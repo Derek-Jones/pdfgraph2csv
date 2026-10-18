@@ -1,0 +1,15 @@
+page,graph,graph_title,symbol,series,legend_key,x_coord,y_coord,color,color_hex
+1,1,Synthetic test plot,filled-circle,measured,0,10,5,red,#ff0000
+1,1,Synthetic test plot,filled-circle,measured,0,25,12,red,#ff0000
+1,1,Synthetic test plot,filled-circle,measured,0,40,20,red,#ff0000
+1,1,Synthetic test plot,filled-circle,measured,0,40,20,red,#ff0000
+1,1,Synthetic test plot,filled-circle,measured,0,55,31,red,#ff0000
+1,1,Synthetic test plot,filled-circle,measured,0,90,44,red,#ff0000
+1,1,Synthetic test plot,filled-circle,measured,1,80,46.6667,red,#ff0000
+1,1,Synthetic test plot,plus,estimated,0,15,40,blue,#0000ff
+1,1,Synthetic test plot,plus,estimated,0,30,33,blue,#0000ff
+1,1,Synthetic test plot,plus,estimated,0,50,10,blue,#0000ff
+1,1,Synthetic test plot,plus,estimated,0,50,10,blue,#0000ff
+1,1,Synthetic test plot,plus,estimated,0,70,25,blue,#0000ff
+1,1,Synthetic test plot,plus,estimated,0,85,8,blue,#0000ff
+1,1,Synthetic test plot,plus,estimated,1,80,44.1667,blue,#0000ff

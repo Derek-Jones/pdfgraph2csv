@@ -1,0 +1,49 @@
+page,graph,graph_title,symbol,series,legend_key,x_coord,y_coord,color,color_hex
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2000,0.999964,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2000.08,0.974449,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2000.17,0.93538,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2000.25,0.919433,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2000.33,0.909466,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2000.42,0.884749,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2000.5,0.893121,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2000.58,0.888736,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2000.67,0.86362,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2000.75,0.838105,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2000.83,0.816976,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2000.92,0.805415,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2001,0.789867,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2001.08,0.765149,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2001.17,0.721296,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2001.25,0.7201,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2001.33,0.711329,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2001.42,0.698173,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2001.5,0.705349,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2001.58,0.710931,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2001.67,0.673456,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2001.75,0.650333,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2001.83,0.638373,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,hedonic indexes /1,0,2001.92,0.62163,black,#0e0e0e
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2000,1.00071,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2000.08,0.967838,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2000.17,0.917187,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2000.25,0.906476,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2000.33,0.892199,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2000.42,0.872789,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2000.5,0.851365,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2000.58,0.840896,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2000.67,0.809326,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2000.75,0.791308,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2000.83,0.764258,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2000.92,0.739445,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2001,0.726979,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2001.08,0.706453,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2001.17,0.682027,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2001.25,0.655875,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2001.33,0.641637,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2001.42,0.619552,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2001.5,0.612098,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2001.58,0.607041,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2001.67,0.582954,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2001.75,0.567282,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2001.83,0.552062,darkslategray,#333333
+1,1,Price Indexes for Digital Cameras,line,matched model indexes /2,0,2001.92,0.536606,darkslategray,#333333
