@@ -1,13 +1,28 @@
 # pdf_points.py
 
-Extracts the data coordinates of marker symbols drawn as vector graphics
-in the plots of a PDF.
+A program to extract the x/y coordinates of data points, displayed as symbols within a graph, drawn using vector graphics within a pdf file.  Graphs represented using raster graphics (e.g., jpeg and png formats) are ignored.
 
-    python3 pdf_points.py input.pdf -o points.csv
+The program is still new and under active development.
 
-`python3 pdf_points.py --help` lists the options.  It needs Python 3.9+ and
+The following command will send the x/y coordinates of any detected data points within any graphs contained in ``interesting.pdf`` to standard output:
+
+``python3 pdf_points.py interesting.pdf``
+
+an output file can be specified:
+
+    python3 pdf_points.py interesting.pdf -o interesting.csv
+
+By default the message ``warning: No vector graphics found`` is output when no data points are detected.
+
+`python3 pdf_points.py --help` lists the options.
+
+The program is written in python and needs python 3.9+
 
     pip install -r requirements.txt     # pikepdf, pdfminer.six, fonttools, python-dateutil
+
+A myriad of different ways are used to display symbols denoting data values, e.g., instruction to output a circle, or four instructions that output the four (sometimes eight) bezier curves forming the quadrants of a circle.
+
+If no x/y coordinates are output, it's possible that the technique used to support them is not yet supported.  The first thing to do is check whether it's possible to [extract the graph](https://github.com/pdfcpu/pdfcpu) as a known raster image format.  If no image can be extracted, the the process involves extracting the page containing the graph, then [uncompressing the pdf, and looking at the sequences of internal pdf instructions](https://shape-of-code.com/2025/07/27/a-process-to-find-and-extract-data-points-from-graphs-in-pdf-files/).
 
 | Package | Used for |
 |---|---|
@@ -46,7 +61,9 @@ or, from this directory, `python3 -m pdfpoints plot.pdf`.
     python3 tests/run_tests.py -v         # one line per case
     python3 tests/run_tests.py -k rofpc   # cases whose name contains "rofpc"
 
-Output columns: page, graph, graph_title, symbol, series, legend_key, x_coord, y_coord, color, color_hex.
+Output columns: page, graph, symbol, series, legend_key, x_coord, y_coord, color, color_hex.
+When no data points are found nothing is written (not even the header line),
+and an output file named with `-o` is not created.
 
 Each case in `tests/cases.json` runs `pdf_points.py` on a PDF in `tests/data`
 and compares the result with the expected CSV: same rows in the same order,
@@ -78,7 +95,10 @@ identical text columns, numeric columns within the case's tolerance.
 | month-axis.pdf | month names at the ticks with years beneath (x = year + month/12); solid and dashed line series without markers |
 | histogram.pdf | 16 small histograms; short bars that look like squares are read as bars |
 | frame-corner-axes.pdf | '+' markers; body text beside a graph must not become a legend label; captions below as titles |
-| plus-symbols-log-axes.pdf | six panels, ~7700 '+' markers drawn as separate strokes; legend of swatches numbered 1..8; markers clipped out of view are skipped |
+| plus-symbols-log-axes.pdf | six panels, ~7700 '+' markers drawn as separate strokes; legend of swatches numbered 1..8; markers beyond the axis ranges (clipped out of view) are reported, in the graph they were clipped to |
+| 1209.1411v2-013.pdf | four log-log graphs; labels drawn as outlines whose exponent minus signs are separate dashes (which must not pass for tick marks); points beyond the axis values reported; legend inside a graph with unreadable names |
+| 2001.10488v4-56.pdf | two scatter plots of 100 000 points each: a 69 MB content stream with 2.9 million operators (tokenized by qpdf); only the point counts are checked |
+| overflow-exponent.pdf | body text with '2^2000 ≈ 10^602' (a superscript joined to its base): a number too big for a float is no number; no graph, no crash |
 | log-clipped-markers.pdf | circles flattened into clipped fragments; rebuilt from their arcs, with stacking counts from the alpha layers |
 | encrypted*.pdf, enc-*.pdf, bad-stream.pdf | RC4-40/128, AES-128/256 (R2-R6), user password (`--password secret`), all decrypted by pikepdf; corrupt ASCII85 and Flate streams skipped with qpdf's reason as the warning |
 | damaged.pdf (beyond qpdf's repair), not-a-pdf.pdf, no-graph.pdf, many-shapes.pdf, zero-width-glyph.pdf, doubtful-axes.pdf | must fail cleanly or report that no graph was found (cases with `"expected": null` check only the exit status and the message) |

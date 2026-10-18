@@ -1,0 +1,7 @@
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex,pdf_x,pdf_y
+2,1,open-circle,,0,-5,1,purple,#800080,57.6818,176.16
+2,1,open-circle,,0,0,-1,purple,#800080,184.5,41.76
+2,1,open-circle,,0,5,2,purple,#800080,311.318,243.36
+2,1,filled-diamond,,0,1,0.5,orange,#ffa500,209.864,142.56
+2,1,filled-diamond,,0,2,0.5,orange,#ffa500,235.227,142.56
+2,1,cross,,0,-2,1.5,black,#000000,133.773,209.76

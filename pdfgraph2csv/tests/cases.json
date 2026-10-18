@@ -1,0 +1,467 @@
+{
+  "_comment": [
+    "Regression cases for pdf_points.py.  Paths are relative to tests/data.",
+    "pdf       : input file",
+    "args      : extra command line arguments",
+    "expected  : CSV the program must reproduce",
+    "tolerance : maximum absolute difference allowed for numeric columns",
+    "columns   : only compare these columns (default: all columns of 'expected')",
+    "update    : false = hand-made reference, never overwritten by --update"
+  ],
+  "cases": [
+    {
+      "name": "schumpeter-001 matches the supplied reference CSV",
+      "pdf": "schumpeter-001.pdf",
+      "args": [],
+      "expected": "schumpeter-001.reference.csv",
+      "tolerance": 0.001,
+      "columns": [
+        "page",
+        "graph",
+        "symbol",
+        "x_coord",
+        "y_coord",
+        "color",
+        "color_hex"
+      ],
+      "update": false
+    },
+    {
+      "name": "schumpeter-001 default output",
+      "pdf": "schumpeter-001.pdf",
+      "args": [],
+      "expected": "schumpeter-001.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "schumpeter-001 inside the axes only (legend keys dropped)",
+      "pdf": "schumpeter-001.pdf",
+      "args": [
+        "--inside-only"
+      ],
+      "expected": "schumpeter-001.inside-only.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "rofpc-19: four log-log graphs in one stream, ZapfDingbats circles",
+      "pdf": "rofpc-19.pdf",
+      "args": [],
+      "expected": "rofpc-19.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "matplotlib: two panels, log y axis, marker XObjects",
+      "pdf": "mpl-two-panels-log.pdf",
+      "args": [],
+      "expected": "mpl-two-panels-log.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "matplotlib: multi-page, open circles, diamonds, x, vector minus signs",
+      "pdf": "mpl-multipage-markers.pdf",
+      "args": [],
+      "expected": "mpl-multipage-markers.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "matplotlib: multi-page with page selection",
+      "pdf": "mpl-multipage-markers.pdf",
+      "args": [
+        "--pages",
+        "2",
+        "--internal"
+      ],
+      "expected": "mpl-multipage-markers.page2-internal.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "effort-fig2: three Excel scatter plots, diamonds from four lines, inward ticks, packed TJ labels, sub-caption titles",
+      "pdf": "effort-fig2-excel-diamonds.pdf",
+      "args": [],
+      "expected": "effort-fig2-excel-diamonds.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "swed-bank: 9-page paper, 4 Excel scatter plots on page 6 (fill+outline diamonds) and bar charts with category axes (High/Medium/Low) on page 4",
+      "pdf": "swed-bank.pdf",
+      "args": [],
+      "expected": "swed-bank.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "swed-bank: page selection (--pages 6) gives the page-6 scatter plots only",
+      "pdf": "swed-bank.pdf",
+      "args": [
+        "--pages",
+        "6"
+      ],
+      "expected": "swed-bank-p6.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "Schalken p57: two R graphs, mixed markers (Dingbats circle a71 + cross a27), legend series",
+      "pdf": "Schalken_PhD-057.pdf",
+      "args": [],
+      "expected": "Schalken_PhD-057.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "Schalken p57: --exclude-legend drops the legend keys",
+      "pdf": "Schalken_PhD-057.pdf",
+      "args": [
+        "--exclude-legend"
+      ],
+      "expected": "Schalken_PhD-057.no-legend.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "synthetic: line-drawn pluses (all verticals first), duplicates, legend - exact known values",
+      "pdf": "synthetic-line-plus.pdf",
+      "args": [],
+      "expected": "synthetic-line-plus.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "King p214: graph turned 90 deg clockwise, no tick marks (grid lines), Times-Roman labels in one TJ",
+      "pdf": "King_PhD-214.pdf",
+      "args": [
+        "--rotation"
+      ],
+      "expected": "King_PhD-214.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "synthetic: same graph turned clockwise gives identical values",
+      "pdf": "synthetic-rotated-cw.pdf",
+      "args": [],
+      "expected": "synthetic-line-plus.csv",
+      "tolerance": 1e-06,
+      "update": false
+    },
+    {
+      "name": "synthetic: same graph turned counter-clockwise gives identical values",
+      "pdf": "synthetic-rotated-ccw.pdf",
+      "args": [],
+      "expected": "synthetic-line-plus.csv",
+      "tolerance": 1e-06,
+      "update": false
+    },
+    {
+      "name": "ssrn-4204819 p16: filled grey circles, graph turned 90 deg anticlockwise, log-log, all text and strokes outlined",
+      "pdf": "ssrn-4204819-016.pdf",
+      "args": [
+        "--rotation"
+      ],
+      "expected": "ssrn-4204819-016.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "arXiv 2304.10304 p5: matplotlib markers as Form XObject /M0 (8-Bezier filled circle), log-log, 10^n labels, minor ticks",
+      "pdf": "2304_10304v3-005.pdf",
+      "args": [],
+      "expected": "2304_10304v3-005.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "computer depreciation p189: two scatter plots, every marker outline written twice (Distiller), coincident points, clipped markers",
+      "pdf": "Estimatingcomputerdepreciationauctiondata-001.pdf",
+      "args": [],
+      "expected": "Estimatingcomputerdepreciationauctiondata-001.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "broken-axes: four Excel graphs with axis breaks (wiggle lines) on x and y; labels edited by white boxes; all points mapped piecewise",
+      "pdf": "broken-axes.pdf",
+      "args": [],
+      "expected": "broken-axes.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "grid-line-axes: six graphs, axes from grid lines, all labels drawn as outlines (incl. '%'), x-axis breaks with one label beyond the wiggle, figure legend with unreadable names",
+      "pdf": "grid-line-axes.pdf",
+      "args": [],
+      "expected": "grid-line-axes.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "symbols-on-axes: three graphs, '+' markers sitting on the axes, colour-swatch legend",
+      "pdf": "symbols-on-axes.pdf",
+      "args": [],
+      "expected": "symbols-on-axes.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "log-inset: two graphs, log y axis with unlabelled minor ticks and a x10^-9 multiplier, two inset graphs",
+      "pdf": "log-inset.pdf",
+      "args": [],
+      "expected": "log-inset.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "nominal-axis: category x axis (outlined, unreadable names numbered #1..#35)",
+      "pdf": "nominal-axis.pdf",
+      "args": [],
+      "expected": "nominal-axis.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "short-years: '95-style year labels, log axis, nominal feature-size axis",
+      "pdf": "short-years.pdf",
+      "args": [],
+      "expected": "short-years.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "lattice-panels: 216 panels on one page, merged tick labels '510 20', figure legend",
+      "pdf": "lattice-panels.pdf",
+      "args": [],
+      "expected": "lattice-panels.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "month-axis: month names at ticks with years below (year + month/12), dashed line series",
+      "pdf": "month-axis.pdf",
+      "args": [],
+      "expected": "month-axis.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "histogram: 16 small histograms, short bars that look like squares",
+      "pdf": "histogram.pdf",
+      "args": [],
+      "expected": "histogram.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "frame-corner-axes: two graphs, '+' markers, body text beside the plot is no legend",
+      "pdf": "frame-corner-axes.pdf",
+      "args": [],
+      "expected": "frame-corner-axes.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "plus-symbols-log-axes: six panels of '+' markers, log y axis, numbered colour legend (1..8); markers beyond the axis ranges (clipped out of view) are reported, assigned to the graph they were clipped to",
+      "pdf": "plus-symbols-log-axes.pdf",
+      "args": [],
+      "expected": "plus-symbols-log-axes.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "log-clipped-markers: circles flattened into fragments and clipped; rebuilt with stacking counts",
+      "pdf": "log-clipped-markers.pdf",
+      "args": [],
+      "expected": "log-clipped-markers.csv",
+      "tolerance": 1e-06,
+      "stderr_contains": [
+        "circles rebuilt from their outlines"
+      ]
+    },
+    {
+      "name": "encrypted: AES-128, empty user password",
+      "pdf": "encrypted.pdf",
+      "args": [],
+      "expected": "schumpeter-001.csv",
+      "tolerance": 1e-06,
+      "update": false
+    },
+    {
+      "name": "encrypted-password: needs --password secret",
+      "pdf": "encrypted-password.pdf",
+      "args": [
+        "--password",
+        "secret"
+      ],
+      "expected": "schumpeter-001.csv",
+      "tolerance": 1e-06,
+      "update": false
+    },
+    {
+      "name": "encrypted-password: without the password the file is refused",
+      "pdf": "encrypted-password.pdf",
+      "args": [],
+      "expected": null,
+      "tolerance": 1e-06,
+      "exit_code": 1,
+      "stderr_contains": [
+        "needs a password"
+      ]
+    },
+    {
+      "name": "synthetic encryption rc4-40 gives the unencrypted output",
+      "pdf": "enc-rc4-40.pdf",
+      "args": [],
+      "expected": "enc-plain.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "synthetic encryption aes256 gives the unencrypted output",
+      "pdf": "enc-aes256.pdf",
+      "args": [],
+      "expected": "enc-plain.csv",
+      "tolerance": 1e-06,
+      "update": false
+    },
+    {
+      "name": "synthetic encryption aes256-r5 gives the unencrypted output",
+      "pdf": "enc-aes256-r5.pdf",
+      "args": [],
+      "expected": "enc-plain.csv",
+      "tolerance": 1e-06,
+      "update": false
+    },
+    {
+      "name": "synthetic encryption rc4-user gives the unencrypted output",
+      "pdf": "enc-rc4-user.pdf",
+      "args": [
+        "--password",
+        "secret"
+      ],
+      "expected": "enc-plain.csv",
+      "tolerance": 1e-06,
+      "update": false
+    },
+    {
+      "name": "bad-stream: a corrupt Ascii85 stream is skipped with a warning",
+      "pdf": "bad-stream.pdf",
+      "args": [],
+      "expected": "schumpeter-001.csv",
+      "tolerance": 1e-06,
+      "update": false,
+      "stderr_contains": [
+        "corrupt ASCII85Decode stream was skipped"
+      ]
+    },
+    {
+      "name": "damaged: rejected with an error",
+      "pdf": "damaged.pdf",
+      "args": [],
+      "expected": null,
+      "tolerance": 1e-06,
+      "exit_code": 1,
+      "stderr_contains": [
+        "damaged beyond repair"
+      ]
+    },
+    {
+      "name": "not-a-pdf: rejected with an error",
+      "pdf": "not-a-pdf.pdf",
+      "args": [],
+      "expected": null,
+      "tolerance": 1e-06,
+      "exit_code": 1,
+      "stderr_contains": [
+        "not a PDF file"
+      ]
+    },
+    {
+      "name": "no-graph: no graph with numbered axes",
+      "pdf": "no-graph.pdf",
+      "args": [],
+      "expected": null,
+      "tolerance": 1e-06,
+      "stderr_contains": [
+        "No vector graphics found"
+      ]
+    },
+    {
+      "name": "many-shapes: no graph with numbered axes",
+      "pdf": "many-shapes.pdf",
+      "args": [],
+      "expected": null,
+      "tolerance": 1e-06,
+      "stderr_contains": [
+        "No vector graphics found"
+      ]
+    },
+    {
+      "name": "zero-width-glyph: no graph with numbered axes",
+      "pdf": "zero-width-glyph.pdf",
+      "args": [],
+      "expected": null,
+      "tolerance": 1e-06,
+      "stderr_contains": [
+        "No vector graphics found"
+      ]
+    },
+    {
+      "name": "doubtful-axes: no graph with numbered axes",
+      "pdf": "doubtful-axes.pdf",
+      "args": [],
+      "expected": null,
+      "tolerance": 1e-06,
+      "stderr_contains": [
+        "No vector graphics found"
+      ]
+    },
+    {
+      "name": "synthetic-date-axis: date tick labels ('Jan 2010', python-dateutil) and glyph names in /Differences incl. the /fi ligature (fontTools); exact known values",
+      "pdf": "synthetic-date-axis.pdf",
+      "args": [],
+      "expected": "synthetic-date-axis.reference.csv",
+      "tolerance": 0.001,
+      "update": false
+    },
+    {
+      "name": "synthetic-date-axis: the title, read through glyph names with the /fi ligature (fontTools), is found (--debug; titles are not output)",
+      "pdf": "synthetic-date-axis.pdf",
+      "args": [
+        "--debug"
+      ],
+      "expected": "synthetic-date-axis.reference.csv",
+      "tolerance": 0.001,
+      "update": false,
+      "stderr_contains": [
+        "graph 1 title: 'Profits by month'"
+      ]
+    },
+    {
+      "name": "no-graph with -o: no output file is created",
+      "pdf": "no-graph.pdf",
+      "args": [],
+      "expected": null,
+      "output_file": "points.csv",
+      "stderr_contains": [
+        "No vector graphics found"
+      ]
+    },
+    {
+      "name": "histogram with -o: the output file holds the points",
+      "pdf": "histogram.pdf",
+      "args": [],
+      "expected": "histogram.csv",
+      "tolerance": 1e-06,
+      "output_file": "points.csv",
+      "update": false
+    },
+    {
+      "name": "1209.1411v2-013: four log-log graphs, outlined labels whose exponent minus signs are separate dashes, points beyond the axis values (clipped out of view) reported, in-graph legend with unreadable names",
+      "pdf": "1209.1411v2-013.pdf",
+      "args": [],
+      "expected": "1209.1411v2-013.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "2001.10488v4-56: a 69 MB content stream drawing 200 000 circle markers (2.9 million operators) must finish (about a minute) with every marker",
+      "pdf": "2001.10488v4-56.pdf",
+      "args": [],
+      "expected": null,
+      "expected_counts": {
+        "2 filled-circle": 100000,
+        "3 filled-circle": 99989,
+        "1 line": 335
+      },
+      "stderr_contains": [
+        "million objects"
+      ]
+    },
+    {
+      "name": "overflow-exponent: body text '10^602' (a superscript) is no number - no crash, no graph",
+      "pdf": "overflow-exponent.pdf",
+      "args": [],
+      "expected": null,
+      "stderr_contains": [
+        "No vector graphics found"
+      ]
+    }
+  ]
+}
