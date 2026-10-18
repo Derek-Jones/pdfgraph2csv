@@ -7,7 +7,7 @@ How it works
 ------------
 1.  The PDF is opened with pikepdf (qpdf), which repairs damaged files,
     decrypts them and decodes their streams, and is then interpreted with
-    pdfminer.six (with qpdf tokenizing the content streams): its
+    pdfminer.six (with tokenizer.py reading the content streams): its
     content-stream interpreter (extended here to record paths, colours,
     clipping, opacity and glyph-by-glyph text) tracks the
     current transformation matrix, the graphics-state stack, the text state

@@ -3,6 +3,7 @@
 mapped piecewise on either side of a wiggle line.
 """
 
+import bisect
 import math
 
 from .context import PAGE
@@ -71,7 +72,7 @@ def map_value(m, c):
     """Page coordinate -> data value through an axis mapping.  Values
     closer to zero than the fit's own error are reported as 0."""
     if m["kind"] == "nominal":
-        return min(m["ticks"], key=lambda tv: abs(tv[0] - c))[1]
+        return _nearest_tick(m, c)
     if m["kind"] == "piecewise" and c > m["cut"]:
         return m["a2"] * c + m["b2"]
     v = m["a"] * c + m["b"]
@@ -83,6 +84,26 @@ def map_value(m, c):
     # values closer to zero than the axis fit's own residual are fitting noise
     eps = min(max(2 * m.get("resid", 0.0), 1e-9), 2e-6) * m["range"]
     return 0.0 if abs(v) < eps else v
+
+
+_NOMINAL = {}                       # id(mapping) -> (mapping, positions, ticks)
+
+
+def _nearest_tick(m, c):
+    """The label of the tick nearest c (the first such tick on a tie), by
+    binary search over the distinct tick positions."""
+    entry = _NOMINAL.get(id(m))
+    if entry is None or entry[0] is not m:
+        first = {}
+        for k, (pos, label) in enumerate(m["ticks"]):
+            first.setdefault(pos, (k, label))
+        pos = sorted(first)
+        entry = _NOMINAL[id(m)] = (m, pos, [first[q] for q in pos])
+    _, pos, ticks = entry
+    i = bisect.bisect_left(pos, c)
+    cands = [j for j in (i - 1, i) if 0 <= j < len(pos)]
+    best = min(cands, key=lambda j: (abs(pos[j] - c), ticks[j][0]))
+    return ticks[best][1]
 
 
 def nominal_map(labelled):

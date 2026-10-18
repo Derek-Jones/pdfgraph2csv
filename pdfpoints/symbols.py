@@ -14,17 +14,22 @@ from .grouping import DisjointSets
 def drop_highlight_boxes(symbols):
     """An open square or circle drawn round a smaller marker of another
     colour highlights that point; it is not a data point itself."""
+    # grid cell -> colour -> symbols: only markers of another colour count,
+    # so thousands of stacked markers of one colour are never compared
     grid = {}
     for t in symbols:
-        grid.setdefault((int(t["cx"] // 4), int(t["cy"] // 4)), []).append(t)
+        if t["size"] > 0:
+            cell = grid.setdefault((int(t["cx"] // 4), int(t["cy"] // 4)), {})
+            cell.setdefault(t["rgb"], []).append(t)
     out = []
     for s in symbols:
         if not s.get("filled") and s["shape"] in ("square", "circle") and s["size"] > 0:
             gx, gy = int(s["cx"] // 4), int(s["cy"] // 4)
             r = int(0.25 * s["size"] // 4) + 1
-            near = [t for dx in range(-r, r + 1) for dy in range(-r, r + 1)
-                    for t in grid.get((gx + dx, gy + dy), ())]
-            if any(t is not s and 0 < t["size"] < 0.8 * s["size"] and t["rgb"] != s["rgb"] and
+            near = (t for dx in range(-r, r + 1) for dy in range(-r, r + 1)
+                    for rgb, ts in grid.get((gx + dx, gy + dy), {}).items()
+                    if rgb != s["rgb"] for t in ts)
+            if any(t["size"] < 0.8 * s["size"] and
                    math.hypot(t["cx"] - s["cx"], t["cy"] - s["cy"]) < 0.25 * s["size"]
                    for t in near):
                 continue
@@ -169,40 +174,83 @@ def classify_subpath(sp):
     return out
 
 
-def doubled_outlines(paths, text_parts=frozenset()):
+def doubled_outlines(paths, text_parts=frozenset(), cls_of=None):
     """Some converters (seen with Acrobat Distiller) write every marker
     outline twice in a row.  Identical marker outlines that follow each
     other directly form runs; when the runs on a page are (almost) all of
     even length, the page is doubled and a run of L outlines is L/2 markers
     (a run of 4 is two data points at the same place).  Runs are followed
     across painting operations, since a doubled pair can be split between
-    two of them.  Returns the (path idx, subpath no) entries to skip."""
+    two of them.  Returns the (path idx, subpath no) entries to skip.
+    `cls_of` holds the classify_subpath results of each path's subpaths
+    (path idx -> list), where already known."""
+    def geom(p, sp):
+        return (p["fill"], p["stroke"], p["fill_rgb"], p["stroke_rgb"],
+                tuple(round(v, 3) for v in sp["start"]),
+                tuple(tuple(round(v, 3) for q in s[1:] for v in q) for s in sp["segs"]))
+
     seq = []
     for p in paths:
+        cls = cls_of.get(p["idx"]) if cls_of else None
         for k, sp in enumerate(p["subpaths"]):
             if (p["idx"], k) in text_parts:
                 continue
-            if classify_subpath(sp) is None:
+            c = cls[k] if cls is not None and (sp["closed"] or not p["fill"]) else classify_subpath(sp)
+            if c is None:
                 continue
-            geom = (p["fill"], p["stroke"], p["fill_rgb"], p["stroke_rgb"],
-                    tuple(round(v, 3) for v in sp["start"]),
-                    tuple(tuple(round(v, 3) for q in s[1:] for v in q) for s in sp["segs"]))
-            seq.append(((p["idx"], k), geom))
-    runs = []
-    for key, geom in seq:
-        if runs and runs[-1][0] == geom:
-            runs[-1][1].append(key)
-        else:
-            runs.append((geom, [key]))
+            seq.append(((p["idx"], k), p, sp))
+    runs = []                       # [geometry, keys, (path, subpath) of the run]
+    for key, p, sp in seq:
+        if runs:
+            q, sq = runs[-1][2]
+            # outlines whose start points differ cannot be equal: skip the
+            # full comparison (the common case)
+            if abs(sq["start"][0] - sp["start"][0]) < 0.001 and \
+                    abs(sq["start"][1] - sp["start"][1]) < 0.001:
+                if runs[-1][0] is None:
+                    runs[-1][0] = geom(q, sq)
+                if runs[-1][0] == geom(p, sp):
+                    runs[-1][1].append(key)
+                    continue
+        runs.append([None, [key], (p, sp)])
     if len(seq) < 4:
         return set()
     in_even = sum(len(r[1]) for r in runs if len(r[1]) % 2 == 0)
     if in_even < 0.9 * len(seq):
         return set()                        # not a doubled page
     skip = set()
-    for _, keys in runs:
-        skip.update(keys[1::2])             # keep every other outline
+    for r in runs:
+        skip.update(r[1][1::2])             # keep every other outline
     return skip
+
+
+def _containers(boxes):
+    """(k, m) for each box k lying inside a larger box m (the first such m
+    in order).  A box containing box k covers k's centre, so only the boxes
+    covering that point are tested (grid index; boxes spanning very many
+    cells are tested directly)."""
+    sizes = sorted(max(b[2] - b[0], b[3] - b[1]) for b in boxes)
+    cell = max(sizes[len(sizes) // 2], 1e-3)
+    grid, big = {}, []
+    for m, o in enumerate(boxes):
+        gx0, gy0, gx1, gy1 = int(o[0] // cell), int(o[1] // cell), int(o[2] // cell), int(o[3] // cell)
+        if (gx1 - gx0 + 1) * (gy1 - gy0 + 1) > 400:
+            big.append(m)
+            continue
+        for gx in range(gx0, gx1 + 1):
+            for gy in range(gy0, gy1 + 1):
+                grid.setdefault((gx, gy), []).append(m)
+    out = []
+    for k, b in enumerate(boxes):
+        area = (b[2] - b[0]) * (b[3] - b[1])
+        cx, cy = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
+        for m in sorted(grid.get((int(cx // cell), int(cy // cell)), []) + big):
+            o = boxes[m]
+            if m != k and (o[2] - o[0]) * (o[3] - o[1]) > area and \
+                    o[0] <= b[0] and o[1] <= b[1] and b[2] <= o[2] and b[3] <= o[3]:
+                out.append((k, m))
+                break
+    return out
 
 
 def find_symbols(paths, glyph_symbols=(), text_parts=frozenset()):
@@ -211,7 +259,10 @@ def find_symbols(paths, glyph_symbols=(), text_parts=frozenset()):
     that belong to text (`text_parts`) are ignored."""
     syms = [dict(g) for g in glyph_symbols]
     open_lines = []
-    doubled = doubled_outlines(paths, text_parts)
+    # filling closes every outline implicitly
+    cls_of = {p["idx"]: [classify_subpath(dict(sp, closed=True) if p["fill"] else sp)
+                         for sp in p["subpaths"]] for p in paths}
+    doubled = doubled_outlines(paths, text_parts, cls_of)
     for p in paths:
         holes = set()
         hole_of = {}        # outer contour -> its holes
@@ -219,15 +270,10 @@ def find_symbols(paths, glyph_symbols=(), text_parts=frozenset()):
             # a contour inside another contour of the same path is a hole
             boxes = [bbox_of([sp["start"]] + [q for s in sp["segs"] for q in s[1:]])
                      for sp in p["subpaths"]]
-            for k, b in enumerate(boxes):
-                for m, o in enumerate(boxes):
-                    if m != k and (o[2] - o[0]) * (o[3] - o[1]) > (b[2] - b[0]) * (b[3] - b[1]) and \
-                            o[0] <= b[0] and o[1] <= b[1] and b[2] <= o[2] and b[3] <= o[3]:
-                        holes.add(k)
-                        hole_of.setdefault(m, []).append(k)
-                        break
-        # filling closes every outline implicitly
-        cls = [classify_subpath(dict(sp, closed=True) if p["fill"] else sp) for sp in p["subpaths"]]
+            for k, m in _containers(boxes):
+                holes.add(k)
+                hole_of.setdefault(m, []).append(k)
+        cls = cls_of[p["idx"]]
         if p["fill"]:
             outer = [k for k in range(len(cls)) if k not in holes]
             if len(outer) >= 3 and sum(1 for k in outer if cls[k]) < 0.5 * len(outer):

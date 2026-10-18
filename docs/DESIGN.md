@@ -3,10 +3,16 @@
 `pdfgraph2csv.py` is a thin command-line wrapper; the work is done by the
 `pdfpoints` package next to it.  It uses four packages:
 
-* **pikepdf** opens the file (`document.py`) and tokenizes the content
-  streams (`interpreter.py`, much faster than pdfminer.six's parser): qpdf repairs damaged files,
+* **pikepdf** opens the file (`document.py`): qpdf repairs damaged files,
   decrypts and decodes streams; streams that cannot be decoded are emptied
   with a warning; the cleaned file is handed, in memory, to pdfminer.six.
+* Content streams are tokenized by `tokenizer.py`, one operator at a time
+  (much faster than pdfminer.six's parser, and unlike qpdf's
+  `parse_content_stream` it does not hold a whole stream as objects in
+  memory: a 92 MB stream of 2.3 million operators needed 2.5 GB that way).
+  Path coordinates come out as floats and are appended to the current path
+  directly.  Content with inline images goes to qpdf's tokenizer, and
+  pdfminer.six's parser is the last fallback.
 * **pdfminer.six** interprets the pages (`interpreter.py`): its
   `PDFPageInterpreter` keeps the matrix,
   q/Q stack, text state, fonts and resources.  `ContentInterpreter`
@@ -40,7 +46,7 @@ Lower layers never import higher ones (there are no import cycles):
 
 ```
 opening the file    document                                    (pikepdf, pdfminer.six)
-drawing             fonts  →  interpreter                       (pdfminer.six, fontTools)
+drawing             tokenizer  fonts  →  interpreter            (pdfminer.six, fontTools)
 text                occlusion  text  →  outlined_text           (python-dateutil in text)
 axes                scales  →  labels  →  axes
 graphs              titles  →  graphs

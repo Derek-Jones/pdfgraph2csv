@@ -22,15 +22,23 @@ def cover_rects(paths, images):
 
 class CoverIndex:
     """Which covers (painted after drawing step `idx`) hold a point."""
+    MAX_CELLS = 10000                 # bigger covers are checked one by one
+
     def __init__(self, covers, cell=20.0):
-        self.cell, self.grid = cell, {}
+        self.cell, self.grid, self.big = cell, {}, []
         for b, i in covers:
+            nx = int(b[2] // cell) - int(b[0] // cell) + 1
+            ny = int(b[3] // cell) - int(b[1] // cell) + 1
+            if nx * ny > self.MAX_CELLS:  # e.g. a degenerate box 10^9 points wide
+                self.big.append((b, i))
+                continue
             for gx in range(int(b[0] // cell), int(b[2] // cell) + 1):
                 for gy in range(int(b[1] // cell), int(b[3] // cell) + 1):
                     self.grid.setdefault((gx, gy), []).append((b, i))
 
     def over(self, x, y, idx):
-        return [i for b, i in self.grid.get((int(x // self.cell), int(y // self.cell)), ())
+        cands = self.grid.get((int(x // self.cell), int(y // self.cell)), ())
+        return [i for b, i in (list(cands) + self.big if self.big else cands)
                 if i > idx and b[0] <= x <= b[2] and b[1] <= y <= b[3]]
 
 

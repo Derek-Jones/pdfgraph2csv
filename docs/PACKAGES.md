@@ -4,7 +4,7 @@
 
 | Package | What it replaced |
 |---|---|
-| **pikepdf** (qpdf) | the PDF object parser, xref scanning and repair, stream filters (Flate, LZW, ASCII85, ASCIIHex, PNG predictors), the RC4 / AES-128 / AES-256 decryption, the content-stream tokenizer (`pdfobjects.py`, `filters.py`, `crypto.py`, most of `document.py`) |
+| **pikepdf** (qpdf) | the PDF object parser, xref scanning and repair, stream filters (Flate, LZW, ASCII85, ASCIIHex, PNG predictors), the RC4 / AES-128 / AES-256 decryption, the content-stream tokenizer for content with inline images (`pdfobjects.py`, `filters.py`, `crypto.py`, most of `document.py`) |
 | **pdfminer.six** | the operator handling, CTM and q/Q handling, text-state operators, resources, font loading, ToUnicode/CMap parsing, CID fonts, the standard-14 width tables |
 | **fontTools** | the hand-made glyph-name table (`fontTools.agl.toUnicode` covers the whole Adobe Glyph List, `uniXXXX`, `uXXXXX` and ligature names such as `f_i`) |
 | **python-dateutil** | the month-name table; it also adds date tick labels ("Mar 2010", "2010-03-15", "15 March 2010", Excel's "Jan-10") |
@@ -60,7 +60,7 @@ The parts below are still hand-written; these packages could take them over.
 | Package | What it would replace |
 |---|---|
 | **pandas** | CSV writing and the per-graph bookkeeping. Returning a DataFrame from `extract()` would suit users who analyse the points in Python. |
-| **pytest** + **pytest-regressions** | The custom runner in `tests/run_tests.py`. `dataframe_regression` compares CSV-like results with per-column tolerances, and `--force-regen` replaces `--update`. |
+| **pytest** + **pytest-regressions** | The shell runner `tests/run_tests.sh`. `dataframe_regression` compares CSV-like results with per-column tolerances, and `--force-regen` replaces `--update`. |
 | **click** or **typer** | `argparse` in `cli.py` (a matter of taste; argparse is fine). |
 
 ## Suggested order

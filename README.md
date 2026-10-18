@@ -57,15 +57,16 @@ or, from this directory, `python3 -m pdfpoints plot.pdf`.
 
 ## Regression tests
 
-    python3 tests/run_tests.py            # all cases (exit status 0 = pass)
-    python3 tests/run_tests.py -v         # one line per case
-    python3 tests/run_tests.py -k rofpc   # cases whose name contains "rofpc"
+    tests/run_tests.sh                    # all cases (exit status 0 = pass)
+    tests/run_tests.sh -v                 # one line per case
+    tests/run_tests.sh -k rofpc           # cases whose name contains "rofpc"
 
 Output columns: page, graph, symbol, series, legend_key, x_coord, y_coord, color, color_hex.
 When no data points are found nothing is written (not even the header line),
 and an output file named with `-o` is not created.
 
-Each case in `tests/cases.json` runs `pdfgraph2csv.py` on a PDF in `tests/data`
+Each case listed at the end of `tests/run_tests.sh` (a bash script; set `PYTHON`
+to choose the interpreter) runs `pdfgraph2csv.py` on a PDF in `tests/data`
 and compares the result with the expected CSV: same rows in the same order,
 identical text columns, numeric columns within the case's tolerance.
 
@@ -77,9 +78,9 @@ identical text columns, numeric columns within the case's tolerance.
 | effort-fig2-excel-diamonds.pdf | Word/Excel via Acrobat Distiller; 3 graphs, ~3000 diamonds drawn as four lines; inward ticks; several labels in one TJ with wide character spacing; sub-captions below the plots as titles |
 | swed-bank.pdf | 9-page LaTeX paper; four Excel scatter plots on page 6 in separate embedded forms; each diamond drawn as fill + outline (counted once); bar charts with category axes (High/Medium/Low, between-tick Excel labels) on page 4. Refitting the extracted points reproduces Excel's printed R² values exactly. `--pages 6` has its own expected file (graph numbers start at 1 there) |
 | Schalken_PhD-057.pdf | two R graphs, each mixing ZapfDingbats circles (a71) and crosses (a27); legend gives the `series` column. All markers are anchored at the a71 centre: the integer-valued data confirm it |
-| synthetic-line-plus.pdf | made by `tests/make_line_plus_pdf.py`: plus signs drawn as two strokes with all vertical bars first, duplicated points, legend; exact known values |
+| synthetic-line-plus.pdf | synthetic: plus signs drawn as two strokes with all vertical bars first, duplicated points, legend; exact known values |
 | King_PhD-214.pdf | graph turned 90° clockwise (y axis across the top, x axis down the left); no tick marks, grid lines act as ticks; Times-Roman labels without width table, all in one TJ; two-line title |
-| synthetic-date-axis.pdf | made by `tests/make_date_axis_pdf.py`: x tick labels are dates ("Jan 2010" ... "Jan 2011", python-dateutil); labels and title use glyph names from /Differences, including the /fi ligature (fontTools); exact known values in the hand-made reference |
+| synthetic-date-axis.pdf | synthetic: x tick labels are dates ("Jan 2010" ... "Jan 2011", python-dateutil); labels and title use glyph names from /Differences, including the /fi ligature (fontTools); exact known values in the hand-made reference |
 | synthetic-rotated-cw.pdf, synthetic-rotated-ccw.pdf | the synthetic plot turned both ways; must equal `synthetic-line-plus.csv` exactly |
 | ssrn-4204819-016.pdf | 1870 light-grey filled circles; graph turned 90° anticlockwise (y axis along the bottom, x axis up the right); log-log; every line and every label converted to filled outlines, so tick labels are read from glyph shapes. The points reproduce the empirical 1−F(x) steps k/N to 0.2% |
 | 2304_10304v3-005.pdf | matplotlib histogram on log-log axes; each marker drawn by the Form XObject /M0 (filled circle of 8 Béziers); labels 10^n with superscript exponents; log minor ticks. The 334 counts are integers summing to 108,745 as the caption says; the "1 month"/"1 year" lines map to 30 and 365 days |
@@ -101,7 +102,7 @@ identical text columns, numeric columns within the case's tolerance.
 | overflow-exponent.pdf | body text with '2^2000 ≈ 10^602' (a superscript joined to its base): a number too big for a float is no number; no graph, no crash |
 | log-clipped-markers.pdf | circles flattened into clipped fragments; rebuilt from their arcs, with stacking counts from the alpha layers |
 | encrypted*.pdf, enc-*.pdf, bad-stream.pdf | RC4-40/128, AES-128/256 (R2-R6), user password (`--password secret`), all decrypted by pikepdf; corrupt ASCII85 and Flate streams skipped with qpdf's reason as the warning |
-| damaged.pdf (beyond qpdf's repair), not-a-pdf.pdf, no-graph.pdf, many-shapes.pdf, zero-width-glyph.pdf, doubtful-axes.pdf | must fail cleanly or report that no graph was found (cases with `"expected": null` check only the exit status and the message) |
+| damaged.pdf (beyond qpdf's repair), not-a-pdf.pdf, no-graph.pdf, many-shapes.pdf, zero-width-glyph.pdf, doubtful-axes.pdf | must fail cleanly or report that no graph was found (cases without `--expect` check only the exit status and the message) |
 
 `schumpeter-001.reference.csv` is the reference supplied with the PDF
 (compared with tolerance 0.001 and never overwritten).  The other expected
@@ -111,16 +112,11 @@ plotted values exactly.
 ### Adding a case
 
 1. Copy the PDF into `tests/data/`.
-2. Add an entry to `tests/cases.json` (`pdf`, `args`, `expected`, `tolerance`;
-   optionally `exit_code` and `stderr_contains`).
-3. `python3 tests/run_tests.py --update -k "<case name>"` to write the expected CSV.
+2. Add a `t` call at the end of `tests/run_tests.sh` (`--pdf`, `--expect`,
+   optionally `--tol`, `--exit`, `--stderr`, `--counts`; the comment at the
+   top of the script lists them all).
+3. `tests/run_tests.sh --update -k "<case name>"` to write the expected CSV.
 4. Check that CSV by hand before trusting it; then it is a regression baseline.
 
 After an intended change in the program's output, run `--update` and review
 the changed CSVs (e.g. with `git diff`) before accepting them.
-
-`tests/make_digit_templates.py` regenerates the digit templates embedded in
-`pdfpoints/outlined_text.py` (needs Pillow and the Liberation/DejaVu fonts,
-which the program itself does not use).
-`tests/make_date_axis_pdf.py` writes the synthetic date-axis case and its
-reference CSV.

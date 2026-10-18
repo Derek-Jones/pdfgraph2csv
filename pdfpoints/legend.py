@@ -39,10 +39,14 @@ def find_legend(symbols, texts, hlines=()):
                              or len(t["text"].strip()) > 60)), key=lambda ct: ct[0])
     label_y = [cy for cy, _ in labels]
     reach = 0.6 * max((t["size"] or 1.0 for _, t in labels), default=1.0)
+    hlines = sorted(hlines, key=lambda h: h[2])     # line samples by height, likewise
+    hline_y = [h[2] for h in hlines]
     for i, s in enumerate(symbols):
         right = s["cx"] + s["size"] / 2
-        for x0, x1, y in hlines:
-            if x0 - 0.5 <= s["cx"] <= x1 + 0.5 and abs(y - s["cy"]) < 0.3 * max(s["size"], 1.0):
+        tol = 0.3 * max(s["size"], 1.0)
+        for x0, x1, y in hlines[bisect.bisect_left(hline_y, s["cy"] - tol):
+                                bisect.bisect_right(hline_y, s["cy"] + tol)]:
+            if x0 - 0.5 <= s["cx"] <= x1 + 0.5 and abs(y - s["cy"]) < tol:
                 right = max(right, x1)
         best = None
         lo = bisect.bisect_left(label_y, s["cy"] - reach)
@@ -281,6 +285,7 @@ class SeriesNamer:
         self.by_marker = {}       # (graph no, marker signature) -> label / None
         self.by_colour = {}       # (graph no, colour) -> label / None (swatches)
         self.figure = []          # (rgb, signature, label) of keys outside all graphs
+        self._figure_cache = {}
         for i, label in legend.items():
             s = symbols[i]
             g = min(graphs, key=lambda g: rect_distance(g["rect"], s["cx"], s["cy"]))
@@ -303,9 +308,17 @@ class SeriesNamer:
         return self.by_colour.get((g["no"], color_name(s["rgb"])[1])) or self._figure_series(s)
 
     def _figure_series(self, s):
+        """(cached: the answer depends only on the colour and the marker)"""
         rgb = s["rgb"]
         if not rgb or not self.figure:
             return ""
+        key = (rgb, symbol_signature(s), s["shape"])
+        if key not in self._figure_cache:
+            self._figure_cache[key] = self._figure_series_uncached(s)
+        return self._figure_cache[key]
+
+    def _figure_series_uncached(self, s):
+        rgb = s["rgb"]
         same = {label for _, sig, label in self.figure if sig == symbol_signature(s)}
         if len(same) == 1:                 # the same marker as one key
             return same.pop()

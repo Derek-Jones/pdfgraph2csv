@@ -3,9 +3,10 @@
 pdfminer.six's PDFPageInterpreter does the work of a content-stream
 interpreter: it keeps the current transformation matrix, the q/Q stack and
 the text state (font, size, spacing, text and line matrices), and loads the
-fonts and resources.  The operators themselves are tokenized by qpdf
-(pikepdf), which is many times faster than pdfminer.six's own parser on the
-huge streams of plots with 100 000+ markers.  The
+fonts and resources.  The operators themselves are tokenized by
+tokenizer.py (or by qpdf, for content with inline images), which is many
+times faster than pdfminer.six's own parser on the huge streams of plots
+with 100 000+ markers.  The
 subclass `ContentInterpreter` adds what plot extraction needs and pdfminer
 does not keep:
 
@@ -37,6 +38,7 @@ from pdfminer.psparser import LIT, PSEOF, PSKeyword, keyword_name, literal_name
 from .context import PAGE, SETTINGS
 from .fonts import DINGBAT_ANCHOR, DINGBAT_SYMBOLS, FontInfo
 from .geometry import bbox_of, mapply, mmul
+from .tokenizer import Floats, has_inline_image, operators
 
 IDENTITY = (1, 0, 0, 1, 0, 0)
 
@@ -122,11 +124,14 @@ class ContentInterpreter(PDFPageInterpreter):
             self.textstate, self.graphicstate, self.extra = textstate, graphicstate, extra
 
     def execute(self, streams):
-        """Run the operators of the content streams.  They are tokenized by
-        qpdf (pikepdf), which is far faster than pdfminer.six's parser on big
-        streams (plots with 100 000+ markers); pdfminer.six's parser is the
-        fallback for content qpdf rejects.  An operator that fails is
-        skipped (one malformed operator must not lose the page)."""
+        """Run the operators of the content streams.  They are tokenized one
+        at a time by tokenizer.py, which is far faster than pdfminer.six's
+        parser on big streams (plots with 100 000+ markers) and, unlike qpdf's
+        tokenizer, does not hold the whole stream as objects in memory.
+        Content with inline images is tokenized by qpdf (pikepdf), and
+        pdfminer.six's parser is the fallback for content qpdf rejects.  An
+        operator that fails is skipped (one malformed operator must not lose
+        the page)."""
         valid = []
         self.stream_ids.clear()
         for obj in streams:
@@ -138,16 +143,32 @@ class ContentInterpreter(PDFPageInterpreter):
                 self.stream_ids.add(stream.objid)
         try:
             data = b"\n".join(s.get_data() for s in valid)
+        except Exception:
+            self._execute_pdfminer(valid)
+            return
+        if len(data) > 15000000:          # say why the program is busy
+            print("note: page %d has %d MB of drawing instructions; this may take a minute or two"
+                  % (PAGE.number, len(data) // 1000000), file=sys.stderr, flush=True)
+        if not has_inline_image(data):
+            run = self._run_operator
+            for name, operands in operators(data):
+                # path construction, by far the most common: when the
+                # tokenizer gives floats the segment is recorded directly,
+                # as pdfminer would record it
+                n = _PATH_OPERANDS.get(name)
+                if n is not None and type(operands) is Floats and len(operands) >= n:
+                    self.curpath.append((name, *operands[len(operands) - n:]))
+                else:
+                    run(name, operands)
+            return
+        try:                              # inline images: qpdf knows where they end
             instructions = pikepdf.parse_content_stream(pikepdf.Stream(_scratch_pdf(), data))
         except Exception:
             self._execute_pdfminer(valid)
             return
-        if len(instructions) > 500000:    # say why the program is busy
-            print("note: page %d draws %.1f million objects; this may take a few minutes"
-                  % (PAGE.number, len(instructions) / 1e6), file=sys.stderr, flush=True)
         for inst in instructions:
             if not isinstance(inst, pikepdf.ContentStreamInstruction):
-                continue                  # inline images
+                continue                  # the inline image itself
             self._run_operator(str(inst.operator), [_from_pikepdf(o) for o in inst.operands])
 
     def _execute_pdfminer(self, streams):
@@ -433,6 +454,7 @@ class ContentInterpreter(PDFPageInterpreter):
 
 
 _HANDLERS = {}                            # (class, operator) -> (method, operand count)
+_PATH_OPERANDS = {"m": 2, "l": 2, "c": 6, "v": 4, "y": 4}
 _SCRATCH = []
 
 
@@ -468,9 +490,12 @@ def build_subpaths(curpath, ctm):
     coordinates: [{start, segs: [("l", p) | ("c", p1, p2, p3)], closed}].
     A segment after a close-path starts a new subpath at the current point."""
     subpaths, sub, cur = [], None, None
+    ma, mb, mc, md, me, mf = ctm
 
     def P(x, y):
-        return mapply(ctm, _num(x), _num(y))
+        # (the segments' coordinates are floats: pdfminer and
+        # ContentInterpreter.execute only record parsed numbers)
+        return (ma * x + mc * y + me, mb * x + md * y + mf)
 
     def new_sub(pt):
         s = {"start": pt, "segs": [], "closed": False}
@@ -478,21 +503,28 @@ def build_subpaths(curpath, ctm):
         return s
 
     for seg in curpath:
-        op, a = seg[0], seg[1:]
+        op = seg[0]
+        if op == "c":                         # the common case first
+            if sub is None:
+                sub = new_sub(cur or P(0.0, 0.0))
+            _, x1, y1, x2, y2, x3, y3 = seg
+            cur = (ma * x3 + mc * y3 + me, mb * x3 + md * y3 + mf)
+            sub["segs"].append(("c", (ma * x1 + mc * y1 + me, mb * x1 + md * y1 + mf),
+                                (ma * x2 + mc * y2 + me, mb * x2 + md * y2 + mf), cur))
+            continue
+        a = seg[1:]
         if op == "m":
             cur = P(a[0], a[1])
             sub = new_sub(cur)
         elif op == "l":
             if sub is None:
-                sub = new_sub(cur or P(0, 0))
+                sub = new_sub(cur or P(0.0, 0.0))
             cur = P(a[0], a[1])
             sub["segs"].append(("l", cur))
-        elif op in ("c", "v", "y"):
+        elif op in ("v", "y"):
             if sub is None:
-                sub = new_sub(cur or P(0, 0))
-            if op == "c":
-                p1, p2, p3 = P(a[0], a[1]), P(a[2], a[3]), P(a[4], a[5])
-            elif op == "v":                   # first control point = current point
+                sub = new_sub(cur or P(0.0, 0.0))
+            if op == "v":                     # first control point = current point
                 p1, p2, p3 = cur, P(a[0], a[1]), P(a[2], a[3])
             else:                             # y: second control point = end point
                 p1, p2, p3 = P(a[0], a[1]), P(a[2], a[3]), P(a[2], a[3])

@@ -126,6 +126,8 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
                 b = bbox_of(pts)
                 i = len(frags)
                 frags.append((b, polys, p["idx"], p["fill_rgb"]))
+                if (int(b[2]) - int(b[0]) + 1) * (int(b[3]) - int(b[1]) + 1) > 10000:
+                    continue                  # far larger than a marker fragment
                 for gx in range(int(b[0]), int(b[2]) + 1):
                     for gy in range(int(b[1]), int(b[3]) + 1):
                         grid.setdefault((gx, gy), []).append(i)
