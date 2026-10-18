@@ -7,8 +7,9 @@ How it works
 ------------
 1.  The PDF is opened with pikepdf (qpdf), which repairs damaged files,
     decrypts them and decodes their streams, and is then interpreted with
-    pdfminer.six: its content-stream interpreter (extended here to record
-    paths, colours, clipping, opacity and glyph-by-glyph text) tracks the
+    pdfminer.six (with qpdf tokenizing the content streams): its
+    content-stream interpreter (extended here to record paths, colours,
+    clipping, opacity and glyph-by-glyph text) tracks the
     current transformation matrix, the graphics-state stack, the text state
     and Form XObjects (which is how LaTeX embeds plots made by R,
     matplotlib, etc.).  All geometry is therefore converted to page
@@ -45,8 +46,10 @@ How it works
     page and its y values from the axis running across (--rotation adds
     the detected angle as a column).
     Graphs are numbered through the document (top to bottom, left to right
-    on each page).  The title centred above a graph is reported too or,
-    failing that, a sub-caption below it such as "(a). ..." or "Fig. 2 ...".
+    on each page).  The title centred above a graph (or, failing that, a
+    sub-caption below it such as "(a). ..." or "Fig. 2 ...") is found too: it
+    helps to recognise turned graphs, and --debug shows it, but it is not
+    part of the output.
 5.  Marker symbols are recognised in two forms:
       * vector paths: small closed shapes - filled or outlined circles made
         of Bezier curves (4, 8 or more segments; also when the marker is a
@@ -91,9 +94,10 @@ Special axes and graphs
   * Lattice / small-multiple panels sharing long frame lines, inset graphs
     (assigned by drawing order), bar charts and histograms (one point per
     bar top) and line charts without markers (one point per vertex).
-  * Markers whose centre lies outside their clipping region are invisible
-    and skipped (with a warning); markers flattened into clipped fragments
-    are rebuilt from their arcs.
+  * All detected markers are reported, also those whose values lie beyond
+    the axis ranges (often clipped out of view by the plot); a marker
+    belongs to the graph it was clipped to.  Markers flattened into clipped
+    fragments are rebuilt from their arcs.
   * Encrypted files (RC4, AES-128, AES-256) open with an empty or given
     (--password) user password; corrupt streams are skipped with a warning.
 
@@ -105,7 +109,7 @@ Usage
     python3 pdf_points.py plot.pdf --internal     # add page x/y columns
     python3 pdf_points.py plot.pdf --debug        # axis info on stderr
 
-Output columns: page,graph,graph_title,symbol,series,legend_key,
+Output columns: page,graph,symbol,series,legend_key,
                 x_coord,y_coord,color,color_hex
 
 Package layout (in pipeline order)

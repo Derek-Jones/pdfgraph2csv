@@ -193,10 +193,30 @@ def set_graph_backgrounds(graphs, paths):
                 g["bg"] = max(g["bg"], p["idx"])
 
 
+def clip_graph(graphs, s):
+    """The graph whose plot box the symbol was clipped to when drawn (the
+    clipping box is about the graph's box), or None."""
+    c = s.get("clip")
+    if not c:
+        return None
+    best = None
+    for g in graphs:
+        x0, y0, x1, y1 = g["rect"]
+        area = max((x1 - x0) * (y1 - y0), 1e-9)
+        ov = max(0.0, min(x1, c[2]) - max(x0, c[0])) * max(0.0, min(y1, c[3]) - max(y0, c[1]))
+        carea = max(0.0, c[2] - c[0]) * max(0.0, c[3] - c[1])
+        if ov >= 0.9 * area and carea <= 1.5 * area and (best is None or carea < best[0]):
+            best = (carea, g)
+    return best[1] if best else None
+
+
 def graph_for_symbol(graphs, s):
-    """The graph a symbol belongs to: among the graphs whose box contains
-    it, the innermost one painted before the symbol; otherwise the
-    nearest graph.  Returns (distance, graph)."""
+    """The graph a symbol belongs to: the graph it was clipped to; else,
+    among the graphs whose box contains it, the innermost one painted before
+    the symbol; otherwise the nearest graph.  Returns (distance, graph)."""
+    g = clip_graph(graphs, s)
+    if g is not None:
+        return rect_distance(g["rect"], s["cx"], s["cy"]), g
     inside = [g for g in graphs if rect_distance(g["rect"], s["cx"], s["cy"]) == 0]
     if inside:
         before = [g for g in inside if g.get("bg", -1) < s["idx"]] or inside

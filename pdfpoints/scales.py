@@ -76,7 +76,10 @@ def map_value(m, c):
         return m["a2"] * c + m["b2"]
     v = m["a"] * c + m["b"]
     if m["kind"] == "log":
-        return 10 ** v
+        try:
+            return 10 ** v
+        except OverflowError:             # far beyond the axis (a stray mark)
+            return math.inf
     # values closer to zero than the axis fit's own residual are fitting noise
     eps = min(max(2 * m.get("resid", 0.0), 1e-9), 2e-6) * m["range"]
     return 0.0 if abs(v) < eps else v

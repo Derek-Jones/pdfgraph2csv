@@ -1,185 +1,185 @@
-page,graph,graph_title,symbol,series,legend_key,x_coord,y_coord,color,color_hex
-6,1,Project participants,filled-diamond,,0,27.0262,4.49962e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,35.051,1.20843e+07,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,2.94961,2.37351e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,8.96887,1.50538e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,21.0065,4.32747e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,9.97141,3.22934e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,3.95287,1.65283e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,6.962,2.76182e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,2.94961,735487,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,5.95956,1.53768e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,9.97141,1.04209e+07,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,20.004,9.70416e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,4.95594,707805,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,6.962,4.16984e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,10.9748,1.20925e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,11.9783,2.19752e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,3.95287,3.05037e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,5.95956,2.04383e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,11.9783,3.59823e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,5.95956,901865,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,4.95594,6.04268e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,4.95594,2.25663e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,4.95594,796233,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,25.0193,5.00673e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,9.97141,4.85814e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,13.9842,3.88832e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,8.96887,1.67292e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,40.0673,6.91408e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,4.95594,2.03422e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,5.95956,811611,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,35.051,1.02892e+07,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,7.96544,1.78335e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,4.95594,763265,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,9.97141,2.59939e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,4.95594,779220,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,6.962,820646,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,4.95594,431565,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,8.96887,9.77452e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,38.0604,5.10525e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,19.0005,9.32536e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,41.0707,2.69109e+07,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,7.96544,2.70137e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,31.0381,1.18372e+07,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,4.95594,2.94118e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,15.9911,4.52682e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,7.96544,1.50481e+06,dimgray,#616161
-6,1,Project participants,filled-diamond,,0,5.95956,1.03624e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,394.721,4.48842e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,243.041,1.2096e+07,dimgray,#616161
-6,3,Duration,filled-diamond,,0,344.82,2.35573e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,265.988,1.48501e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,325.864,4.31565e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,270.976,3.21421e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,184.159,1.63291e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,137.256,2.74524e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,142.244,712822,dimgray,#616161
-6,3,Duration,filled-diamond,,0,167.194,1.5174e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,485.53,1.04276e+07,dimgray,#616161
-6,3,Duration,filled-diamond,,0,597.296,9.70861e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,312.892,685054,dimgray,#616161
-6,3,Duration,filled-diamond,,0,360.79,4.15753e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,280.951,1.18805e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,224.073,2.17929e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,383.738,3.03468e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,182.157,2.02512e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,298.924,3.58415e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,268.986,879619,dimgray,#616161
-6,3,Duration,filled-diamond,,0,197.132,6.03607e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,226.075,2.23849e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,125.278,773660,dimgray,#616161
-6,3,Duration,filled-diamond,,0,333.85,4.99701e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,270.976,4.84795e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,119.296,1.65306e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,227.07,6.91017e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,271.971,2.01548e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,179.172,789086,dimgray,#616161
-6,3,Duration,filled-diamond,,0,308.899,1.02955e+07,dimgray,#616161
-6,3,Duration,filled-diamond,,0,208.115,1.76384e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,119.296,740686,dimgray,#616161
-6,3,Duration,filled-diamond,,0,225.08,2.5824e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,396.723,756594,dimgray,#616161
-6,3,Duration,filled-diamond,,0,152.219,798149,dimgray,#616161
-6,3,Duration,filled-diamond,,0,118.288,407958,dimgray,#616161
-6,3,Duration,filled-diamond,,0,377.755,9.77918e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,377.755,5.09584e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,396.723,9.32873e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,636.227,2.69675e+07,dimgray,#616161
-6,3,Duration,filled-diamond,,0,290.939,2.6846e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,266.983,2.92515e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,406.698,4.51561e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,202.12,1.48433e+06,dimgray,#616161
-6,3,Duration,filled-diamond,,0,163.202,1.01441e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,206.426,4.57857e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,611.136,1.21384e+07,dimgray,#616161
-6,4,Function points,filled-diamond,,0,135.893,2.45944e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,270.971,1.59434e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,556.109,4.40694e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,538.097,3.31241e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,185.906,1.74112e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,294.479,2.84644e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,361.027,826900,dimgray,#616161
-6,4,Function points,filled-diamond,,0,73.8595,1.62651e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,1422.28,1.04804e+07,dimgray,#616161
-6,4,Function points,filled-diamond,,0,320.998,9.76592e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,549.12,799354,dimgray,#616161
-6,4,Function points,filled-diamond,,0,168.158,4.24995e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,37.8372,1.29904e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,83.6838,2.28415e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,255.533,3.13404e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,220.417,2.13101e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,125.887,3.68014e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,47.3047,992755,dimgray,#616161
-6,4,Function points,filled-diamond,,0,621.136,6.11654e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,173.623,2.3429e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,95.8092,887386,dimgray,#616161
-6,4,Function points,filled-diamond,,0,233.077,5.08404e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,955.337,4.9359e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,306.584,3.96928e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,110.127,1.76116e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,245.007,6.98511e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,377.927,2.12138e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,38.2085,902604,dimgray,#616161
-6,4,Function points,filled-diamond,,0,463.217,1.03492e+07,dimgray,#616161
-6,4,Function points,filled-diamond,,0,58.4682,1.87134e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,71.5555,854542,dimgray,#616161
-6,4,Function points,filled-diamond,,0,107.818,2.68463e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,49.4947,870434,dimgray,#616161
-6,4,Function points,filled-diamond,,0,68.8158,911657,dimgray,#616161
-6,4,Function points,filled-diamond,,0,63.3511,523892,dimgray,#616161
-6,4,Function points,filled-diamond,,0,372.02,9.83623e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,433.656,5.18228e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,239.159,9.38856e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,1176.15,2.69168e+07,dimgray,#616161
-6,4,Function points,filled-diamond,,0,252.96,2.78615e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,463.538,1.18922e+07,dimgray,#616161
-6,4,Function points,filled-diamond,,0,197.233,3.0252e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,137.103,4.60573e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,177.064,1.59357e+06,dimgray,#616161
-6,4,Function points,filled-diamond,,0,125.384,1.12663e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,1.61048e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,3.33062e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,1.75763e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,2.86417e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,1.05065e+07,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,4.26902e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,2.14772e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,1.00825e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,6.13779e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,902858,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,2.13821e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,918152,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,870016,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,2.70211e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,927171,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,538948,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,2.80378e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,-0.00823247,1.14236e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,0.991334,2.47663e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,0.991334,842272,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,0.991334,1.64274e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,0.991334,4.95586e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,0.991334,1.88792e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,0.991334,885898,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,0.991334,9.41327e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,1.99084,9.7912e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,1.99084,814626,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,1.99084,1.315e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,1.99084,2.30105e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,1.99084,3.69865e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,1.99084,2.35997e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,1.99084,1.77763e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,1.99084,3.04308e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,2.99042,5.10409e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,2.99042,3.98815e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,2.99042,7.00736e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,2.99042,4.62529e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,4.9896,9.86149e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,5.98919,4.59823e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,5.98919,1.19197e+07,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,6.98877,1.0375e+07,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,7.98836,1.21662e+07,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,7.98836,4.42637e+06,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,8.98795,2.69607e+07,dimgray,#616161
-6,2,Consultants,filled-diamond,,0,9.98754,5.20242e+06,dimgray,#616161
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
+6,1,filled-diamond,,0,27.0262,4.49962e+06,dimgray,#616161
+6,1,filled-diamond,,0,35.051,1.20843e+07,dimgray,#616161
+6,1,filled-diamond,,0,2.94961,2.37351e+06,dimgray,#616161
+6,1,filled-diamond,,0,8.96887,1.50538e+06,dimgray,#616161
+6,1,filled-diamond,,0,21.0065,4.32747e+06,dimgray,#616161
+6,1,filled-diamond,,0,9.97141,3.22934e+06,dimgray,#616161
+6,1,filled-diamond,,0,3.95287,1.65283e+06,dimgray,#616161
+6,1,filled-diamond,,0,6.962,2.76182e+06,dimgray,#616161
+6,1,filled-diamond,,0,2.94961,735487,dimgray,#616161
+6,1,filled-diamond,,0,5.95956,1.53768e+06,dimgray,#616161
+6,1,filled-diamond,,0,9.97141,1.04209e+07,dimgray,#616161
+6,1,filled-diamond,,0,20.004,9.70416e+06,dimgray,#616161
+6,1,filled-diamond,,0,4.95594,707805,dimgray,#616161
+6,1,filled-diamond,,0,6.962,4.16984e+06,dimgray,#616161
+6,1,filled-diamond,,0,10.9748,1.20925e+06,dimgray,#616161
+6,1,filled-diamond,,0,11.9783,2.19752e+06,dimgray,#616161
+6,1,filled-diamond,,0,3.95287,3.05037e+06,dimgray,#616161
+6,1,filled-diamond,,0,5.95956,2.04383e+06,dimgray,#616161
+6,1,filled-diamond,,0,11.9783,3.59823e+06,dimgray,#616161
+6,1,filled-diamond,,0,5.95956,901865,dimgray,#616161
+6,1,filled-diamond,,0,4.95594,6.04268e+06,dimgray,#616161
+6,1,filled-diamond,,0,4.95594,2.25663e+06,dimgray,#616161
+6,1,filled-diamond,,0,4.95594,796233,dimgray,#616161
+6,1,filled-diamond,,0,25.0193,5.00673e+06,dimgray,#616161
+6,1,filled-diamond,,0,9.97141,4.85814e+06,dimgray,#616161
+6,1,filled-diamond,,0,13.9842,3.88832e+06,dimgray,#616161
+6,1,filled-diamond,,0,8.96887,1.67292e+06,dimgray,#616161
+6,1,filled-diamond,,0,40.0673,6.91408e+06,dimgray,#616161
+6,1,filled-diamond,,0,4.95594,2.03422e+06,dimgray,#616161
+6,1,filled-diamond,,0,5.95956,811611,dimgray,#616161
+6,1,filled-diamond,,0,35.051,1.02892e+07,dimgray,#616161
+6,1,filled-diamond,,0,7.96544,1.78335e+06,dimgray,#616161
+6,1,filled-diamond,,0,4.95594,763265,dimgray,#616161
+6,1,filled-diamond,,0,9.97141,2.59939e+06,dimgray,#616161
+6,1,filled-diamond,,0,4.95594,779220,dimgray,#616161
+6,1,filled-diamond,,0,6.962,820646,dimgray,#616161
+6,1,filled-diamond,,0,4.95594,431565,dimgray,#616161
+6,1,filled-diamond,,0,8.96887,9.77452e+06,dimgray,#616161
+6,1,filled-diamond,,0,38.0604,5.10525e+06,dimgray,#616161
+6,1,filled-diamond,,0,19.0005,9.32536e+06,dimgray,#616161
+6,1,filled-diamond,,0,41.0707,2.69109e+07,dimgray,#616161
+6,1,filled-diamond,,0,7.96544,2.70137e+06,dimgray,#616161
+6,1,filled-diamond,,0,31.0381,1.18372e+07,dimgray,#616161
+6,1,filled-diamond,,0,4.95594,2.94118e+06,dimgray,#616161
+6,1,filled-diamond,,0,15.9911,4.52682e+06,dimgray,#616161
+6,1,filled-diamond,,0,7.96544,1.50481e+06,dimgray,#616161
+6,1,filled-diamond,,0,5.95956,1.03624e+06,dimgray,#616161
+6,3,filled-diamond,,0,394.721,4.48842e+06,dimgray,#616161
+6,3,filled-diamond,,0,243.041,1.2096e+07,dimgray,#616161
+6,3,filled-diamond,,0,344.82,2.35573e+06,dimgray,#616161
+6,3,filled-diamond,,0,265.988,1.48501e+06,dimgray,#616161
+6,3,filled-diamond,,0,325.864,4.31565e+06,dimgray,#616161
+6,3,filled-diamond,,0,270.976,3.21421e+06,dimgray,#616161
+6,3,filled-diamond,,0,184.159,1.63291e+06,dimgray,#616161
+6,3,filled-diamond,,0,137.256,2.74524e+06,dimgray,#616161
+6,3,filled-diamond,,0,142.244,712822,dimgray,#616161
+6,3,filled-diamond,,0,167.194,1.5174e+06,dimgray,#616161
+6,3,filled-diamond,,0,485.53,1.04276e+07,dimgray,#616161
+6,3,filled-diamond,,0,597.296,9.70861e+06,dimgray,#616161
+6,3,filled-diamond,,0,312.892,685054,dimgray,#616161
+6,3,filled-diamond,,0,360.79,4.15753e+06,dimgray,#616161
+6,3,filled-diamond,,0,280.951,1.18805e+06,dimgray,#616161
+6,3,filled-diamond,,0,224.073,2.17929e+06,dimgray,#616161
+6,3,filled-diamond,,0,383.738,3.03468e+06,dimgray,#616161
+6,3,filled-diamond,,0,182.157,2.02512e+06,dimgray,#616161
+6,3,filled-diamond,,0,298.924,3.58415e+06,dimgray,#616161
+6,3,filled-diamond,,0,268.986,879619,dimgray,#616161
+6,3,filled-diamond,,0,197.132,6.03607e+06,dimgray,#616161
+6,3,filled-diamond,,0,226.075,2.23849e+06,dimgray,#616161
+6,3,filled-diamond,,0,125.278,773660,dimgray,#616161
+6,3,filled-diamond,,0,333.85,4.99701e+06,dimgray,#616161
+6,3,filled-diamond,,0,270.976,4.84795e+06,dimgray,#616161
+6,3,filled-diamond,,0,119.296,1.65306e+06,dimgray,#616161
+6,3,filled-diamond,,0,227.07,6.91017e+06,dimgray,#616161
+6,3,filled-diamond,,0,271.971,2.01548e+06,dimgray,#616161
+6,3,filled-diamond,,0,179.172,789086,dimgray,#616161
+6,3,filled-diamond,,0,308.899,1.02955e+07,dimgray,#616161
+6,3,filled-diamond,,0,208.115,1.76384e+06,dimgray,#616161
+6,3,filled-diamond,,0,119.296,740686,dimgray,#616161
+6,3,filled-diamond,,0,225.08,2.5824e+06,dimgray,#616161
+6,3,filled-diamond,,0,396.723,756594,dimgray,#616161
+6,3,filled-diamond,,0,152.219,798149,dimgray,#616161
+6,3,filled-diamond,,0,118.288,407958,dimgray,#616161
+6,3,filled-diamond,,0,377.755,9.77918e+06,dimgray,#616161
+6,3,filled-diamond,,0,377.755,5.09584e+06,dimgray,#616161
+6,3,filled-diamond,,0,396.723,9.32873e+06,dimgray,#616161
+6,3,filled-diamond,,0,636.227,2.69675e+07,dimgray,#616161
+6,3,filled-diamond,,0,290.939,2.6846e+06,dimgray,#616161
+6,3,filled-diamond,,0,266.983,2.92515e+06,dimgray,#616161
+6,3,filled-diamond,,0,406.698,4.51561e+06,dimgray,#616161
+6,3,filled-diamond,,0,202.12,1.48433e+06,dimgray,#616161
+6,3,filled-diamond,,0,163.202,1.01441e+06,dimgray,#616161
+6,4,filled-diamond,,0,206.426,4.57857e+06,dimgray,#616161
+6,4,filled-diamond,,0,611.136,1.21384e+07,dimgray,#616161
+6,4,filled-diamond,,0,135.893,2.45944e+06,dimgray,#616161
+6,4,filled-diamond,,0,270.971,1.59434e+06,dimgray,#616161
+6,4,filled-diamond,,0,556.109,4.40694e+06,dimgray,#616161
+6,4,filled-diamond,,0,538.097,3.31241e+06,dimgray,#616161
+6,4,filled-diamond,,0,185.906,1.74112e+06,dimgray,#616161
+6,4,filled-diamond,,0,294.479,2.84644e+06,dimgray,#616161
+6,4,filled-diamond,,0,361.027,826900,dimgray,#616161
+6,4,filled-diamond,,0,73.8595,1.62651e+06,dimgray,#616161
+6,4,filled-diamond,,0,1422.28,1.04804e+07,dimgray,#616161
+6,4,filled-diamond,,0,320.998,9.76592e+06,dimgray,#616161
+6,4,filled-diamond,,0,549.12,799354,dimgray,#616161
+6,4,filled-diamond,,0,168.158,4.24995e+06,dimgray,#616161
+6,4,filled-diamond,,0,37.8372,1.29904e+06,dimgray,#616161
+6,4,filled-diamond,,0,83.6838,2.28415e+06,dimgray,#616161
+6,4,filled-diamond,,0,255.533,3.13404e+06,dimgray,#616161
+6,4,filled-diamond,,0,220.417,2.13101e+06,dimgray,#616161
+6,4,filled-diamond,,0,125.887,3.68014e+06,dimgray,#616161
+6,4,filled-diamond,,0,47.3047,992755,dimgray,#616161
+6,4,filled-diamond,,0,621.136,6.11654e+06,dimgray,#616161
+6,4,filled-diamond,,0,173.623,2.3429e+06,dimgray,#616161
+6,4,filled-diamond,,0,95.8092,887386,dimgray,#616161
+6,4,filled-diamond,,0,233.077,5.08404e+06,dimgray,#616161
+6,4,filled-diamond,,0,955.337,4.9359e+06,dimgray,#616161
+6,4,filled-diamond,,0,306.584,3.96928e+06,dimgray,#616161
+6,4,filled-diamond,,0,110.127,1.76116e+06,dimgray,#616161
+6,4,filled-diamond,,0,245.007,6.98511e+06,dimgray,#616161
+6,4,filled-diamond,,0,377.927,2.12138e+06,dimgray,#616161
+6,4,filled-diamond,,0,38.2085,902604,dimgray,#616161
+6,4,filled-diamond,,0,463.217,1.03492e+07,dimgray,#616161
+6,4,filled-diamond,,0,58.4682,1.87134e+06,dimgray,#616161
+6,4,filled-diamond,,0,71.5555,854542,dimgray,#616161
+6,4,filled-diamond,,0,107.818,2.68463e+06,dimgray,#616161
+6,4,filled-diamond,,0,49.4947,870434,dimgray,#616161
+6,4,filled-diamond,,0,68.8158,911657,dimgray,#616161
+6,4,filled-diamond,,0,63.3511,523892,dimgray,#616161
+6,4,filled-diamond,,0,372.02,9.83623e+06,dimgray,#616161
+6,4,filled-diamond,,0,433.656,5.18228e+06,dimgray,#616161
+6,4,filled-diamond,,0,239.159,9.38856e+06,dimgray,#616161
+6,4,filled-diamond,,0,1176.15,2.69168e+07,dimgray,#616161
+6,4,filled-diamond,,0,252.96,2.78615e+06,dimgray,#616161
+6,4,filled-diamond,,0,463.538,1.18922e+07,dimgray,#616161
+6,4,filled-diamond,,0,197.233,3.0252e+06,dimgray,#616161
+6,4,filled-diamond,,0,137.103,4.60573e+06,dimgray,#616161
+6,4,filled-diamond,,0,177.064,1.59357e+06,dimgray,#616161
+6,4,filled-diamond,,0,125.384,1.12663e+06,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,1.61048e+06,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,3.33062e+06,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,1.75763e+06,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,2.86417e+06,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,1.05065e+07,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,4.26902e+06,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,2.14772e+06,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,1.00825e+06,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,6.13779e+06,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,902858,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,2.13821e+06,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,918152,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,870016,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,2.70211e+06,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,927171,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,538948,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,2.80378e+06,dimgray,#616161
+6,2,filled-diamond,,0,-0.00823247,1.14236e+06,dimgray,#616161
+6,2,filled-diamond,,0,0.991334,2.47663e+06,dimgray,#616161
+6,2,filled-diamond,,0,0.991334,842272,dimgray,#616161
+6,2,filled-diamond,,0,0.991334,1.64274e+06,dimgray,#616161
+6,2,filled-diamond,,0,0.991334,4.95586e+06,dimgray,#616161
+6,2,filled-diamond,,0,0.991334,1.88792e+06,dimgray,#616161
+6,2,filled-diamond,,0,0.991334,885898,dimgray,#616161
+6,2,filled-diamond,,0,0.991334,9.41327e+06,dimgray,#616161
+6,2,filled-diamond,,0,1.99084,9.7912e+06,dimgray,#616161
+6,2,filled-diamond,,0,1.99084,814626,dimgray,#616161
+6,2,filled-diamond,,0,1.99084,1.315e+06,dimgray,#616161
+6,2,filled-diamond,,0,1.99084,2.30105e+06,dimgray,#616161
+6,2,filled-diamond,,0,1.99084,3.69865e+06,dimgray,#616161
+6,2,filled-diamond,,0,1.99084,2.35997e+06,dimgray,#616161
+6,2,filled-diamond,,0,1.99084,1.77763e+06,dimgray,#616161
+6,2,filled-diamond,,0,1.99084,3.04308e+06,dimgray,#616161
+6,2,filled-diamond,,0,2.99042,5.10409e+06,dimgray,#616161
+6,2,filled-diamond,,0,2.99042,3.98815e+06,dimgray,#616161
+6,2,filled-diamond,,0,2.99042,7.00736e+06,dimgray,#616161
+6,2,filled-diamond,,0,2.99042,4.62529e+06,dimgray,#616161
+6,2,filled-diamond,,0,4.9896,9.86149e+06,dimgray,#616161
+6,2,filled-diamond,,0,5.98919,4.59823e+06,dimgray,#616161
+6,2,filled-diamond,,0,5.98919,1.19197e+07,dimgray,#616161
+6,2,filled-diamond,,0,6.98877,1.0375e+07,dimgray,#616161
+6,2,filled-diamond,,0,7.98836,1.21662e+07,dimgray,#616161
+6,2,filled-diamond,,0,7.98836,4.42637e+06,dimgray,#616161
+6,2,filled-diamond,,0,8.98795,2.69607e+07,dimgray,#616161
+6,2,filled-diamond,,0,9.98754,5.20242e+06,dimgray,#616161

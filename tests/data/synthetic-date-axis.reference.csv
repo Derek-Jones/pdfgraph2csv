@@ -1,9 +1,9 @@
-page,graph,graph_title,symbol,series,legend_key,x_coord,y_coord,color,color_hex
-1,1,Profits by month,filled-square,,0,2010.08,20,blue,#0000ff
-1,1,Profits by month,filled-square,,0,2010.17,35,blue,#0000ff
-1,1,Profits by month,filled-square,,0,2010.33,30,blue,#0000ff
-1,1,Profits by month,filled-square,,0,2010.42,55,blue,#0000ff
-1,1,Profits by month,filled-square,,0,2010.58,60,blue,#0000ff
-1,1,Profits by month,filled-square,,0,2010.67,45,blue,#0000ff
-1,1,Profits by month,filled-square,,0,2010.83,80,blue,#0000ff
-1,1,Profits by month,filled-square,,0,2010.92,70,blue,#0000ff
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
+1,1,filled-square,,0,2010.08,20,blue,#0000ff
+1,1,filled-square,,0,2010.17,35,blue,#0000ff
+1,1,filled-square,,0,2010.33,30,blue,#0000ff
+1,1,filled-square,,0,2010.42,55,blue,#0000ff
+1,1,filled-square,,0,2010.58,60,blue,#0000ff
+1,1,filled-square,,0,2010.67,45,blue,#0000ff
+1,1,filled-square,,0,2010.83,80,blue,#0000ff
+1,1,filled-square,,0,2010.92,70,blue,#0000ff

@@ -14,7 +14,8 @@ def main():
     """Parse the command line, run the extraction and write the CSV."""
     ap = argparse.ArgumentParser(description=package_doc.split("\n\n")[0])
     ap.add_argument("pdf", help="input PDF file")
-    ap.add_argument("-o", "--output", help="output CSV file (default: stdout)")
+    ap.add_argument("-o", "--output", help="output CSV file (default: stdout); only created when "
+                         "data points are found")
     ap.add_argument("--pages", help="comma separated page numbers, e.g. 1,3")
     ap.add_argument("--inside-only", action="store_true",
                     help="only report symbols inside the axis rectangle (drops legend keys)")
@@ -46,12 +47,17 @@ def main():
         sys.exit("error: %s" % e)
     for wmsg in info.get("warnings", []):
         print("warning: %s" % wmsg, file=sys.stderr)
-    cols = ["page", "graph", "graph_title", "symbol", "series", "legend_key",
+    cols = ["page", "graph", "symbol", "series", "legend_key",
             "x_coord", "y_coord", "color", "color_hex"]
     if args.rotation:
         cols.append("rotation")
     if args.internal:
         cols += ["pdf_x", "pdf_y"]
+    if not rows:
+        # no points: no output at all - not even the header, and no -o file
+        print("warning: %s" % ("No vector graphics found" if not info.get("graphs")
+                               else "graphs found, but no data points in them"), file=sys.stderr)
+        return
     out = open(args.output, "w", newline="") if args.output else sys.stdout
     w = csv.writer(out, lineterminator="\n")
     try:
@@ -64,6 +70,3 @@ def main():
         sys.exit(0)
     if args.output:
         out.close()
-    if not rows:
-        print("warning: %s" % ("no graphs with numbered axes found" if not info.get("graphs")
-                               else "graphs found, but no data points in them"), file=sys.stderr)

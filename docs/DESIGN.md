@@ -3,11 +3,12 @@
 `pdf_points.py` is a thin command-line wrapper; the work is done by the
 `pdfpoints` package next to it.  It uses four packages:
 
-* **pikepdf** opens the file (`document.py`): qpdf repairs damaged files,
+* **pikepdf** opens the file (`document.py`) and tokenizes the content
+  streams (`interpreter.py`, much faster than pdfminer.six's parser): qpdf repairs damaged files,
   decrypts and decodes streams; streams that cannot be decoded are emptied
   with a warning; the cleaned file is handed, in memory, to pdfminer.six.
 * **pdfminer.six** interprets the pages (`interpreter.py`): its
-  `PDFPageInterpreter` parses the content streams and keeps the matrix,
+  `PDFPageInterpreter` keeps the matrix,
   q/Q stack, text state, fonts and resources.  `ContentInterpreter`
   overrides the painting, clipping, colour, ExtGState, text-showing and
   XObject operators to record what plot extraction needs (pdfminer ignores
@@ -70,7 +71,8 @@ debugger).  Coordinates are PDF page points (1/72 inch, y upwards).
 **Symbol** (`find_symbols`, `find_bars`, line vertices)
 : `shape` (circle, square, triangle, diamond, polygon, plus, cross,
   asterisk, rectangle, bar, line, …); `cx`, `cy` (centre); `size`;
-  `filled`; `rgb`; `idx`.
+  `filled`; `rgb`; `idx`; `clip` (the clipping box it was drawn with, which
+  decides its graph; markers outside the axis ranges are still reported).
 
 **Axis** (`find_axes`)
 : `orient` ("x"/"y"); `lo`, `hi` (extent along the axis); `pos` (position

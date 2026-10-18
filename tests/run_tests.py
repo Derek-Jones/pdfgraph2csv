@@ -7,12 +7,17 @@ as a user would) on a PDF in tests/data and compares the CSV it writes with
 the expected CSV stored next to it:
 
   * the same number of rows, in the same order;
-  * text columns (page, graph, graph_title, symbol, color, ...) identical;
+  * text columns (page, graph, symbol, color, ...) identical;
   * numeric columns equal within the case's tolerance.
 
-A case may also give "exit_code" (default 0) and "stderr_contains" (texts
+A case may also give "output_file" (the CSV is then written with -o to a
+temporary file of that name, which must not be created when there are no
+points), "exit_code" (default 0) and "stderr_contains" (texts
 the warnings / error message must include); a case whose "expected" is null
-checks only those (e.g. a damaged file that must be rejected cleanly).
+checks only those and that nothing is written to stdout (e.g. a damaged
+file that must be rejected cleanly, or a file without graphs) - or, with
+"expected_counts", the number of points per "graph symbol" (for files whose
+output is too big to keep).
 
 Usage
 -----
@@ -33,6 +38,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -47,7 +53,27 @@ def load_cases():
 
 
 def run_program(case):
+    """Run the program on the case's PDF; returns the CSV it wrote (to
+    stdout, or with "output_file" to a file given with -o, which must only
+    exist when there are data points)."""
     cmd = [sys.executable, PROGRAM, os.path.join(DATA, case["pdf"])] + case.get("args", [])
+    if case.get("output_file"):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, case["output_file"])
+            stdout = _run(case, cmd + ["-o", path])
+            if stdout:
+                raise AssertionError("output on stdout although -o was given")
+            if not os.path.exists(path):
+                return ""
+            with open(path, newline="") as f:
+                text = f.read()
+            if not text:
+                raise AssertionError("an empty output file was created")
+            return text
+    return _run(case, cmd)
+
+
+def _run(case, cmd):
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
     want = case.get("exit_code", 0)
     if proc.returncode != want:
@@ -101,7 +127,18 @@ class RegressionTests(unittest.TestCase):
 def make_test(case):
     def test(self):
         if case.get("expected") is None:
-            run_program(case)              # exit status and messages only
+            out = run_program(case)
+            if "expected_counts" in case:
+                # big outputs: only the number of points per graph and symbol
+                counts = {}
+                for r in read_csv(out):
+                    k = "%s %s" % (r["graph"], r["symbol"])
+                    counts[k] = counts.get(k, 0) + 1
+                self.assertEqual(counts, case["expected_counts"], case["name"])
+                return
+            # exit status and messages only; no points means no output at
+            # all (not even the CSV header)
+            self.assertEqual(out, "", "%s\noutput is not empty" % case["name"])
             return
         expected_path = os.path.join(DATA, case["expected"])
         self.assertTrue(os.path.exists(expected_path),

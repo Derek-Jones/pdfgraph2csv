@@ -36,6 +36,13 @@ def _cluster_centres(arcs, rr):
 def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
     """Return the symbol list with flattened-marker fragments replaced by
     rebuilt circles (one entry per marker, stacked markers repeated)."""
+    # 0. fragments are filled curved shapes that are not markers themselves;
+    #    without (enough of) them there is nothing to rebuild
+    marker_paths = {s["idx"] for s in symbols}
+    pieces = sum(1 for p in paths if p["fill"] and p["idx"] not in marker_paths and
+                 any(seg[0] == "c" for sp in p["subpaths"] for seg in sp["segs"]))
+    if pieces < 20:
+        return symbols
     # 1. every Bezier segment that is a good circular arc gives a centre
     #    and radius
     arcs = []            # (cx, cy, r, path idx, colour)

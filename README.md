@@ -1,28 +1,13 @@
 # pdf_points.py
 
-A program to extract the x/y coordinates of data points, displayed as symbols within a graph, drawn using vector graphics within a pdf file.  Graphs represented using raster graphics (e.g., jpeg and png formats) are ignored.
+Extracts the data coordinates of marker symbols drawn as vector graphics
+in the plots of a PDF.
 
-The program is still new and under active development.
+    python3 pdf_points.py input.pdf -o points.csv
 
-The following command will send the x/y coordinates of any detected data points within any graphs contained in ``interesting.pdf`` to standard output:
-
-``python3 pdf_points.py interesting.pdf``
-
-an output file can be specified:
-
-    python3 pdf_points.py interesting.pdf -o interesting.csv
-
-By default the message ``warning: No vector graphics found`` is output when no data points are detected.
-
-`python3 pdf_points.py --help` lists the options.
-
-The program is written in python and needs python 3.9+
+`python3 pdf_points.py --help` lists the options.  It needs Python 3.9+ and
 
     pip install -r requirements.txt     # pikepdf, pdfminer.six, fonttools, python-dateutil
-
-A myriad of different ways are used to display symbols denoting data values, e.g., instruction to output a circle, or four instructions that output the four (sometimes eight) bezier curves forming the quadrants of a circle.
-
-If no x/y coordinates are output, it's possible that the technique used to support them is not yet supported.  The first thing to do is check whether it's possible to [extract the graph](https://github.com/pdfcpu/pdfcpu) as a known raster image format.  If no image can be extracted, the the process involves extracting the page containing the graph, then [uncompressing the pdf, and looking at the sequences of internal pdf instructions](https://shape-of-code.com/2025/07/27/a-process-to-find-and-extract-data-points-from-graphs-in-pdf-files/).
 
 | Package | Used for |
 |---|---|

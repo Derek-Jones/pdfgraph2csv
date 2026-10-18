@@ -1,6 +1,7 @@
 """Colour naming: the nearest CSS colour name for an RGB triple.
 """
 
+import functools
 
 _CSS = """aliceblue f0f8ff antiquewhite faebd7 aqua 00ffff aquamarine 7fffd4
 azure f0ffff beige f5f5dc bisque ffe4c4 black 000000 blanchedalmond ffebcd
@@ -43,6 +44,12 @@ _CSS_COLORS = [(n, tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)))
 
 def color_name(rgb):
     """(nearest CSS colour name, '#rrggbb') of an RGB triple in 0..1."""
+    return _color_name(None if rgb is None else tuple(rgb))
+
+
+@functools.lru_cache(maxsize=4096)
+def _color_name(rgb):
+    # cached: pages with 100 000 markers use only a few colours
     if rgb is None:
         return "unknown", ""
     c = tuple(max(0, min(255, int(round(v * 255)))) for v in rgb)

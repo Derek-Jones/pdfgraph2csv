@@ -139,6 +139,39 @@ def _read_glyph(polys, box, word_box):
     return best
 
 
+class _Dash(list):
+    """A short thin shape (a polygon) that may be a minus sign; `idx` is
+    the drawing step of its path."""
+
+    def __init__(self, poly, idx):
+        super().__init__(poly)
+        self.idx = idx
+
+
+def _exponent_minus(word, best, dashes):
+    """'10^2' whose exponent's minus sign was drawn as a separate thin dash
+    (between the 10 and the exponent, raised to the exponent's height) is
+    10^-2.  Returns the (word, reading) pair, corrected if so."""
+    rot, q, text, wb = best
+    m = re.fullmatch(r"([\d.]*)\^(\d+)", text)
+    if not m or q < 0.75:
+        return word, best
+    H = wb[3] - wb[1]
+    boxes = [bbox_of([to_frame(p, rot) for poly in gl["polys"] for p in poly]) for gl in word]
+    for d in dashes:
+        db = bbox_of([to_frame(p, rot) for p in d])
+        cx, cy = (db[0] + db[2]) / 2, (db[1] + db[3]) / 2
+        if not (wb[0] < cx < wb[2] and wb[1] + 0.45 * H < cy < wb[3] and db[2] - db[0] < 0.6 * H):
+            continue
+        left = [b for b in boxes if b[2] <= cx]
+        right = [b for b in boxes if b[0] >= cx]
+        # the dash sits between the mantissa and the (smaller, raised) exponent
+        if left and right and min(b[1] for b in right) > min(b[1] for b in left) + 0.2 * H:
+            PAGE.minus_paths.add(d.idx)        # text, not a tick mark
+            return word, (rot, q, "%s^-%s" % (m.group(1), m.group(2)), wb)
+    return word, best
+
+
 def _join_split_exponents(readings, read, dashes, page_rot):
     """'10' followed by a small raised number (a superscript whose minus
     sign was drawn as a separate thin dash) is one label 10^n."""
@@ -166,6 +199,7 @@ def _join_split_exponents(readings, read, dashes, page_rot):
                 if (wb[2] - 0.1 * H <= db[0] and db[2] <= eb[0] + 0.1 * H and
                         eb[1] - 0.2 * H <= (db[1] + db[3]) / 2 <= eb[3]):
                     sign = "-"
+                    PAGE.minus_paths.add(d.idx)
             merged = word + w2
             out[i] = (merged, (rot, min(q, q2), text + "^" + sign + t2,
                                (wb[0], wb[1], eb[2], max(wb[3], eb[3]))))
@@ -228,6 +262,7 @@ def outlined_text(paths, blobs=None, covers=()):
         rot for word, (rot, q, text, wb) in readings
         if len(word) >= 3 and q >= 0.75 and parse_number(text) is not None)
     page_rot = max(votes, key=votes.get) if votes else None
+    readings = [_exponent_minus(word, best, dashes) for word, best in readings]
     readings = _join_split_exponents(readings, _read_word, dashes, page_rot)
     texts, used = [], set()
     for word, best in readings:
@@ -279,7 +314,7 @@ def _glyph_parts(paths, covers):
         if all(classify_subpath(sp) is not None or thin_rect_line(sp) is not None
                for _, _, _, sp in info):
             if len(info) == 1 and thin_rect_line(info[0][3]) is not None and big < 6:
-                dashes.append(info[0][1])          # maybe a minus sign
+                dashes.append(_Dash(info[0][1], p["idx"]))  # maybe a minus sign
             continue                               # markers / lines only
         for k, poly, b, sp in info:
             if cover_ix is not None:

@@ -12,7 +12,7 @@ from .context import PAGE
 from .document import Document
 from .fragments import rebuild_fragmented_circles
 from .graphs import (
-    add_panel_graphs, build_graphs, graph_for_symbol, graph_rotation,
+    add_panel_graphs, build_graphs, clip_graph, graph_for_symbol, graph_rotation,
     set_graph_backgrounds)
 from .interpreter import Interpreter
 from .labels import apply_axis_multipliers, resolve_shared_labels
@@ -49,7 +49,12 @@ def extract(pdf_path, pages=None, inside_only=False, max_frac=0.1, debug=False,
     rows = []
     for pno, page in enumerate(pdf.pages(), 1):
         if not pages or pno in pages:
-            rows += extract_page(pdf, pno, page, opts, info)
+            try:
+                rows += extract_page(pdf, pno, page, opts, info)
+            except Exception as e:     # a bug must not lose the other pages
+                if opts.debug:
+                    raise
+                pdf.warn("page %d could not be analysed (%s: %s)" % (pno, type(e).__name__, e))
     return rows
 
 
@@ -58,6 +63,7 @@ def extract_page(pdf, pno, page, opts, info):
     graphs, find the markers (or bars / line vertices), name the series from
     the legends and map every point through its graph's axes."""
     PAGE.reset()
+    PAGE.number = pno
     it = Interpreter(pdf)
     it.run_page(page)
     texts, text_parts, blobs = read_page_text(it)
@@ -113,24 +119,18 @@ def find_page_graphs(it, texts, pno, debug):
 
 
 def find_page_symbols(pdf, pno, it, text_parts):
-    """The visible marker symbols of the page."""
+    """The marker symbols of the page.  Markers outside the axis ranges are
+    kept, even when the plot clips them out of view; each symbol notes the
+    clipping box it was drawn with ('clip'), which tells which graph it
+    belongs to."""
     symbols = find_symbols(it.paths, it.glyph_symbols, text_parts)
     symbols = rebuild_fragmented_circles(it.paths, symbols, text_parts, pdf.warnings)
     symbols = [s for s in symbols if s["idx"] not in PAGE.hiding_paths]
     symbols = drop_highlight_boxes(symbols)
-    # markers whose centre lies outside their clipping region are not
-    # visible in the graph (values beyond the plotted range)
     clip_of = {p["idx"]: p.get("clip") for p in it.paths}
-    kept = [s for s in symbols if not _clipped(clip_of.get(s["idx"]), s)]
-    if len(kept) < len(symbols):
-        pdf.warn("page %d: %d markers clipped out of view were skipped"
-                 % (pno, len(symbols) - len(kept)))
-    return kept
-
-
-def _clipped(clip, s, tol=0.5):
-    return clip is not None and not (clip[0] - tol <= s["cx"] <= clip[2] + tol and
-                                     clip[1] - tol <= s["cy"] <= clip[3] + tol)
+    for s in symbols:
+        s["clip"] = clip_of.get(s["idx"])
+    return symbols
 
 
 def describe_graphs(graphs, texts, symbols, first_no, debug):
@@ -198,8 +198,8 @@ def make_rows(pno, graphs, symbols, legend, namer, opts):
         d, g = graph_for_symbol(graphs, s)
         x0, y0, x1, y1 = g["rect"]
         w, h = x1 - x0, y1 - y0
-        if d > 0.5 * max(w, h) and si not in legend:
-            continue                      # far from every graph
+        if d > 0.5 * max(w, h) and si not in legend and clip_graph(graphs, s) is not g:
+            continue                      # far from every graph (and not drawn in one)
         # markers are small, but in tiny panels (small multiples) a few
         # points of marker are still a large share of the panel
         if s["shape"] not in ("bar", "line") and \

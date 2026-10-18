@@ -20,16 +20,24 @@ _NUMTXT_RE = re.compile(r"^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$")
 def parse_number(s):
     """Numeric value of a label: plain numbers, 1,000 / $5 / 25%, 10^3 and
     2x10^3, unicode minus signs, '95-style years and dates (as decimal
-    years, see parse_date); None if not a number."""
+    years, see parse_date); None if not a number, or not one a float can
+    hold (such as 10^602 in body text)."""
     t = (s.strip().replace("\u2212", "-").replace("\u2013", "-")
          .replace("\u2014", "-").replace("\u00a0", "").replace(" ", ""))
     t = t.replace(",", "").replace("$", "").replace("%", "")
     m = re.fullmatch(r"([+-]?[\d.]+)?[x\u00d7\*]?10\^([+-]?\d+)", t)
     if m:  # 10^3  or 2x10^3
-        mant = float(m.group(1)) if m.group(1) else 1.0
-        return mant * 10 ** int(m.group(2))
+        exp = int(m.group(2))
+        if abs(exp) > 300:                 # beyond the range of a float
+            return None
+        try:
+            mant = float(m.group(1)) if m.group(1) else 1.0
+        except ValueError:                 # e.g. "1.2.3"
+            return None
+        return mant * 10.0 ** exp
     if _NUMTXT_RE.match(t):
-        return float(t)
+        v = float(t)
+        return v if math.isfinite(v) else None
     m = SHORT_YEAR_RE.fullmatch(t)
     if m:  # '95 = 1995, '05 = 2005 (century checked per axis)
         yy = int(m.group(1))

@@ -94,9 +94,9 @@ def write_pdf(path):
 
 
 def write_reference(path):
-    rows = ["page,graph,graph_title,symbol,series,legend_key,x_coord,y_coord,color,color_hex"]
+    rows = ["page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex"]
     for m, v in POINTS:
-        rows.append("1,1,Profits by month,filled-square,,0,%.6g,%.6g,blue,#0000ff"
+        rows.append("1,1,filled-square,,0,%.6g,%.6g,blue,#0000ff"
                     % (2010 + m / 12.0, v))
     with open(path, "w") as f:
         f.write("\n".join(rows) + "\n")

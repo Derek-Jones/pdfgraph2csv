@@ -8,6 +8,7 @@ a dict with its orientation, extent, position and value mapping.
 
 import sys
 
+from .context import PAGE
 from .geometry import (
     axis_aligned, merge_collinear, straight_segments, thin_rect_line)
 from .labels import (
@@ -72,7 +73,9 @@ def find_axes(paths, texts, debug=False):
     hs_dark, vs_dark = [], []          # dark lines: frames and panel borders
     for p in paths:
         if not p["stroke"]:
-            if p["fill"]:          # strokes converted to thin filled rectangles
+            if p["fill"] and p["idx"] not in PAGE.minus_paths:
+                # strokes converted to thin filled rectangles (but not the
+                # minus signs of outlined labels)
                 for sp in p["subpaths"]:
                     ln = thin_rect_line(sp)
                     aa = axis_aligned(*ln) if ln else None

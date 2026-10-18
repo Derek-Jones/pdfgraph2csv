@@ -2,6 +2,8 @@
 and the naming of every data symbol's series from them.
 """
 
+import bisect
+
 from .colours import color_name
 from .context import PAGE
 from .geometry import bbox_of, rect_distance
@@ -30,28 +32,33 @@ def find_legend(symbols, texts, hlines=()):
     the same line - measured from the end of the line sample the marker sits
     on, if any.  Returns {symbol index: label}."""
     entries = {}
+    # possible labels (a long line of a paragraph is none), by height on
+    # the page, so each marker only looks at the texts on its own line
+    labels = sorted(((t["center"][1], t) for t in texts
+                     if not (is_number(t) or t["rotated"] or not t["text"].strip()
+                             or len(t["text"].strip()) > 60)), key=lambda ct: ct[0])
+    label_y = [cy for cy, _ in labels]
+    reach = 0.6 * max((t["size"] or 1.0 for _, t in labels), default=1.0)
     for i, s in enumerate(symbols):
         right = s["cx"] + s["size"] / 2
         for x0, x1, y in hlines:
             if x0 - 0.5 <= s["cx"] <= x1 + 0.5 and abs(y - s["cy"]) < 0.3 * max(s["size"], 1.0):
                 right = max(right, x1)
         best = None
-        for t in texts:
-            if is_number(t) or t["rotated"] or not t["text"].strip():
-                continue
+        lo = bisect.bisect_left(label_y, s["cy"] - reach)
+        hi = bisect.bisect_right(label_y, s["cy"] + reach)
+        for _, t in labels[lo:hi]:
             size = t["size"] or 1.0
-            # a long line of a paragraph, or text outside the graph that
-            # holds the marker (a data point at the edge of the plot next to
-            # the body text), is no legend label
-            if len(t["text"].strip()) > 60 or any(
-                    r[0] < s["cx"] < r[2] and r[1] < s["cy"] < r[3] and
-                    not (r[0] <= t["center"][0] <= r[2] and r[1] <= t["center"][1] <= r[3])
-                    for r in PAGE.graph_rects):
-                continue
             gap = t["bbox"][0] - right
             if not (-0.2 * size <= gap <= 3 * size):
                 continue
             if abs(t["center"][1] - s["cy"]) > 0.6 * size:
+                continue
+            # text outside the graph that holds the marker (a data point at
+            # the edge of the plot next to the body text) is no legend label
+            if any(r[0] < s["cx"] < r[2] and r[1] < s["cy"] < r[3] and
+                   not (r[0] <= t["center"][0] <= r[2] and r[1] <= t["center"][1] <= r[3])
+                   for r in PAGE.graph_rects):
                 continue
             if best is None or gap < best[0]:
                 best = (gap, t)
@@ -224,15 +231,17 @@ def find_page_legend(symbols, texts, blobs, graphs, paths):
 
 
 def _unreadable_legend_keys(symbols, texts, blobs, graphs, hlines, legend):
-    """Markers just outside a graph, lined up with each other, each followed
-    by a word drawn as outlines that could not be read: legend keys."""
+    """Markers each followed by a word drawn as outlines that could not be
+    read: legend keys, when they line up with each other just outside a
+    graph, or (inside a graph) when at least three of them, all different
+    markers, are stacked in a column."""
     unread = [{"text": "\x00", "value": None, "rotated": False, "bbox": b["bbox"],
                "center": b["center"], "size": b["size"], "idx": b["idx"],
                "p0": (b["bbox"][0], b["bbox"][1]), "p1": (b["bbox"][2], b["bbox"][1])}
               for b in blobs if not b.get("glyph")]
     if not unread:
         return []
-    cands = {}
+    cands, inner = {}, {}
     for i, label in find_legend(symbols, texts + unread, hlines).items():
         s = symbols[i]
         if label != "\x00" or i in legend or s["shape"] in ("line", "bar"):
@@ -242,10 +251,21 @@ def _unreadable_legend_keys(symbols, texts, blobs, graphs, hlines, legend):
         rect = graphs[g]["rect"]
         if 0 < d <= 0.75 * (rect[3] - rect[1]):
             cands[i] = s
+        elif d == 0:
+            inner[i] = s
     # keys of a legend line up: a lone candidate is something else
-    return [i for i, s in cands.items()
+    keys = [i for i, s in cands.items()
             if any(j != i and (abs(o["cy"] - s["cy"]) < 1.0 or abs(o["cx"] - s["cx"]) < 1.0)
                    for j, o in cands.items())]
+    for i, s in inner.items():
+        column = sorted((o for o in inner.values() if abs(o["cx"] - s["cx"]) < 1.0),
+                        key=lambda o: o["cy"])
+        sizes = [o["size"] for o in column]
+        if (len(column) >= 3 and len({symbol_signature(o) for o in column}) == len(column)
+                and max(sizes) <= 1.5 * min(sizes)
+                and all(b["cy"] - a["cy"] >= 0.8 * max(sizes) for a, b in zip(column, column[1:]))):
+            keys.append(i)                  # rows of similar keys, one under another
+    return keys
 
 
 class SeriesNamer:

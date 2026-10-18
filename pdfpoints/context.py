@@ -23,6 +23,8 @@ class PageState:
         self.hiding_paths = set() # drawing steps of boxes painted over text
         self.graph_rects = []     # rectangles of all graphs found on the page
         self.label_size = 0.0     # typical tick-label font size on the page
+        self.minus_paths = set()  # drawing steps of dashes that are minus signs of labels
+        self.number = 0           # page number (for progress messages)
 
 
 SETTINGS = Settings()

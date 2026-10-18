@@ -4,8 +4,8 @@
 
 | Package | What it replaced |
 |---|---|
-| **pikepdf** (qpdf) | the PDF object parser, xref scanning and repair, stream filters (Flate, LZW, ASCII85, ASCIIHex, PNG predictors), the RC4 / AES-128 / AES-256 decryption (`pdfobjects.py`, `filters.py`, `crypto.py`, most of `document.py`) |
-| **pdfminer.six** | the content-stream lexer and operator loop, CTM and q/Q handling, text-state operators, resources, font loading, ToUnicode/CMap parsing, CID fonts, the standard-14 width tables |
+| **pikepdf** (qpdf) | the PDF object parser, xref scanning and repair, stream filters (Flate, LZW, ASCII85, ASCIIHex, PNG predictors), the RC4 / AES-128 / AES-256 decryption, the content-stream tokenizer (`pdfobjects.py`, `filters.py`, `crypto.py`, most of `document.py`) |
+| **pdfminer.six** | the operator handling, CTM and q/Q handling, text-state operators, resources, font loading, ToUnicode/CMap parsing, CID fonts, the standard-14 width tables |
 | **fontTools** | the hand-made glyph-name table (`fontTools.agl.toUnicode` covers the whole Adobe Glyph List, `uniXXXX`, `uXXXXX` and ligature names such as `f_i`) |
 | **python-dateutil** | the month-name table; it also adds date tick labels ("Mar 2010", "2010-03-15", "15 March 2010", Excel's "Jan-10") |
 

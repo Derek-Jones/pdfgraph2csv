@@ -1,9 +1,11 @@
 """Executing a page's drawing operators.
 
 pdfminer.six's PDFPageInterpreter does the work of a content-stream
-interpreter: it parses the operators, keeps the current transformation
-matrix, the q/Q stack and the text state (font, size, spacing, text and line
-matrices), loads the fonts and resources, and runs Form XObjects.  The
+interpreter: it keeps the current transformation matrix, the q/Q stack and
+the text state (font, size, spacing, text and line matrices), and loads the
+fonts and resources.  The operators themselves are tokenized by qpdf
+(pikepdf), which is many times faster than pdfminer.six's own parser on the
+huge streams of plots with 100 000+ markers.  The
 subclass `ContentInterpreter` adds what plot extraction needs and pdfminer
 does not keep:
 
@@ -22,14 +24,17 @@ does not keep:
 `Interpreter` collects the results of one page.
 """
 
+import decimal
 import math
+import sys
 
+import pikepdf
 from pdfminer.pdfdevice import PDFDevice
 from pdfminer.pdfinterp import PDFContentParser, PDFPageInterpreter
 from pdfminer.pdftypes import PDFStream, resolve1, stream_value
-from pdfminer.psparser import PSEOF, PSKeyword, keyword_name, literal_name
+from pdfminer.psparser import LIT, PSEOF, PSKeyword, keyword_name, literal_name
 
-from .context import SETTINGS
+from .context import PAGE, SETTINGS
 from .fonts import DINGBAT_ANCHOR, DINGBAT_SYMBOLS, FontInfo
 from .geometry import bbox_of, mapply, mmul
 
@@ -117,7 +122,10 @@ class ContentInterpreter(PDFPageInterpreter):
             self.textstate, self.graphicstate, self.extra = textstate, graphicstate, extra
 
     def execute(self, streams):
-        """pdfminer's operator loop, except that an operator that fails is
+        """Run the operators of the content streams.  They are tokenized by
+        qpdf (pikepdf), which is far faster than pdfminer.six's parser on big
+        streams (plots with 100 000+ markers); pdfminer.six's parser is the
+        fallback for content qpdf rejects.  An operator that fails is
         skipped (one malformed operator must not lose the page)."""
         valid = []
         self.stream_ids.clear()
@@ -129,9 +137,25 @@ class ContentInterpreter(PDFPageInterpreter):
             if stream.objid is not None:
                 self.stream_ids.add(stream.objid)
         try:
-            parser = PDFContentParser(valid)
+            data = b"\n".join(s.get_data() for s in valid)
+            instructions = pikepdf.parse_content_stream(pikepdf.Stream(_scratch_pdf(), data))
+        except Exception:
+            self._execute_pdfminer(valid)
+            return
+        if len(instructions) > 500000:    # say why the program is busy
+            print("note: page %d draws %.1f million objects; this may take a few minutes"
+                  % (PAGE.number, len(instructions) / 1e6), file=sys.stderr, flush=True)
+        for inst in instructions:
+            if not isinstance(inst, pikepdf.ContentStreamInstruction):
+                continue                  # inline images
+            self._run_operator(str(inst.operator), [_from_pikepdf(o) for o in inst.operands])
+
+    def _execute_pdfminer(self, streams):
+        try:
+            parser = PDFContentParser(streams)
         except PSEOF:
             return                        # empty page
+        operands = []
         while True:
             try:
                 _, obj = parser.nextobject()
@@ -139,24 +163,29 @@ class ContentInterpreter(PDFPageInterpreter):
                 break
             except Exception:
                 continue
-            if not isinstance(obj, PSKeyword):
-                self.push(obj)
-                continue
-            name = keyword_name(obj)
-            method = getattr(self, "do_" + name.replace("*", "_a").replace('"', "_w")
+            if isinstance(obj, PSKeyword):
+                self._run_operator(keyword_name(obj), operands)
+                operands = []
+            else:
+                operands.append(obj)
+
+    def _run_operator(self, name, operands):
+        """Call do_<operator> with its operands (those given since the
+        previous operator; colour operators use them all)."""
+        handler = _HANDLERS.get((type(self), name))
+        if handler is None:
+            method = getattr(type(self), "do_" + name.replace("*", "_a").replace('"', "_w")
                              .replace("'", "_q"), None)
-            # each operator takes the operands given since the previous one
-            self.operands, self.argstack = self.argstack, []
-            if method is None:
-                continue
-            nargs = method.__code__.co_argcount - 1
-            args = self.operands[len(self.operands) - nargs:] if nargs else []
-            if nargs and len(args) != nargs:
-                continue
-            try:
-                method(*args)
-            except Exception:
-                pass
+            handler = (method, method.__code__.co_argcount - 1) if method else (None, 0)
+            _HANDLERS[(type(self), name)] = handler
+        method, nargs = handler
+        if method is None or len(operands) < nargs:
+            return
+        self.operands = operands
+        try:
+            method(self, *operands[len(operands) - nargs:]) if nargs else method(self)
+        except Exception:
+            pass
 
     # -- graphics state ----------------------------------------------------
     def do_q(self):
@@ -401,6 +430,37 @@ class ContentInterpreter(PDFPageInterpreter):
             xs, ys = [p[0] for p in pts], [p[1] for p in pts]
             self.page.images.append(((min(xs), min(ys), max(xs), max(ys)), self.page.order))
             self.page.order += 1
+
+
+_HANDLERS = {}                            # (class, operator) -> (method, operand count)
+_SCRATCH = []
+
+
+def _scratch_pdf():
+    """An empty pikepdf document to hold content streams for tokenizing."""
+    if not _SCRATCH:
+        _SCRATCH.append(pikepdf.new())
+    return _SCRATCH[0]
+
+
+def _from_pikepdf(o):
+    """A pikepdf operand as the Python value pdfminer.six would produce:
+    numbers as int/float, names as PSLiteral, strings as bytes, arrays as
+    lists and dictionaries as dicts."""
+    t = type(o)
+    if t is int or t is float or t is bool:
+        return o
+    if t is decimal.Decimal:
+        return float(o)
+    if isinstance(o, pikepdf.Name):
+        return LIT(str(o)[1:])
+    if isinstance(o, pikepdf.String):
+        return bytes(o)
+    if isinstance(o, pikepdf.Array):
+        return [_from_pikepdf(x) for x in o]
+    if isinstance(o, pikepdf.Dictionary):
+        return {str(k)[1:]: _from_pikepdf(v) for k, v in o.items()}
+    return None
 
 
 def build_subpaths(curpath, ctm):

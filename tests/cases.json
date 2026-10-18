@@ -240,14 +240,11 @@
       "tolerance": 1e-06
     },
     {
-      "name": "plus-symbols-log-axes: six panels of '+' markers, log y axis, numbered colour legend (1..8), markers clipped out of view skipped",
+      "name": "plus-symbols-log-axes: six panels of '+' markers, log y axis, numbered colour legend (1..8); markers beyond the axis ranges (clipped out of view) are reported, assigned to the graph they were clipped to",
       "pdf": "plus-symbols-log-axes.pdf",
       "args": [],
       "expected": "plus-symbols-log-axes.csv",
-      "tolerance": 1e-06,
-      "stderr_contains": [
-        "clipped out of view"
-      ]
+      "tolerance": 1e-06
     },
     {
       "name": "log-clipped-markers: circles flattened into fragments and clipped; rebuilt with stacking counts",
@@ -363,7 +360,7 @@
       "expected": null,
       "tolerance": 1e-06,
       "stderr_contains": [
-        "no graphs with numbered axes found"
+        "No vector graphics found"
       ]
     },
     {
@@ -373,7 +370,7 @@
       "expected": null,
       "tolerance": 1e-06,
       "stderr_contains": [
-        "no graphs with numbered axes found"
+        "No vector graphics found"
       ]
     },
     {
@@ -383,7 +380,7 @@
       "expected": null,
       "tolerance": 1e-06,
       "stderr_contains": [
-        "no graphs with numbered axes found"
+        "No vector graphics found"
       ]
     },
     {
@@ -393,7 +390,7 @@
       "expected": null,
       "tolerance": 1e-06,
       "stderr_contains": [
-        "no graphs with numbered axes found"
+        "No vector graphics found"
       ]
     },
     {
@@ -403,6 +400,68 @@
       "expected": "synthetic-date-axis.reference.csv",
       "tolerance": 0.001,
       "update": false
+    },
+    {
+      "name": "synthetic-date-axis: the title, read through glyph names with the /fi ligature (fontTools), is found (--debug; titles are not output)",
+      "pdf": "synthetic-date-axis.pdf",
+      "args": [
+        "--debug"
+      ],
+      "expected": "synthetic-date-axis.reference.csv",
+      "tolerance": 0.001,
+      "update": false,
+      "stderr_contains": [
+        "graph 1 title: 'Profits by month'"
+      ]
+    },
+    {
+      "name": "no-graph with -o: no output file is created",
+      "pdf": "no-graph.pdf",
+      "args": [],
+      "expected": null,
+      "output_file": "points.csv",
+      "stderr_contains": [
+        "No vector graphics found"
+      ]
+    },
+    {
+      "name": "histogram with -o: the output file holds the points",
+      "pdf": "histogram.pdf",
+      "args": [],
+      "expected": "histogram.csv",
+      "tolerance": 1e-06,
+      "output_file": "points.csv",
+      "update": false
+    },
+    {
+      "name": "1209.1411v2-013: four log-log graphs, outlined labels whose exponent minus signs are separate dashes, points beyond the axis values (clipped out of view) reported, in-graph legend with unreadable names",
+      "pdf": "1209.1411v2-013.pdf",
+      "args": [],
+      "expected": "1209.1411v2-013.csv",
+      "tolerance": 1e-06
+    },
+    {
+      "name": "2001.10488v4-56: a 69 MB content stream drawing 200 000 circle markers (2.9 million operators) must finish (about a minute) with every marker",
+      "pdf": "2001.10488v4-56.pdf",
+      "args": [],
+      "expected": null,
+      "expected_counts": {
+        "2 filled-circle": 100000,
+        "3 filled-circle": 99989,
+        "1 line": 335
+      },
+      "stderr_contains": [
+        "million objects"
+      ]
+    },
+    {
+      "name": "overflow-exponent: body text '10^602' (a superscript) is no number - no crash, no graph",
+      "pdf": "overflow-exponent.pdf",
+      "args": [],
+      "expected": null,
+      "stderr_contains": [
+        "No vector graphics found"
+      ]
     }
   ]
 }
