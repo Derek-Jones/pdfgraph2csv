@@ -1,4 +1,0 @@
-pikepdf>=8
-pdfminer.six>=20231228
-fonttools>=4
-python-dateutil>=2.8
