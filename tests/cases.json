@@ -1,6 +1,6 @@
 {
   "_comment": [
-    "Regression cases for pdf_points.py.  Paths are relative to tests/data.",
+    "Regression cases for pdfgraph2csv.py.  Paths are relative to tests/data.",
     "pdf       : input file",
     "args      : extra command line arguments",
     "expected  : CSV the program must reproduce",

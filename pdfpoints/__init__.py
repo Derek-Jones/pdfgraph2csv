@@ -1,5 +1,5 @@
 """
-pdf_points.py - extract the data coordinates of marker symbols (circles,
+pdfgraph2csv.py - extract the data coordinates of marker symbols (circles,
 squares, triangles, diamonds, crosses, ...) drawn as vector graphics in the
 plots of a PDF file.
 
@@ -103,11 +103,11 @@ Special axes and graphs
 
 Usage
 -----
-    python3 pdf_points.py plot.pdf                # CSV to stdout
-    python3 pdf_points.py plot.pdf -o points.csv
-    python3 pdf_points.py plot.pdf --inside-only  # drop legend keys etc.
-    python3 pdf_points.py plot.pdf --internal     # add page x/y columns
-    python3 pdf_points.py plot.pdf --debug        # axis info on stderr
+    python3 pdfgraph2csv.py plot.pdf                # CSV to stdout
+    python3 pdfgraph2csv.py plot.pdf -o points.csv
+    python3 pdfgraph2csv.py plot.pdf --inside-only  # drop legend keys etc.
+    python3 pdfgraph2csv.py plot.pdf --internal     # add page x/y columns
+    python3 pdfgraph2csv.py plot.pdf --debug        # axis info on stderr
 
 Output columns: page,graph,symbol,series,legend_key,
                 x_coord,y_coord,color,color_hex

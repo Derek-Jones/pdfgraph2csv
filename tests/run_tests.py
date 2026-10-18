@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Regression test suite for pdf_points.py.
+Regression test suite for pdfgraph2csv.py.
 
-Every case in cases.json runs pdf_points.py (as a separate process, exactly
+Every case in cases.json runs pdfgraph2csv.py (as a separate process, exactly
 as a user would) on a PDF in tests/data and compares the CSV it writes with
 the expected CSV stored next to it:
 
@@ -43,7 +43,7 @@ import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
-PROGRAM = os.path.join(os.path.dirname(HERE), "pdf_points.py")
+PROGRAM = os.path.join(os.path.dirname(HERE), "pdfgraph2csv.py")
 MAX_REPORTED = 10  # differences listed per failing case
 
 
@@ -77,7 +77,7 @@ def _run(case, cmd):
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
     want = case.get("exit_code", 0)
     if proc.returncode != want:
-        raise AssertionError("pdf_points.py exit status %d, expected %d:\n%s"
+        raise AssertionError("pdfgraph2csv.py exit status %d, expected %d:\n%s"
                              % (proc.returncode, want, proc.stderr))
     for text in case.get("stderr_contains", []):
         if text not in proc.stderr:
@@ -177,7 +177,7 @@ def update_expected(cases, selected):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="pdf_points.py regression tests")
+    ap = argparse.ArgumentParser(description="pdfgraph2csv.py regression tests")
     ap.add_argument("-v", "--verbose", action="store_true")
     ap.add_argument("-k", metavar="TEXT", help="only run cases whose name contains TEXT")
     ap.add_argument("--update", action="store_true",

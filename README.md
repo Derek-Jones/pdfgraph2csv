@@ -1,13 +1,28 @@
-# pdf_points.py
+# pdfgraph2csv.py
 
-Extracts the data coordinates of marker symbols drawn as vector graphics
-in the plots of a PDF.
+A program to extract the x/y coordinates of data points, displayed as symbols within a graph, drawn using vector graphics within a pdf file.  Graphs represented using raster graphics (e.g., jpeg and png formats) are ignored.
 
-    python3 pdf_points.py input.pdf -o points.csv
+The program is still new and under active development.
 
-`python3 pdf_points.py --help` lists the options.  It needs Python 3.9+ and
+The following command will send the x/y coordinates of any detected data points within any graphs contained in ``interesting.pdf`` to standard output:
+
+``python3 pdfgraph2csv.py interesting.pdf``
+
+an output file can be specified:
+
+    python3 pdfgraph2csv.py interesting.pdf -o interesting.csv
+
+By default the message ``warning: No vector graphics found`` is output when no data points are detected.
+
+`python3 pdfgraph2csv.py --help` lists the options.
+
+The program is written in python and needs python 3.9+
 
     pip install -r requirements.txt     # pikepdf, pdfminer.six, fonttools, python-dateutil
+
+A myriad of different ways are used to display symbols denoting data values, e.g., instruction to output a circle, or four instructions that output the four (sometimes eight) bezier curves forming the quadrants of a circle.
+
+If no x/y coordinates are output, it's possible that the technique used to support them is not yet supported.  The first thing to do is check whether it's possible to [extract the graph](https://github.com/pdfcpu/pdfcpu) as a known raster image format.  If no image can be extracted, the the process involves extracting the page containing the graph, then [uncompressing the pdf, and looking at the sequences of internal pdf instructions](https://shape-of-code.com/2025/07/27/a-process-to-find-and-extract-data-points-from-graphs-in-pdf-files/).
 
 | Package | Used for |
 |---|---|
@@ -18,7 +33,7 @@ in the plots of a PDF.
 
 ## Layout
 
-    pdf_points.py        command-line wrapper (run this)
+    pdfgraph2csv.py        command-line wrapper (run this)
     pdfpoints/           the package that does the work, one module per step:
       document.py                                      opening the file
       fonts.py interpreter.py                          drawing a page
@@ -50,7 +65,7 @@ Output columns: page, graph, symbol, series, legend_key, x_coord, y_coord, color
 When no data points are found nothing is written (not even the header line),
 and an output file named with `-o` is not created.
 
-Each case in `tests/cases.json` runs `pdf_points.py` on a PDF in `tests/data`
+Each case in `tests/cases.json` runs `pdfgraph2csv.py` on a PDF in `tests/data`
 and compares the result with the expected CSV: same rows in the same order,
 identical text columns, numeric columns within the case's tolerance.
 

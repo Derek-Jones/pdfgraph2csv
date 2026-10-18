@@ -1,6 +1,6 @@
-# How pdf_points works
+# How pdfgraph2csv works
 
-`pdf_points.py` is a thin command-line wrapper; the work is done by the
+`pdfgraph2csv.py` is a thin command-line wrapper; the work is done by the
 `pdfpoints` package next to it.  It uses four packages:
 
 * **pikepdf** opens the file (`document.py`) and tokenizes the content
@@ -46,7 +46,7 @@ axes                scales  →  labels  →  axes
 graphs              titles  →  graphs
 marks               symbols  fragments  charts
 naming              legend
-top                 pipeline  →  cli  →  pdf_points.py
+top                 pipeline  →  cli  →  pdfgraph2csv.py
 shared              geometry  grouping  colours  context
 ```
 
