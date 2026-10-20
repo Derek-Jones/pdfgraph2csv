@@ -35,7 +35,7 @@
 | 2. Read the text | `read_page_text` (pipeline) → `drop_hidden_glyphs` (occlusion), `outlined_text` (outlined_text), `merge_texts`, `attach_vector_minus` (text) | labels and words, including text drawn as outlines; text painted over by white boxes removed |
 | 3. Find the graphs | `find_page_graphs` (pipeline) → `find_axes` (axes), `resolve_shared_labels`, `apply_axis_multipliers` (labels), `build_graphs`, `add_panel_graphs` (graphs) | axes with value mappings, paired into plot boxes |
 | 4. Find the markers | `find_page_symbols` (pipeline) → `find_symbols` (symbols), `rebuild_fragmented_circles` (fragments) | visible marker symbols |
-| 5. Describe graphs | `describe_graphs` (pipeline) → `graph_rotation` (graphs), `find_title` (titles) | number, title, 90° turns |
+| 5. Describe graphs | `describe_graphs` (pipeline) → `graph_rotation` (graphs), `find_title`, `find_figure_caption` (titles) | number, title, figure number and caption, 90° turns |
 | 6. Bars and lines | `add_bars_and_lines` (pipeline) → `find_bars`, `find_line_series` (charts) | data points of charts without markers |
 | 7. Legends | `find_page_legend`, `SeriesNamer` (legend) | series name of every point |
 | 8. Rows | `make_rows` (pipeline) → `map_value` (scales) | the CSV rows |
@@ -93,7 +93,7 @@ debugger).  Coordinates are PDF page points (1/72 inch, y upwards).
   `n` labels were fitted with largest relative error `resid`.
 
 **Graph** (`build_graphs`)
-: `x`, `y` (axes); `rect` (plot box); later `no`, `title`, `rot`, `bg`
+: `x`, `y` (axes); `rect` (plot box); later `no`, `title`, `figure`, `caption`, `rot`, `bg`
   (drawing step of its background box, for insets).
 
 ## Page state
@@ -111,3 +111,34 @@ size of the marker or tick concerned (e.g. a legend label must start
 within 3 font sizes of its key), so they work at any scale.  Absolute values in points
 are used only for things that are fixed in practice, such as the 0.5 pt
 slack allowed around a clipping box.
+
+## The meta file (-meta)
+
+`pipeline.graph_meta` makes one record per graph after its points are
+mapped: page, graph number, title, figure number and caption
+(`titles.find_figure_caption`: the nearest "Fig. N" / "Figure N" paragraph
+below the graph and across its width; other graphs of the same figure may
+lie in between; the paragraph is followed down the column at the spacing of
+its first two lines), the number of points output for the graph, and the
+values of the lowest and highest labelled ticks of each axis
+(`pipeline.tick_range`, with any ×10^n axis multiplier applied).
+`extract()` returns these in `info["meta"]`; `cli.write_meta` writes them.
+
+## Where a marker's data point is
+
+A marker's data point is the middle of its bounding box, except:
+
+* an equilateral triangle (box aspect about 0.87): its centroid, the
+  convention of R (apex r above the point, base r/2 below); a triangle
+  filling a square box, as matplotlib draws it, keeps the middle of the box;
+* a regular polygon or star: its centre of symmetry (the mean of its
+  vertices), which for a pentagon or a star is not the middle of the box;
+* ZapfDingbats circles: (0.396, 0.347) em from the glyph origin (R).
+
+`tests/make_random_symbols_pdf.py` draws 1000 random points with each kind
+of marker by the drawing program's convention; the regression cases require
+every point within the 3-decimal precision of the PDF's coordinates.  Means
+of a circle's arc ends or of the strokes' crossing point were tried instead
+of the middle of the box: they gained nothing on these files and made
+schumpeter-001 (supplied reference values) and symbols-on-axes (values on a
+known grid) slightly worse, so the box middle stays.

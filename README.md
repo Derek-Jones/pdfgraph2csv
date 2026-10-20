@@ -12,9 +12,15 @@ an output file can be specified:
 
     python3 pdfgraph2csv.py interesting.pdf -o interesting.csv
 
+a file describing each graph found can also be written:
+
+    python3 pdfgraph2csv.py interesting.pdf -o interesting.csv -meta interesting-meta.csv
+
+with the columns page, graph, title, figure (number), caption, points (the number of data points output for the graph), x_tick_min, x_tick_max, y_tick_min, y_tick_max (the values of the lowest and highest labelled ticks of each axis; for a category axis, the first and last category).  Title, figure and caption are empty when none is found; a caption is the paragraph starting "Fig. N" or "Figure N" below the graph, shared by all the graphs of that figure.  The file is only created when graphs are found.
+
 By default the message ``warning: No vector graphics found`` is output when no data points are detected.
 
-`python3 pdfgraph2csv.py --help` lists the options.
+`python3 pdfgraph2csv.py --help` lists the options.  Numbers are written with 6 significant digits; `--digits N` writes more (the precision of the coordinates in the PDF itself limits what more digits can add).
 
 The program is written in python and needs python 3.9+
 
@@ -78,9 +84,9 @@ identical text columns, numeric columns within the case's tolerance.
 | effort-fig2-excel-diamonds.pdf | Word/Excel via Acrobat Distiller; 3 graphs, ~3000 diamonds drawn as four lines; inward ticks; several labels in one TJ with wide character spacing; sub-captions below the plots as titles |
 | swed-bank.pdf | 9-page LaTeX paper; four Excel scatter plots on page 6 in separate embedded forms; each diamond drawn as fill + outline (counted once); bar charts with category axes (High/Medium/Low, between-tick Excel labels) on page 4. Refitting the extracted points reproduces Excel's printed R² values exactly. `--pages 6` has its own expected file (graph numbers start at 1 there) |
 | Schalken_PhD-057.pdf | two R graphs, each mixing ZapfDingbats circles (a71) and crosses (a27); legend gives the `series` column. All markers are anchored at the a71 centre: the integer-valued data confirm it |
-| synthetic-line-plus.pdf | synthetic: plus signs drawn as two strokes with all vertical bars first, duplicated points, legend; exact known values |
+| synthetic-line-plus.pdf | made by `tests/make_line_plus_pdf.py`: plus signs drawn as two strokes with all vertical bars first, duplicated points, legend; exact known values |
 | King_PhD-214.pdf | graph turned 90° clockwise (y axis across the top, x axis down the left); no tick marks, grid lines act as ticks; Times-Roman labels without width table, all in one TJ; two-line title |
-| synthetic-date-axis.pdf | synthetic: x tick labels are dates ("Jan 2010" ... "Jan 2011", python-dateutil); labels and title use glyph names from /Differences, including the /fi ligature (fontTools); exact known values in the hand-made reference |
+| synthetic-date-axis.pdf | made by `tests/make_date_axis_pdf.py`: x tick labels are dates ("Jan 2010" ... "Jan 2011", python-dateutil); labels and title use glyph names from /Differences, including the /fi ligature (fontTools); exact known values in the hand-made reference |
 | synthetic-rotated-cw.pdf, synthetic-rotated-ccw.pdf | the synthetic plot turned both ways; must equal `synthetic-line-plus.csv` exactly |
 | ssrn-4204819-016.pdf | 1870 light-grey filled circles; graph turned 90° anticlockwise (y axis along the bottom, x axis up the right); log-log; every line and every label converted to filled outlines, so tick labels are read from glyph shapes. The points reproduce the empirical 1−F(x) steps k/N to 0.2% |
 | 2304_10304v3-005.pdf | matplotlib histogram on log-log axes; each marker drawn by the Form XObject /M0 (filled circle of 8 Béziers); labels 10^n with superscript exponents; log minor ticks. The 334 counts are integers summing to 108,745 as the caption says; the "1 month"/"1 year" lines map to 30 and 365 days |
@@ -101,6 +107,7 @@ identical text columns, numeric columns within the case's tolerance.
 | 2001.10488v4-56.pdf | two scatter plots of 100 000 points each: a 69 MB content stream with 2.9 million operators (tokenized by qpdf); only the point counts are checked |
 | overflow-exponent.pdf | body text with '2^2000 ≈ 10^602' (a superscript joined to its base): a number too big for a float is no number; no graph, no crash |
 | log-clipped-markers.pdf | circles flattened into clipped fragments; rebuilt from their arcs, with stacking counts from the alpha layers |
+| random-*.pdf | made by `tests/make_random_symbols_pdf.py`: 1000 points drawn uniformly from [0, 100]², one file per marker kind (circles of 4 or 8 Béziers, Dingbats circles, diamonds of four lines, squares, R's equilateral and matplotlib's triangles, pentagons, hexagons, stars, plus, cross, asterisks); the true values are in `random-*.reference.csv`, and every point must come out within the 3-decimal precision of the PDF's coordinates (run with `--digits 10`) |
 | encrypted*.pdf, enc-*.pdf, bad-stream.pdf | RC4-40/128, AES-128/256 (R2-R6), user password (`--password secret`), all decrypted by pikepdf; corrupt ASCII85 and Flate streams skipped with qpdf's reason as the warning |
 | damaged.pdf (beyond qpdf's repair), not-a-pdf.pdf, no-graph.pdf, many-shapes.pdf, zero-width-glyph.pdf, doubtful-axes.pdf | must fail cleanly or report that no graph was found (cases without `--expect` check only the exit status and the message) |
 
@@ -120,3 +127,18 @@ plotted values exactly.
 
 After an intended change in the program's output, run `--update` and review
 the changed CSVs (e.g. with `git diff`) before accepting them.
+
+Cases with `--meta` also compare the `-meta` file with an expected CSV
+(`*.meta.csv` in `tests/data`).
+
+The synthetic test PDFs are made by Python programs in `tests/`;
+`tests/run_tests.sh --generate` re-creates them and then runs the cases:
+
+    make_line_plus_pdf.py    synthetic-line-plus.pdf, synthetic-rotated-*.pdf
+    make_date_axis_pdf.py    synthetic-date-axis.pdf and its reference CSV
+    make_random_symbols_pdf.py  random-*.pdf: 1000 random points per marker kind, with their true values
+    make_synthetic_pdfs.py   mpl-*.pdf (needs matplotlib)
+
+`tests/make_digit_templates.py` prints the digit templates embedded in
+`pdfpoints/outlined_text.py` (needs Pillow and the Liberation/DejaVu fonts,
+which the program itself does not use).

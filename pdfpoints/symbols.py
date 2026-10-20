@@ -113,6 +113,7 @@ def classify_subpath(sp):
     aspect = min(w, h) / max(w, h)
     shape = None
     ring = False
+    centre = ((x0 + x1) / 2, (y0 + y1) / 2)      # the middle of the box
     if curves >= 3 and lines <= 1:          # a circle: 4, 8, ... Bezier arcs
         shape = "circle" if aspect > 0.85 else None
     elif curves >= 6 and lines <= 3 and aspect > 0.85:
@@ -138,6 +139,12 @@ def classify_subpath(sp):
         n = len(uniq)
         if n == 3:
             shape = "triangle"
+            # an equilateral triangle (box aspect sqrt(3)/2) is centred on its
+            # centroid, as R draws it (pch 2, 6, 17, 24, 25: apex r above
+            # the point, base r/2 below); a triangle filling a square box,
+            # as matplotlib draws it, on the middle of the box
+            if 0.8 < aspect < 0.93:
+                centre = (sum(v[0] for v in uniq) / 3, sum(v[1] for v in uniq) / 3)
         elif n == 4:
             edges = [axis_aligned(uniq[k], uniq[(k + 1) % 4]) for k in range(4)]
             if all(edges):
@@ -161,6 +168,9 @@ def classify_subpath(sp):
                     shape = "diamond"
         elif 5 <= n <= 12 and aspect > 0.7 and _rotationally_symmetric(uniq, size):
             shape = "polygon"
+            # the centre of symmetry (for a pentagon or a star it is not the
+            # middle of the box)
+            centre = (sum(v[0] for v in uniq) / n, sum(v[1] for v in uniq) / n)
     if shape is None:
         return None
     # markers are compact; a short diagonal stroke (e.g. the dash of a dashed
@@ -168,7 +178,7 @@ def classify_subpath(sp):
     # and thin
     if shape in ("polygon", "triangle", "diamond") and elongation(flatten_subpath(sp)) > 1.8:
         return None
-    out = {"shape": shape, "cx": (x0 + x1) / 2, "cy": (y0 + y1) / 2, "size": size}
+    out = {"shape": shape, "cx": centre[0], "cy": centre[1], "size": size}
     if ring:
         out["ring"] = True
     return out
@@ -386,8 +396,44 @@ def match_crossing_strokes(lines):
             x0, y0, x1, y1 = bbox_of(pts)
             out.append({"shape": shape, "cx": (x0 + x1) / 2, "cy": (y0 + y1) / 2,
                         "size": max(x1 - x0, y1 - y0), "filled": False,
-                        "rgb": parts[0]["rgb"], "idx": min(s["idx"] for s in parts)})
-    return out
+                        "rgb": parts[0]["rgb"], "idx": min(s["idx"] for s in parts),
+                        "last": max(s["idx"] for s in parts)})
+    return _join_asterisks(out)
+
+
+def _join_asterisks(syms):
+    """An asterisk whose diagonal rays are longer than its straight ones
+    (or the other way round) comes out of the stroke matching as a plus and
+    a cross: the strokes' lengths differ too much to be grouped.  A plus and
+    a cross of one colour around the same centre, drawn one right after the
+    other, are one asterisk."""
+    by_spot = {}
+    for k, s in enumerate(syms):
+        if s["shape"] in ("plus", "cross"):
+            key = (s["rgb"], round(s["cx"], 1), round(s["cy"], 1))
+            by_spot.setdefault(key, []).append(k)
+    gone = set()
+    for k, s in enumerate(syms):
+        if k in gone or s["shape"] not in ("plus", "cross"):
+            continue
+        other = "cross" if s["shape"] == "plus" else "plus"
+        cands = [j for dx in (-0.1, 0.0, 0.1) for dy in (-0.1, 0.0, 0.1)
+                 for j in by_spot.get((s["rgb"], round(s["cx"] + dx, 1), round(s["cy"] + dy, 1)), ())]
+        for j in sorted(set(cands)):
+            o = syms[j]
+            if j in gone or j == k or o["shape"] != other:
+                continue
+            tol = 0.05 * min(s["size"], o["size"])
+            near = abs(o["cx"] - s["cx"]) <= tol and abs(o["cy"] - s["cy"]) <= tol
+            # drawn one right after the other (in one path, or in
+            # consecutive painting operations)
+            together = o["idx"] <= s["last"] + 2 and s["idx"] <= o["last"] + 2
+            if near and together and 0.5 < o["size"] / s["size"] < 2:
+                s.update(shape="asterisk", size=max(s["size"], o["size"]),
+                         idx=min(s["idx"], o["idx"]), last=max(s["last"], o["last"]))
+                gone.add(j)
+                break
+    return [s for k, s in enumerate(syms) if k not in gone]
 
 
 def merge_fill_outline(syms):

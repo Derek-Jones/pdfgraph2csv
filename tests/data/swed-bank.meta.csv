@@ -1,0 +1,11 @@
+page,graph,title,figure,caption,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+4,1,Risk classification,1,Project costs illustrated using Risk classification,3,High,Low,0,1.2e+07
+5,2,Budget revisions,2,Project costs illustrated using Budget revisions,4,0,3,0,1e+07
+5,3,Commissioning body's unit,5,Project costs illustrated using Commissioning body’s unit,7,Unit 1,Unit 7,0,6e+06
+5,4,Platform,3,Project costs illustrated using Platform,4,other,ZOS,0,8e+06
+5,5,Commissioning body,6,Project costs illustrated using Commissioning body,11,1,11,0,1e+07
+5,6,Project priority,4,Project costs illustrated using Project priority,2,other,ZOS,0,7e+06
+6,7,Project participants,7,Project costs modeled using Project participants,47,0,50,0,3e+07
+6,8,Consultants,10,Project costs modeled using Consultants,45,0,12,0,3e+07
+6,9,Duration,8,Project costs modeled using Duration,45,0,700,0,3e+07
+6,10,Function points,9,Project costs modeled using Function points,47,0,1600,0,3e+07

@@ -1,0 +1,7 @@
+page,graph,title,figure,caption,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+6,1,,2,"Autocorrelations for the new unique traces found per campaign, sub-dataset (hash).",4,0,8,#1,#4
+6,2,,2,"Autocorrelations for the new unique traces found per campaign, sub-dataset (hash).",11,0,20,#1,#4
+7,3,,3,Autocorrelations for the sub-dataset (execution time).,4,#1,#7,#1,#4
+7,4,,4,"New unique traces found per campaign of executions, sub-dataset (hash).",1,#1,#6,0,15000
+7,5,,3,Autocorrelations for the sub-dataset (execution time).,11,#1,#6,#1,#4
+7,6,,4,"New unique traces found per campaign of executions, sub-dataset (hash).",8,#1,#6,0,120

@@ -14,7 +14,9 @@
 #   * or, for a case without expected output, that nothing at all is
 #     written to stdout (not even the CSV header);
 #   * its exit status and the messages it must write to stderr;
-#   * with -o, that the output file is created only when there are points.
+#   * with -o, that the output file is created only when there are points;
+#   * with --meta, the per-graph meta file (written with -meta) against an
+#     expected CSV, or that none is created.
 #
 # Usage
 #   tests/run_tests.sh               run all cases
@@ -23,6 +25,21 @@
 #   tests/run_tests.sh --update      regenerate the expected CSVs from the
 #                                    current program (after an intended
 #                                    change; review the differences)
+#   tests/run_tests.sh --generate    first re-create the synthetic test PDFs
+#                                    with the Python generators, then run
+#                                    the cases
+#
+# The test PDFs that were made by program are re-created by these Python
+# scripts in tests/ (they write into tests/data):
+#   make_line_plus_pdf.py    synthetic-line-plus.pdf, synthetic-rotated-*.pdf
+#   make_date_axis_pdf.py    synthetic-date-axis.pdf and its reference CSV
+#   make_random_symbols_pdf.py  random-<symbol>.pdf: 1000 uniform random
+#                            points drawn with each kind of marker, and
+#                            their true values
+#   make_synthetic_pdfs.py   mpl-*.pdf (needs matplotlib)
+# All but the last need only the standard library.  make_digit_templates.py
+# prints the digit templates embedded in pdfpoints/outlined_text.py (needs
+# Pillow and the Liberation and DejaVu fonts).
 #
 # The Python interpreter is taken from $PYTHON (default python3).  Needs
 # only bash (3.2 or later) and the standard tools awk, grep, sort, diff, cmp.
@@ -43,6 +60,8 @@
 #                    not be created when no points are found)
 #   --counts 'graph symbol=N|...'
 #                    number of points per graph and symbol (instead of CSV)
+#   --meta CSV       also write the meta file (-meta) and compare it with
+#                    CSV; "--meta -": no meta file may be created
 #
 # Without --expect or --counts the program must write nothing to stdout.
 
@@ -55,14 +74,16 @@ TIME_LIMIT=600                       # seconds per run (when timeout exists)
 
 verbose=0
 update=0
+generate=0
 filter=
 while [ $# -gt 0 ]; do
     case $1 in
         -v|--verbose) verbose=1 ;;
         -k) shift; filter=$1 ;;
         --update) update=1 ;;
+        --generate) generate=1 ;;
         -h|--help) sed -n '2,/^$/s/^# \{0,1\}//p' "$0"; exit 0 ;;
-        *) echo "usage: $0 [-v] [-k TEXT] [--update]" >&2; exit 2 ;;
+        *) echo "usage: $0 [-v] [-k TEXT] [--update] [--generate]" >&2; exit 2 ;;
     esac
     shift
 done
@@ -79,6 +100,23 @@ fi
 passed=0
 failed=0
 failed_names=
+
+# --generate: re-create the synthetic PDFs before running the cases
+if [ "$generate" -eq 1 ]; then
+    for gen in make_line_plus_pdf.py make_date_axis_pdf.py make_random_symbols_pdf.py \
+               make_synthetic_pdfs.py; do
+        if [ "$gen" = make_synthetic_pdfs.py ] && ! "$PYTHON" -c "import matplotlib" 2>/dev/null; then
+            echo "skipped   $gen (matplotlib is not installed)"
+            continue
+        fi
+        if "$PYTHON" "$HERE/$gen" >"$TMP/gen.log" 2>&1; then
+            echo "generated $gen"
+        else
+            echo "FAILED    $gen:"; sed 's/^/      /' "$TMP/gen.log"; exit 1
+        fi
+    done
+    echo
+fi
 
 # -- awk helpers ---------------------------------------------------------------
 
@@ -171,16 +209,19 @@ point_counts() {
 # the exit status, a message or the output file is wrong.
 run_program() {
     local out= status want text
-    rm -rf "$TMP/o" "$TMP/result" "$TMP/why"
+    local cmd
+    rm -rf "$TMP/o" "$TMP/m" "$TMP/result" "$TMP/meta_result" "$TMP/why"
+    cmd=("$PYTHON" "$PROGRAM" "$DATA/$c_pdf" ${c_args[@]+"${c_args[@]}"})
     if [ -n "$c_out" ]; then
         mkdir "$TMP/o"
         out=$TMP/o/$c_out
-        $TIMEOUT "$PYTHON" "$PROGRAM" "$DATA/$c_pdf" ${c_args[@]+"${c_args[@]}"} -o "$out" \
-            >"$TMP/stdout" 2>"$TMP/stderr"
-    else
-        $TIMEOUT "$PYTHON" "$PROGRAM" "$DATA/$c_pdf" ${c_args[@]+"${c_args[@]}"} \
-            >"$TMP/stdout" 2>"$TMP/stderr"
+        cmd+=(-o "$out")
     fi
+    if [ -n "$c_meta" ]; then
+        mkdir "$TMP/m"
+        cmd+=(-meta "$TMP/m/meta.csv")
+    fi
+    $TIMEOUT "${cmd[@]}" >"$TMP/stdout" 2>"$TMP/stderr"
     status=$?
     want=${c_exit:-0}
     if [ "$status" -ne "$want" ]; then
@@ -213,13 +254,38 @@ EOF
     else
         cp "$TMP/stdout" "$TMP/result"
     fi
+    if [ -n "$c_meta" ]; then
+        if [ -e "$TMP/m/meta.csv" ]; then
+            if [ "$c_meta" = "-" ]; then
+                { echo "a meta file was created:"; head -5 "$TMP/m/meta.csv"; } >"$TMP/why"
+                return 1
+            fi
+            cp "$TMP/m/meta.csv" "$TMP/meta_result"
+        else
+            : >"$TMP/meta_result"
+        fi
+    fi
     return 0
 }
 
-# check: run the current case and compare; prints the differences to
-# $TMP/why and returns 1 on failure
+# check: run the current case and compare (points, then meta file); prints
+# the differences to $TMP/why and returns 1 on failure
 check() {
     run_program || return 1
+    check_points || return 1
+    if [ -n "$c_meta" ] && [ "$c_meta" != "-" ]; then
+        if [ ! -f "$DATA/$c_meta" ]; then
+            echo "missing expected file $c_meta (run with --update)" >"$TMP/why"
+            return 1
+        fi
+        compare_csv "$TMP/meta_result" "$DATA/$c_meta" "$c_tol" "" | sed 's/^/meta: /' >"$TMP/why"
+        [ ! -s "$TMP/why" ] || return 1
+    fi
+    return 0
+}
+
+# check_points: compare the points written (after run_program)
+check_points() {
     if [ -n "$c_counts" ]; then
         point_counts "$TMP/result" >"$TMP/got"
         printf '%s\n' "$c_counts" | tr '|' '\n' | LC_ALL=C sort >"$TMP/want"
@@ -245,33 +311,44 @@ check() {
     [ ! -s "$TMP/why" ]
 }
 
-# update: rewrite the current case's expected CSV from the program's output
+# update: rewrite the current case's expected CSV (and meta CSV) from the
+# program's output
 update_expected() {
-    [ -z "$c_expect" ] && return
+    if [ -z "$c_expect" ] && { [ -z "$c_meta" ] || [ "$c_meta" = "-" ]; }; then
+        return
+    fi
     if [ -n "$c_keep" ]; then
-        echo "kept      $c_expect (hand-made reference)"
+        echo "kept      ${c_expect:-$c_meta} (hand-made reference)"
         return
     fi
     if ! run_program; then
-        echo "FAILED    $c_expect: $(head -1 "$TMP/why")"
+        echo "FAILED    ${c_expect:-$c_meta}: $(head -1 "$TMP/why")"
         failed=$((failed + 1))
         return
     fi
-    local path=$DATA/$c_expect state rows
+    [ -n "$c_expect" ] && write_expected "$TMP/result" "$c_expect"
+    if [ -n "$c_meta" ] && [ "$c_meta" != "-" ]; then
+        write_expected "$TMP/meta_result" "$c_meta"
+    fi
+}
+
+# write_expected NEW NAME: replace tests/data/NAME, saying what changed
+write_expected() {
+    local path=$DATA/$2 state rows
     if [ ! -e "$path" ]; then state="created  "
-    elif cmp -s "$TMP/result" "$path"; then state="unchanged"
+    elif cmp -s "$1" "$path"; then state="unchanged"
     else state="UPDATED  "
     fi
-    cp "$TMP/result" "$path"
+    cp "$1" "$path"
     rows=$(awk 'NF' "$path" | wc -l)
     [ "$rows" -gt 0 ] && rows=$((rows - 1))
-    echo "$state $c_expect ($rows rows)"
+    echo "$state $2 ($rows rows)"
 }
 
 # t NAME --pdf FILE [options] [-- program arguments]: one case
 t() {
     c_name=$1; shift
-    c_pdf= c_expect= c_tol=1e-6 c_cols= c_keep= c_exit= c_stderr= c_out= c_counts=
+    c_pdf= c_expect= c_tol=1e-6 c_cols= c_keep= c_exit= c_stderr= c_out= c_counts= c_meta=
     c_args=()
     while [ $# -gt 0 ]; do
         case $1 in
@@ -285,6 +362,7 @@ t() {
 "; shift ;;
             --out) c_out=$2; shift ;;
             --counts) c_counts=$2; shift ;;
+            --meta) c_meta=$2; shift ;;
             --) shift; c_args=("$@"); break ;;
             *) echo "case '$c_name': unknown option $1" >&2; exit 2 ;;
         esac
@@ -583,5 +661,193 @@ t 'S1383762124002030 page 9: box plots with 472 000 outlier circles in a 92 MB F
   --stderr 'MB of drawing instructions' \
   --counts '1 open-circle=240614|2 open-circle=218658|3 open-circle=13121|3 filled-circle=4|1 filled-polygon=2|1 filled-circle=2|2 filled-circle=1|3 filled-square=1|3 open-square=1|3 filled-polygon=1' \
   -- --pages 9
+
+t 'meta file: figure numbers and captions set apart from their label ("Figure 1."), category and numeric axes, several pages' \
+  --pdf swed-bank.pdf \
+  --expect swed-bank.csv \
+  --meta swed-bank.meta.csv
+
+t 'meta file: four graphs stacked two by two share the caption below the figure' \
+  --pdf rofpc-19.pdf \
+  --expect rofpc-19.csv \
+  --meta rofpc-19.meta.csv
+
+t 'meta file: a double-spaced caption, untitled graphs, log axes' \
+  --pdf 1209.1411v2-013.pdf \
+  --expect 1209.1411v2-013.csv \
+  --meta 1209.1411v2-013.meta.csv
+
+t 'meta file: x10^-9 axis multiplier applied to the tick values, inset graphs, numbered section figure (3.2)' \
+  --pdf log-inset.pdf \
+  --expect log-inset.csv \
+  --meta log-inset.meta.csv
+
+t 'meta file: date axis ticks, title and no caption' \
+  --pdf synthetic-date-axis.pdf \
+  --counts '1 filled-square=8' \
+  --meta synthetic-date-axis.meta.csv
+
+t 'S1383762124002030 pages 6-7, with meta file: two-column journal pages, captions with monospaced words, category axes' \
+  --pdf S1383762124002030.pdf \
+  --expect S1383762124002030-p6-7.csv \
+  --meta S1383762124002030-p6-7.meta.csv \
+  -- --pages 6,7
+
+t 'meta file: not created when no graph is found' \
+  --pdf no-graph.pdf \
+  --meta - \
+  --stderr 'No vector graphics found'
+
+t 'random circle: 1000 uniform points, filled circles of four Bezier curves; within the 3-decimal precision of the PDF' \
+  --pdf random-circle.pdf \
+  --expect random-circle.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random open-circle: 1000 uniform points, stroked circles of four Bezier curves; within the 3-decimal precision of the PDF' \
+  --pdf random-open-circle.pdf \
+  --expect random-open-circle.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random circle8: 1000 uniform points, circles of eight Bezier curves in a Form XObject (matplotlib); within the 3-decimal precision of the PDF' \
+  --pdf random-circle8.pdf \
+  --expect random-circle8.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random dingbat-circle: 1000 uniform points, ZapfDingbats a71 circles (R pdf()); within the 3-decimal precision of the PDF' \
+  --pdf random-dingbat-circle.pdf \
+  --expect random-dingbat-circle.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random diamond: 1000 uniform points, stroked diamonds of four lines; within the 3-decimal precision of the PDF' \
+  --pdf random-diamond.pdf \
+  --expect random-diamond.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random filled-diamond: 1000 uniform points, filled diamonds; within the 3-decimal precision of the PDF' \
+  --pdf random-filled-diamond.pdf \
+  --expect random-filled-diamond.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random fill-outline-diamond: 1000 uniform points, diamonds filled then stroked (Excel); within the 3-decimal precision of the PDF' \
+  --pdf random-fill-outline-diamond.pdf \
+  --expect random-fill-outline-diamond.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random square: 1000 uniform points, filled squares (re); within the 3-decimal precision of the PDF' \
+  --pdf random-square.pdf \
+  --expect random-square.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random open-square: 1000 uniform points, stroked squares (re); within the 3-decimal precision of the PDF' \
+  --pdf random-open-square.pdf \
+  --expect random-open-square.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random triangle: 1000 uniform points, R equilateral triangles, point at the centroid; within the 3-decimal precision of the PDF' \
+  --pdf random-triangle.pdf \
+  --expect random-triangle.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random down-triangle: 1000 uniform points, R downward equilateral triangles; within the 3-decimal precision of the PDF' \
+  --pdf random-down-triangle.pdf \
+  --expect random-down-triangle.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random mpl-triangle: 1000 uniform points, matplotlib triangles filling a square box, point at the box centre; within the 3-decimal precision of the PDF' \
+  --pdf random-mpl-triangle.pdf \
+  --expect random-mpl-triangle.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random pentagon: 1000 uniform points, regular pentagons, point at the centre (not the box middle); within the 3-decimal precision of the PDF' \
+  --pdf random-pentagon.pdf \
+  --expect random-pentagon.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random hexagon: 1000 uniform points, regular hexagons; within the 3-decimal precision of the PDF' \
+  --pdf random-hexagon.pdf \
+  --expect random-hexagon.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random star: 1000 uniform points, five-pointed stars, point at the centre; within the 3-decimal precision of the PDF' \
+  --pdf random-star.pdf \
+  --expect random-star.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random plus: 1000 uniform points, plus signs, all vertical strokes first (R); within the 3-decimal precision of the PDF' \
+  --pdf random-plus.pdf \
+  --expect random-plus.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random cross: 1000 uniform points, x crosses of two strokes; within the 3-decimal precision of the PDF' \
+  --pdf random-cross.pdf \
+  --expect random-cross.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random asterisk: 1000 uniform points, R asterisks: four separate strokes of equal length; within the 3-decimal precision of the PDF' \
+  --pdf random-asterisk.pdf \
+  --expect random-asterisk.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
+
+t 'random asterisk-unequal: 1000 uniform points, asterisks whose diagonal rays are longer (a plus and a cross joined); within the 3-decimal precision of the PDF' \
+  --pdf random-asterisk-unequal.pdf \
+  --expect random-asterisk-unequal.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-4 \
+  --keep \
+  -- --digits 10
 
 summary

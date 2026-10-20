@@ -156,3 +156,139 @@ def _find_title(rect, texts, symbols):
 
 
 _CAPTION_RE = re.compile(r"^(\(?[a-zA-Z]\)|Fig(ure|\.)?\s*\d)")
+
+
+# -- figure captions ----------------------------------------------------------
+
+# "Fig. 5.", "Figure 3:", "FIGURE 12 -", "Fig 2", "Figure S3", "Figure 4.2"
+_FIGURE_RE = re.compile(r"^\s*(?:Fig(?:ure)?|FIG(?:URE)?)\.?\s*([A-Z]?\d+(?:\.\d+)?[a-z]?)"
+                        r"\s*(?:[.:|–—-]\s*)?(.*)$", re.S)
+
+
+def text_lines(texts):
+    """The page's horizontal text as lines: items sharing a baseline are
+    joined left to right, but not across a gap of more than one em (the
+    gap between two columns of a page).  Each line: {text, bbox, size, y},
+    where size is that of most of its text and y its baseline."""
+    items = sorted((t for t in texts if not t["rotated"] and t["text"].strip()),
+                   key=lambda t: -t["p0"][1])
+    rows, cur = [], []
+    for t in items:
+        if cur and abs(cur[0]["p0"][1] - t["p0"][1]) > 0.3 * max(cur[0]["size"], 1e-6):
+            rows.append(cur)
+            cur = []
+        cur.append(t)
+    if cur:
+        rows.append(cur)
+    lines = []
+    for row in rows:
+        row.sort(key=lambda t: t["bbox"][0])
+        line = None
+        for t in row:
+            s = max(t["size"], 1e-6)
+            if line is not None and t["bbox"][0] - line["bbox"][2] <= 1.0 * max(
+                    s, max(sz for _, sz in line["sizes"])):
+                gap = t["bbox"][0] - line["bbox"][2]
+                line["text"] += (" " if gap > 0.15 * s and not line["text"].endswith(" ")
+                                 else "") + t["text"].strip()
+                b = line["bbox"]
+                line["bbox"] = (b[0], min(b[1], t["bbox"][1]), max(b[2], t["bbox"][2]),
+                                max(b[3], t["bbox"][3]))
+                line["sizes"].append((len(t["text"].strip()), t["size"]))
+                continue
+            line = {"text": t["text"].strip(), "bbox": tuple(t["bbox"]), "y": t["p0"][1],
+                    "sizes": [(len(t["text"].strip()), t["size"])]}
+            lines.append(line)
+    for line in lines:
+        # the size of most of the line's text (a word in another font, such
+        # as a monospaced name, may be set larger)
+        weight = {}
+        for n, sz in line.pop("sizes"):
+            weight[round(sz, 1)] = weight.get(round(sz, 1), 0) + n
+        line["size"] = max(weight, key=lambda sz: (weight[sz], -sz))
+    return lines
+
+
+def _caption_head(ln, m, lines):
+    """The first line of a caption.  A label set apart from its text ("Figure
+    1." in bold, a wide space, then the caption) forms a line of its own;
+    when nothing follows the number, the text further along the same
+    baseline is joined to it."""
+    head = dict(ln, parts=[ln])
+    if m.group(2).strip():
+        return head
+    s = max(ln["size"], 1e-6)
+    for o in sorted(lines, key=lambda o: o["bbox"][0]):
+        if o is not ln and abs(o["y"] - ln["y"]) < 0.3 * s and \
+                0 <= o["bbox"][0] - head["bbox"][2] <= 4 * s:
+            head["text"] += " " + o["text"]
+            b = head["bbox"]
+            head["bbox"] = (b[0], min(b[1], o["bbox"][1]), max(b[2], o["bbox"][2]),
+                            max(b[3], o["bbox"][3]))
+            head["parts"].append(o)
+    return head
+
+
+def find_figure_caption(rect, lines, graph_rects):
+    """(figure number, caption text) of the figure a graph belongs to: the
+    nearest caption paragraph starting "Fig. N" / "Figure N" below the
+    graph and across its width.  Other graphs of the same figure may lie in
+    between (the caption goes below the whole figure), so the distance
+    allowed grows by the height of each graph across the way.  ("", "")
+    if none."""
+    x0, y0, x1, y1 = rect
+    h = y1 - y0
+    best = None
+    for k, ln in enumerate(lines):
+        m = _FIGURE_RE.match(ln["text"])
+        if not m or m.group(2)[:1] in (")", "]", ",", ";"):
+            continue                           # none, or a reference: "(see Fig. 2)."
+        ln = _caption_head(ln, m, lines)
+        bx0, by0, bx1, by1 = ln["bbox"]
+        gap = y0 - by1
+        if bx1 <= x0 or bx0 >= x1:
+            continue                           # not across the graph's width
+        between = sum(r[3] - r[1] for r in graph_rects
+                      if r != rect and r[3] <= y0 + 1 and r[1] >= by1 - 1 and
+                      r[2] > bx0 and r[0] < bx1)
+        if not (-0.5 * ln["size"] <= gap <= max(2.0 * h, 150.0) + 1.5 * between):
+            continue
+        if best is None or gap < best[0]:
+            best = (gap, ln, m)
+    if best is None:
+        return "", ""
+    _, first, m = best
+    s = max(first["size"], 1e-6)
+    parts = [_FIGURE_RE.match(first["text"]).group(2).strip()]
+    prev = first
+    spacing = None
+    # the following lines of the paragraph: same size, same column, one
+    # line spacing further down (the first step sets the spacing: single
+    # or double spaced); a line ending well short of the column's right
+    # edge ends the paragraph
+    for _ in range(40):
+        if prev["bbox"][2] < first["bbox"][2] - 3 * s and prev is not first:
+            break
+        nxt = None
+        for ln in lines:
+            if ln is prev or ln in first["parts"] or abs(ln["size"] - first["size"]) > 0.15 * s:
+                continue
+            dy = prev["y"] - ln["y"]
+            ok = 0.8 * spacing < dy < 1.2 * spacing if spacing else 0.5 * s < dy < 2.6 * s
+            if ok and ln["bbox"][0] < first["bbox"][2] and \
+                    ln["bbox"][2] > first["bbox"][0] and \
+                    ln["bbox"][0] >= first["bbox"][0] - 2 * s:
+                if nxt is None or dy < nxt[0]:
+                    nxt = (dy, ln)
+        if nxt is None or _FIGURE_RE.match(nxt[1]["text"]):
+            break
+        prev = nxt[1]
+        spacing = spacing or nxt[0]
+        parts.append(prev["text"].strip())
+    caption = ""
+    for p in parts:
+        if caption.endswith("-") and p[:1].islower():
+            caption = caption[:-1] + p         # a word hyphenated at the line end
+        else:
+            caption += (" " if caption else "") + p
+    return m.group(1), caption

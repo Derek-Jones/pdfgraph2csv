@@ -22,6 +22,7 @@ from .outlined_text import outlined_text
 from .scales import find_break_marks, map_value
 from .symbols import LINE_SHAPES, drop_highlight_boxes, find_symbols
 from .text import attach_vector_minus, merge_texts
+from .titles import find_figure_caption, text_lines
 
 
 class Options:
@@ -81,7 +82,45 @@ def extract_page(pdf, pno, page, opts, info):
     if opts.debug and legend:
         print("[debug] legend keys: %s" % sorted(set(legend.values())), file=sys.stderr)
     namer = SeriesNamer(symbols, legend, graphs, line_names)
-    return make_rows(pno, graphs, symbols, legend, namer, opts)
+    rows = make_rows(pno, graphs, symbols, legend, namer, opts)
+    info.setdefault("meta", []).extend(graph_meta(pno, graphs, rows))
+    return rows
+
+
+def graph_meta(pno, graphs, rows):
+    """One record per graph for the --meta file: page and graph number,
+    title, figure number and caption, the number of data points reported,
+    and the values at the lowest and highest labelled tick of each axis."""
+    counts = {}
+    for r in rows:
+        counts[r["graph"]] = counts.get(r["graph"], 0) + 1
+    out = []
+    for g in graphs:
+        m = {"page": pno, "graph": g["no"], "title": g["title"],
+             "figure": g.get("figure", ""), "caption": g.get("caption", ""),
+             "points": counts.get(g["no"], 0)}
+        for k in ("x", "y"):
+            m[k + "_tick_min"], m[k + "_tick_max"] = tick_range(g[k])
+        out.append(m)
+    return out
+
+
+def tick_range(axis):
+    """The values of an axis's lowest and highest labelled ticks (for a
+    category axis the first and last category along it), with the axis
+    multiplier (e.g. x10^-9) applied.  ("", "") if unknown."""
+    m = axis.get("map")
+    if not m:
+        return "", ""
+    if m["kind"] == "nominal":
+        pos = sorted(m["ticks"], key=lambda tv: tv[0])
+        return (pos[0][1], pos[-1][1]) if pos else ("", "")
+    scale = 10.0 ** axis.get("multiplier", 0)
+    vals = [v * scale for _, v in axis.get("ticks", ())
+            if isinstance(v, (int, float)) and not isinstance(v, bool)]
+    if not vals:
+        return "", ""
+    return min(vals), max(vals)
 
 
 def read_page_text(it):
@@ -134,10 +173,15 @@ def find_page_symbols(pdf, pno, it, text_parts):
 
 
 def describe_graphs(graphs, texts, symbols, first_no, debug):
-    """Number, title and orientation of each graph."""
+    """Number, title, figure number and caption, and orientation of each
+    graph."""
+    lines = None
     for no, g in enumerate(graphs, first_no):
         g["no"] = no
         g["rot"], g["title"] = graph_rotation(g, texts, symbols)
+        if lines is None:
+            lines = text_lines(texts)
+        g["figure"], g["caption"] = find_figure_caption(g["rect"], lines, PAGE.graph_rects)
         if g["rot"]:
             # turned graph: the axis running across the page carries the
             # data y values, the one running up/down the page the x values
@@ -145,6 +189,9 @@ def describe_graphs(graphs, texts, symbols, first_no, debug):
         if debug:
             print("[debug] graph %d title: %r rotation: %d" % (no, g["title"], g["rot"]),
                   file=sys.stderr)
+            if g["figure"]:
+                print("[debug] graph %d figure %s: %r" % (no, g["figure"], g["caption"]),
+                      file=sys.stderr)
 
 
 def add_bars_and_lines(graphs, symbols, paths, texts):
