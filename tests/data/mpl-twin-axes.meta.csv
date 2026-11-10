@@ -1,0 +1,4 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max,axis2,axis2_tick_min,axis2_tick_max
+1,1,,,,Matplotlib v3.11.2,matplotlib,18,2000,2015,10,50,y right,0.1,0.5
+2,2,,,,Matplotlib v3.11.2,matplotlib,10,1,4,100,400,y right,5,8
+3,3,,,,Matplotlib v3.11.2,matplotlib,8,0,30,1,4,y right,-40,40

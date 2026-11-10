@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Write tests/data/random-<symbol>.pdf and its true values
-random-<symbol>.reference.csv (standard library only).
+"""Write tests/data/random-<symbol>.pdf, random10-<symbol>.pdf and their true
+values random-<symbol>.reference.csv (standard library only).
 
 Each PDF is one scatter plot of 1000 points whose x and y values are drawn
 from a uniform distribution on [0, 100] (a fixed seed per symbol, so the
 files are reproducible).  Axes run from 0 to 100 with labelled ticks every
-20; one data unit is 4 pt.  Coordinates are written with 3 decimals, as
-plotting programs do, so a point is known to about 0.0002 data units.
+20; one data unit is 4 pt.  In random-<symbol>.pdf coordinates are written
+with 3 decimals, as plotting programs do, so a point is known to 0.000125
+data units; random10-<symbol>.pdf holds the same points with coordinates
+written with 10 significant digits (known to about 1.25e-8 data units).
 
 Every marker is drawn the way a plotting program draws it, centred on the
 data point by that program's convention:
@@ -58,8 +60,11 @@ def py(v):
     return Y0 + SPAN * v / 100.0
 
 
+NUMBER = "%.3f"                              # how coordinates are written
+
+
 def f(v):
-    return "%.3f" % v
+    return NUMBER % v
 
 
 def circle_path(x, y, r):
@@ -253,17 +258,24 @@ def write_pdf(path, sym, pts):
 
 
 def write_reference(path, sym, pts):
-    """The true values, in drawing order (x, y with 10 significant digits),
+    """The true values, in drawing order (x, y exactly, as Python writes them),
     with the symbol name the program must report."""
     with open(path, "w") as fh:
         fh.write("symbol,x_coord,y_coord\n")
         for v, w in pts:
-            fh.write("%s,%.10g,%.10g\n" % (REPORTED[sym], v, w))
+            fh.write("%s,%r,%r\n" % (REPORTED[sym], v, w))
 
 
 if __name__ == "__main__":
+    n = 0
     for sym in SYMBOLS:
         pts = points(sym)
+        # coordinates with 3 decimals (as plotting programs write them) ...
+        NUMBER = "%.3f"
         write_pdf(os.path.join(DATA, "random-%s.pdf" % sym), sym, pts)
+        # ... and with 10 significant digits (the same points)
+        NUMBER = "%.10g"
+        write_pdf(os.path.join(DATA, "random10-%s.pdf" % sym), sym, pts)
         write_reference(os.path.join(DATA, "random-%s.reference.csv" % sym), sym, pts)
-    print("written %d files to %s" % (2 * len(SYMBOLS), DATA))
+        n += 3
+    print("written %d files to %s" % (n, DATA))

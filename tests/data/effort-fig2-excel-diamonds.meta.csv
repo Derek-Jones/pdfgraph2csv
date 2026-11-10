@@ -1,0 +1,4 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,(a). log(Effort) against log(Size),2,Scatter plots of effort against factors,,Excel,1012,-1,9,-1,8
+1,2,(b). log(Effort) against log(TeamSize),2,Scatter plots of effort against factors,,Excel,1005,0,5,-1,8
+1,3,(c). log(Effort) against log(Duration),2,Scatter plots of effort against factors,,Excel,1006,0,8,-1,8

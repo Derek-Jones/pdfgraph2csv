@@ -438,6 +438,70 @@ t 'matplotlib: multi-page, open circles, diamonds, x, vector minus signs' \
   --pdf mpl-multipage-markers.pdf \
   --expect mpl-multipage-markers.csv
 
+t 'matplotlib error bars (--errbars): asymmetric x/y errors, caps, stacked bars, log y; known values' \
+  --pdf mpl-errorbars.pdf \
+  --expect mpl-errorbars.truth.csv \
+  --tol 0.000001 \
+  --cols page,graph,x_coord,y_coord,x_low,x_high,y_low,y_high \
+  -- --errbars
+
+t 'matplotlib error bars: full output with --errbars' \
+  --pdf mpl-errorbars.pdf \
+  --expect mpl-errorbars.csv \
+  -- --errbars
+
+t 'matplotlib error bars: without --errbars no low/high columns; "3x10^1" log labels' \
+  --pdf mpl-errorbars.pdf \
+  --expect mpl-errorbars.noerrbars.csv
+
+t 'shared x axis: two stacked GraphPad Prism graphs, x labels under the lower one only; circles of two Bezier arcs' \
+  --pdf number-sense-across-the-lifespan-004.pdf \
+  --expect number-sense-across-the-lifespan-004.csv
+
+t 'shared x axis with --errbars: interdecile bars of both stacked graphs' \
+  --pdf number-sense-across-the-lifespan-004.pdf \
+  --expect number-sense-across-the-lifespan-004.errbars.csv \
+  -- --errbars
+
+t 'matplotlib shared axes: stacked (sharex), side by side (sharey); a panel with other unlabelled ticks takes no scale' \
+  --pdf mpl-shared-axes.pdf \
+  --expect mpl-shared-axes.csv
+
+t 'two y scales: SRAM on the left, CGP and M1 pitch on the right (named by the axis titles); InDesign ticks as tiny outlined boxes, end labels at the frame corners, small-caps caption' \
+  --pdf 2017_End-of-Moores-Law-004.pdf \
+  --expect 2017_End-of-Moores-Law-004.csv \
+  --meta 2017_End-of-Moores-Law-004.meta.csv
+
+t 'matplotlib twinx: scale chosen by axis title, by legend "(right axis)", by tick label colour' \
+  --pdf mpl-twin-axes.pdf \
+  --expect mpl-twin-axes.csv \
+  --meta mpl-twin-axes.meta.csv
+
+t 'no tick marks or axis lines: white grid lines on a grey background (seaborn darkgrid) give the ticks; thin diamonds; caption not a title' \
+  --pdf 2205.01842-004.pdf \
+  --expect 2205.01842-004.csv \
+  --meta 2205.01842-004.meta.csv
+
+t 'background grids: seaborn darkgrid with thin diamonds; grey blocks tiled with white gaps and nothing else; known values' \
+  --pdf mpl-background-grid.pdf \
+  --expect mpl-background-grid.csv \
+  --tol 0.000001
+
+t 'ggplot2 theme_minimal: only major and minor grid lines (no ticks, no axis lines); log axes; kB/MB and 1.5x labels; bars from 1x, some below; upright category labels; running header not a title' \
+  --pdf 3759548.3763370-007.pdf \
+  --expect 3759548.3763370-007.csv \
+  --meta 3759548.3763370-007.meta.csv
+
+t 'R curves drawn as 441 000 one-segment strokes of 0.01 pt beside long axes (the stroke grid once scanned 10^8 cells per long stroke: hours); 9 999 tiny circles per graph' \
+  --pdf 61676858-74.pdf \
+  --expect 61676858-74.csv \
+  --meta 61676858-74.meta.csv
+
+t 'Excel error bars (--errbars): halves from the marker centre, slightly slanted, dense stacks, log-log' \
+  --pdf Rescaling_reliability_bounds_new_opprof-002.pdf \
+  --expect Rescaling_reliability_bounds_new_opprof-002.errbars.csv \
+  -- --errbars
+
 t 'matplotlib: multi-page with page selection' \
   --pdf mpl-multipage-markers.pdf \
   --expect mpl-multipage-markers.page2-internal.csv \
@@ -659,7 +723,7 @@ t '2001.10488v4-121: two 3-D cube plots (not processed) and a degenerate box 3x1
 t 'S1383762124002030 page 9: box plots with 472 000 outlier circles in a 92 MB Form XObject (2.3 million operators) - must finish in well under a minute without exhausting memory; only the point counts are checked' \
   --pdf S1383762124002030.pdf \
   --stderr 'MB of drawing instructions' \
-  --counts '1 open-circle=240614|2 open-circle=218658|3 open-circle=13121|3 filled-circle=4|1 filled-polygon=2|1 filled-circle=2|2 filled-circle=1|3 filled-square=1|3 open-square=1|3 filled-polygon=1' \
+  --counts '1 open-circle=240613|2 open-circle=218658|3 open-circle=13121|3 filled-square=1|3 open-square=1' \
   -- --pages 9
 
 t 'meta file: figure numbers and captions set apart from their label ("Figure 1."), category and numeric axes, several pages' \
@@ -693,161 +757,300 @@ t 'S1383762124002030 pages 6-7, with meta file: two-column journal pages, captio
   --meta S1383762124002030-p6-7.meta.csv \
   -- --pages 6,7
 
+t 'meta file: tool from the document information of a PDF that is itself a plot (as R writes it)' \
+  --pdf synthetic-line-plus.pdf \
+  --counts '1 filled-circle=7|1 plus=7' \
+  --meta synthetic-line-plus.meta.csv
+
+t 'meta file: no tool when the embedded graphic names only a printer driver and Distiller' \
+  --pdf broken-axes.pdf \
+  --expect broken-axes.csv \
+  --meta broken-axes.meta.csv
+
+t 'meta file: tool guessed from the drawing style - matplotlib 2.2.2 histograms (graphics states A1.., tab10 blue)' \
+  --pdf histogram.pdf \
+  --expect histogram.csv \
+  --meta histogram.meta.csv
+
+t 'meta file: tool guessed from the drawing style - Excel 2003 charts (navy diamonds), no tool recorded' \
+  --pdf effort-fig2-excel-diamonds.pdf \
+  --expect effort-fig2-excel-diamonds.csv \
+  --meta effort-fig2-excel-diamonds.meta.csv
+
+t '2510.19281v2-013: SPSS scatter plot converted by Inkscape - every shape followed by an empty subpath, all text outlined (labels with Bezier 0s, letters o and full stops that look like markers), legend key beside a line sample converted to a thin filled rectangle' \
+  --pdf 2510.19281v2-013.pdf \
+  --expect 2510.19281v2-013.csv \
+  --meta 2510.19281v2-013.meta.csv
+
 t 'meta file: not created when no graph is found' \
   --pdf no-graph.pdf \
   --meta - \
   --stderr 'No vector graphics found'
 
-t 'random circle: 1000 uniform points, filled circles of four Bezier curves; within the 3-decimal precision of the PDF' \
+t 'random circle: 1000 uniform points, filled circles of four Bezier curves; coordinates with 3 decimals, every point within their precision' \
   --pdf random-circle.pdf \
   --expect random-circle.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random open-circle: 1000 uniform points, stroked circles of four Bezier curves; within the 3-decimal precision of the PDF' \
+t 'random open-circle: 1000 uniform points, stroked circles of four Bezier curves; coordinates with 3 decimals, every point within their precision' \
   --pdf random-open-circle.pdf \
   --expect random-open-circle.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random circle8: 1000 uniform points, circles of eight Bezier curves in a Form XObject (matplotlib); within the 3-decimal precision of the PDF' \
+t 'random circle8: 1000 uniform points, circles of eight Bezier curves in a Form XObject (matplotlib); coordinates with 3 decimals, every point within their precision' \
   --pdf random-circle8.pdf \
   --expect random-circle8.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random dingbat-circle: 1000 uniform points, ZapfDingbats a71 circles (R pdf()); within the 3-decimal precision of the PDF' \
+t 'random dingbat-circle: 1000 uniform points, ZapfDingbats a71 circles (R pdf()); coordinates with 3 decimals, every point within their precision' \
   --pdf random-dingbat-circle.pdf \
   --expect random-dingbat-circle.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random diamond: 1000 uniform points, stroked diamonds of four lines; within the 3-decimal precision of the PDF' \
+t 'random diamond: 1000 uniform points, stroked diamonds of four lines; coordinates with 3 decimals, every point within their precision' \
   --pdf random-diamond.pdf \
   --expect random-diamond.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random filled-diamond: 1000 uniform points, filled diamonds; within the 3-decimal precision of the PDF' \
+t 'random filled-diamond: 1000 uniform points, filled diamonds; coordinates with 3 decimals, every point within their precision' \
   --pdf random-filled-diamond.pdf \
   --expect random-filled-diamond.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random fill-outline-diamond: 1000 uniform points, diamonds filled then stroked (Excel); within the 3-decimal precision of the PDF' \
+t 'random fill-outline-diamond: 1000 uniform points, diamonds filled then stroked (Excel); coordinates with 3 decimals, every point within their precision' \
   --pdf random-fill-outline-diamond.pdf \
   --expect random-fill-outline-diamond.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random square: 1000 uniform points, filled squares (re); within the 3-decimal precision of the PDF' \
+t 'random square: 1000 uniform points, filled squares (re); coordinates with 3 decimals, every point within their precision' \
   --pdf random-square.pdf \
   --expect random-square.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random open-square: 1000 uniform points, stroked squares (re); within the 3-decimal precision of the PDF' \
+t 'random open-square: 1000 uniform points, stroked squares (re); coordinates with 3 decimals, every point within their precision' \
   --pdf random-open-square.pdf \
   --expect random-open-square.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random triangle: 1000 uniform points, R equilateral triangles, point at the centroid; within the 3-decimal precision of the PDF' \
+t 'random triangle: 1000 uniform points, R equilateral triangles, point at the centroid; coordinates with 3 decimals, every point within their precision' \
   --pdf random-triangle.pdf \
   --expect random-triangle.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random down-triangle: 1000 uniform points, R downward equilateral triangles; within the 3-decimal precision of the PDF' \
+t 'random down-triangle: 1000 uniform points, R downward equilateral triangles; coordinates with 3 decimals, every point within their precision' \
   --pdf random-down-triangle.pdf \
   --expect random-down-triangle.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random mpl-triangle: 1000 uniform points, matplotlib triangles filling a square box, point at the box centre; within the 3-decimal precision of the PDF' \
+t 'random mpl-triangle: 1000 uniform points, matplotlib triangles filling a square box, point at the box centre; coordinates with 3 decimals, every point within their precision' \
   --pdf random-mpl-triangle.pdf \
   --expect random-mpl-triangle.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random pentagon: 1000 uniform points, regular pentagons, point at the centre (not the box middle); within the 3-decimal precision of the PDF' \
+t 'random pentagon: 1000 uniform points, regular pentagons, point at the centre (not the box middle); coordinates with 3 decimals, every point within their precision' \
   --pdf random-pentagon.pdf \
   --expect random-pentagon.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random hexagon: 1000 uniform points, regular hexagons; within the 3-decimal precision of the PDF' \
+t 'random hexagon: 1000 uniform points, regular hexagons; coordinates with 3 decimals, every point within their precision' \
   --pdf random-hexagon.pdf \
   --expect random-hexagon.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random star: 1000 uniform points, five-pointed stars, point at the centre; within the 3-decimal precision of the PDF' \
+t 'random star: 1000 uniform points, five-pointed stars, point at the centre; coordinates with 3 decimals, every point within their precision' \
   --pdf random-star.pdf \
   --expect random-star.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random plus: 1000 uniform points, plus signs, all vertical strokes first (R); within the 3-decimal precision of the PDF' \
+t 'random plus: 1000 uniform points, plus signs, all vertical strokes first (R); coordinates with 3 decimals, every point within their precision' \
   --pdf random-plus.pdf \
   --expect random-plus.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random cross: 1000 uniform points, x crosses of two strokes; within the 3-decimal precision of the PDF' \
+t 'random cross: 1000 uniform points, x crosses of two strokes; coordinates with 3 decimals, every point within their precision' \
   --pdf random-cross.pdf \
   --expect random-cross.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random asterisk: 1000 uniform points, R asterisks: four separate strokes of equal length; within the 3-decimal precision of the PDF' \
+t 'random asterisk: 1000 uniform points, R asterisks: four separate strokes of equal length; coordinates with 3 decimals, every point within their precision' \
   --pdf random-asterisk.pdf \
   --expect random-asterisk.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
 
-t 'random asterisk-unequal: 1000 uniform points, asterisks whose diagonal rays are longer (a plus and a cross joined); within the 3-decimal precision of the PDF' \
+t 'random asterisk-unequal: 1000 uniform points, asterisks whose diagonal rays are longer (a plus and a cross joined); coordinates with 3 decimals, every point within their precision' \
   --pdf random-asterisk-unequal.pdf \
   --expect random-asterisk-unequal.reference.csv \
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-4 \
-  --keep \
-  -- --digits 10
+  --keep
+
+t 'random10 circle: the same points with 10-digit coordinates (filled circles of four Bezier curves); every point within their precision (1.25e-8)' \
+  --pdf random10-circle.pdf \
+  --expect random-circle.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 open-circle: the same points with 10-digit coordinates (stroked circles of four Bezier curves); every point within their precision (1.25e-8)' \
+  --pdf random10-open-circle.pdf \
+  --expect random-open-circle.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 circle8: the same points with 10-digit coordinates (circles of eight Bezier curves in a Form XObject (matplotlib)); every point within their precision (1.25e-8)' \
+  --pdf random10-circle8.pdf \
+  --expect random-circle8.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 dingbat-circle: the same points with 10-digit coordinates (ZapfDingbats a71 circles (R pdf())); every point within their precision (1.25e-8)' \
+  --pdf random10-dingbat-circle.pdf \
+  --expect random-dingbat-circle.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 diamond: the same points with 10-digit coordinates (stroked diamonds of four lines); every point within their precision (1.25e-8)' \
+  --pdf random10-diamond.pdf \
+  --expect random-diamond.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 filled-diamond: the same points with 10-digit coordinates (filled diamonds); every point within their precision (1.25e-8)' \
+  --pdf random10-filled-diamond.pdf \
+  --expect random-filled-diamond.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 fill-outline-diamond: the same points with 10-digit coordinates (diamonds filled then stroked (Excel)); every point within their precision (1.25e-8)' \
+  --pdf random10-fill-outline-diamond.pdf \
+  --expect random-fill-outline-diamond.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 square: the same points with 10-digit coordinates (filled squares (re)); every point within their precision (1.25e-8)' \
+  --pdf random10-square.pdf \
+  --expect random-square.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 open-square: the same points with 10-digit coordinates (stroked squares (re)); every point within their precision (1.25e-8)' \
+  --pdf random10-open-square.pdf \
+  --expect random-open-square.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 triangle: the same points with 10-digit coordinates (R equilateral triangles, point at the centroid); every point within their precision (1.25e-8)' \
+  --pdf random10-triangle.pdf \
+  --expect random-triangle.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 down-triangle: the same points with 10-digit coordinates (R downward equilateral triangles); every point within their precision (1.25e-8)' \
+  --pdf random10-down-triangle.pdf \
+  --expect random-down-triangle.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 mpl-triangle: the same points with 10-digit coordinates (matplotlib triangles filling a square box, point at the box centre); every point within their precision (1.25e-8)' \
+  --pdf random10-mpl-triangle.pdf \
+  --expect random-mpl-triangle.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 pentagon: the same points with 10-digit coordinates (regular pentagons, point at the centre (not the box middle)); every point within their precision (1.25e-8)' \
+  --pdf random10-pentagon.pdf \
+  --expect random-pentagon.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 hexagon: the same points with 10-digit coordinates (regular hexagons); every point within their precision (1.25e-8)' \
+  --pdf random10-hexagon.pdf \
+  --expect random-hexagon.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 star: the same points with 10-digit coordinates (five-pointed stars, point at the centre); every point within their precision (1.25e-8)' \
+  --pdf random10-star.pdf \
+  --expect random-star.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 plus: the same points with 10-digit coordinates (plus signs, all vertical strokes first (R)); every point within their precision (1.25e-8)' \
+  --pdf random10-plus.pdf \
+  --expect random-plus.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 cross: the same points with 10-digit coordinates (x crosses of two strokes); every point within their precision (1.25e-8)' \
+  --pdf random10-cross.pdf \
+  --expect random-cross.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 asterisk: the same points with 10-digit coordinates (R asterisks: four separate strokes of equal length); every point within their precision (1.25e-8)' \
+  --pdf random10-asterisk.pdf \
+  --expect random-asterisk.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
+
+t 'random10 asterisk-unequal: the same points with 10-digit coordinates (asterisks whose diagonal rays are longer (a plus and a cross joined)); every point within their precision (1.25e-8)' \
+  --pdf random10-asterisk-unequal.pdf \
+  --expect random-asterisk-unequal.reference.csv \
+  --cols symbol,x_coord,y_coord \
+  --tol 1.3e-8 \
+  --keep
 
 summary

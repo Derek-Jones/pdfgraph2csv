@@ -52,6 +52,28 @@ class Floats(list):
     __slots__ = ()
 
 
+_DECIMALS = re.compile(rb"[0-9]\.([0-9]+)|[^0-9]\.([0-9]+)")
+
+
+def coordinate_decimals(data, sample=2000000):
+    """How many decimals the stream's numbers are written with: the 95th
+    percentile of the decimals of the numbers in (the start of) the stream,
+    so that one odd number does not count.  0 for whole numbers only."""
+    counts = {}
+    for m in _DECIMALS.finditer(data, 0, min(len(data), sample)):
+        n = len(m.group(1) or m.group(2))
+        counts[n] = counts.get(n, 0) + 1
+    total = sum(counts.values())
+    if not total:
+        return 0
+    seen = 0
+    for n in sorted(counts):
+        seen += counts[n]
+        if seen >= 0.95 * total:
+            return min(n, 12)
+    return min(max(counts), 12)
+
+
 def has_inline_image(data):
     return _INLINE_IMAGE.search(data) is not None
 

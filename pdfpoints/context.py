@@ -3,7 +3,6 @@ analysed (graph boxes, typical label size, ...) that several steps need.
 `PAGE` is reset by the pipeline at the start of every page.
 """
 
-
 class Settings:
     """Options that change how markers are read (set from the command line)."""
     glyph_centre = "marker"       # "marker" or "bbox", see DINGBAT_ANCHOR
@@ -25,6 +24,8 @@ class PageState:
         self.label_size = 0.0     # typical tick-label font size on the page
         self.minus_paths = set()  # drawing steps of dashes that are minus signs of labels
         self.number = 0           # page number (for progress messages)
+        self.bare_axes = []       # axis lines with ticks but no labels: {orient, pos, lo, hi, tick_pos}
+        self.dark_lines = ([], [])  # merged dark horizontal, vertical lines (lo, hi, pos)
 
 
 SETTINGS = Settings()

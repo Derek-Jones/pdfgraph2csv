@@ -16,11 +16,11 @@ a file describing each graph found can also be written:
 
     python3 pdfgraph2csv.py interesting.pdf -o interesting.csv -meta interesting-meta.csv
 
-with the columns page, graph, title, figure (number), caption, points (the number of data points output for the graph), x_tick_min, x_tick_max, y_tick_min, y_tick_max (the values of the lowest and highest labelled ticks of each axis; for a category axis, the first and last category).  Title, figure and caption are empty when none is found; a caption is the paragraph starting "Fig. N" or "Figure N" below the graph, shared by all the graphs of that figure.  The file is only created when graphs are found.
+with the columns page, graph, title, figure (number), caption, tool (the program that drew the graph, when the PDF records it: e.g. `R 4.0.2`, `Matplotlib v3.7.2`, `MATLAB ... (R2017b)`, `Adobe Illustrator CS5`; taken from the information an embedded graphic keeps about its own file, or from the document information when the PDF is itself a plot; programs that only convert to PDF, such as Ghostscript, Acrobat Distiller or a printer driver, are not reported), tool_guess (a best guess from the drawing style, independent of the recorded tool: `R`, `R (ggplot2)`, `R (lattice)`, `matplotlib`, `MATLAB`, `Excel`, `gnuplot`, `Mathematica` or `Stata`, from default colours, fonts, line caps and joins, the decimals of the coordinates and the names given to marker drawings and graphics states; empty when no program stands out; see `pdfpoints/styles.py`), points (the number of data points output for the graph), x_tick_min, x_tick_max, y_tick_min, y_tick_max (the values of the lowest and highest labelled ticks of each axis; for a category axis, the first and last category); and, when some graph has a scale on both sides, axis2, axis2_tick_min, axis2_tick_max (which second scale, e.g. `y right`, and its lowest and highest labelled ticks).  Title, figure and caption are empty when none is found; a caption is the paragraph starting "Fig. N" or "Figure N" below the graph, shared by all the graphs of that figure.  The file is only created when graphs are found.
 
 By default the message ``warning: No vector graphics found`` is output when no data points are detected.
 
-`python3 pdfgraph2csv.py --help` lists the options.  Numbers are written with 6 significant digits; `--digits N` writes more (the precision of the coordinates in the PDF itself limits what more digits can add).
+`python3 pdfgraph2csv.py --help` lists the options.  x/y values are written with as many significant digits as the precision of the PDF's own coordinates justifies, plus one (at least 6): a plot whose coordinates have 3 decimals gives about 6 or 7 digits, one written with 10 significant digits about 10; `--digits N` fixes the number of digits instead.
 
 The program is written in python and needs python 3.9+
 
@@ -45,10 +45,11 @@ If no x/y coordinates are output, it's possible that the technique used to suppo
       fonts.py interpreter.py                          drawing a page
       occlusion.py text.py outlined_text.py            the page's text
       axes.py labels.py scales.py                      ticks, labels, value mappings
-      graphs.py titles.py                              plot boxes, panels, insets, titles
-      symbols.py fragments.py charts.py                markers, bars, line vertices
+      graphs.py titles.py twin.py                      plot boxes, panels, insets, titles, two scales
+      symbols.py fragments.py charts.py errbars.py     markers, bars, line vertices, error bars
       legend.py                                        legend keys and series names
-      pipeline.py cli.py                               putting it together
+      pipeline.py rows.py meta.py tools.py styles.py   putting it together: points, -meta records, tools
+      cli.py                                           the command line
       geometry.py grouping.py colours.py context.py    shared helpers and page state
     docs/DESIGN.md       the pipeline, module dependencies and record formats
     docs/PACKAGES.md     packages that could replace hand-written parts
@@ -67,7 +68,8 @@ or, from this directory, `python3 -m pdfpoints plot.pdf`.
     tests/run_tests.sh -v                 # one line per case
     tests/run_tests.sh -k rofpc           # cases whose name contains "rofpc"
 
-Output columns: page, graph, symbol, series, legend_key, x_coord, y_coord, color, color_hex.
+Output columns: page, graph, symbol, series, legend_key, x_coord, y_coord, color, color_hex
+(plus axis, `left` or `right`, when a graph has a scale on both sides).
 When no data points are found nothing is written (not even the header line),
 and an output file named with `-o` is not created.
 
@@ -104,17 +106,29 @@ identical text columns, numeric columns within the case's tolerance.
 | frame-corner-axes.pdf | '+' markers; body text beside a graph must not become a legend label; captions below as titles |
 | plus-symbols-log-axes.pdf | six panels, ~7700 '+' markers drawn as separate strokes; legend of swatches numbered 1..8; markers beyond the axis ranges (clipped out of view) are reported, in the graph they were clipped to |
 | 1209.1411v2-013.pdf | four log-log graphs; labels drawn as outlines whose exponent minus signs are separate dashes (which must not pass for tick marks); points beyond the axis values reported; legend inside a graph with unreadable names |
+| 2510.19281v2-013.pdf | SPSS scatter plot converted by Inkscape: a bare move-to after every shape, all text outlined (labels with Bézier-drawn 0s, letters 'o' and full stops that look like markers), legend key beside a line sample converted to a thin filled rectangle; 496 points |
 | 2001.10488v4-56.pdf | two scatter plots of 100 000 points each: a 69 MB content stream with 2.9 million operators (tokenized by qpdf); only the point counts are checked |
 | overflow-exponent.pdf | body text with '2^2000 ≈ 10^602' (a superscript joined to its base): a number too big for a float is no number; no graph, no crash |
+| mpl-errorbars.pdf | made by `tests/make_synthetic_pdfs.py`: matplotlib error bars (`--errbars`) with asymmetric x and y errors, zero errors and two points at one x, and a log y panel labelled 3×10^1 ...; compared with the known values |
+| Rescaling_reliability_bounds_new_opprof-002.pdf | Excel error bars (`--errbars`) drawn as two slightly slanted halves from each marker's centre, with caps; dense stacks of points on log-log axes |
+| number-sense-across-the-lifespan-004.pdf | GraphPad Prism: two stacked graphs share one x axis, labelled under the lower graph only; circles drawn as two Bézier arcs; interdecile bars (`--errbars`) |
+| mpl-shared-axes.pdf | made by `tests/make_synthetic_pdfs.py`: matplotlib panels sharing the x axis (stacked) or the y axis (side by side); a stacked panel with other, unlabelled ticks must not take the scale of the one below |
+| 2017_End-of-Moores-Law-004.pdf | a left and a right y scale: SRAM read on the left, CGP and M1 pitch on the right (from the axis titles), reported in an `axis` column; ticks drawn as tiny outlined boxes, end labels at the frame corners |
+| mpl-twin-axes.pdf | made by `tests/make_synthetic_pdfs.py`: matplotlib twinx graphs whose series' scales are told by the axis titles, by legend labels "(right axis)", or by tick label colours |
+| 2205.01842-004.pdf | seaborn darkgrid: no tick marks or axis lines, the white grid lines on the grey background give the tick positions; thin diamond markers |
+| mpl-background-grid.pdf | made by `tests/make_synthetic_pdfs.py`: a darkgrid plot, and a plot area tiled with grey blocks whose white gaps are the only tick positions; compared with the known values |
+| 3759548.3763370-007.pdf | ggplot2 with grid lines only (no ticks or axis lines): two log-log scatter plots, one with sizes 10kB ... 1MB, and a bar chart of speedups (1x ... 2.5x) with bars below 1x |
+| 61676858-74.pdf | R curves drawn as 441 000 one-segment strokes, 9 999 tiny circles per graph: once ran for hours, now about 20 s |
 | log-clipped-markers.pdf | circles flattened into clipped fragments; rebuilt from their arcs, with stacking counts from the alpha layers |
-| random-*.pdf | made by `tests/make_random_symbols_pdf.py`: 1000 points drawn uniformly from [0, 100]², one file per marker kind (circles of 4 or 8 Béziers, Dingbats circles, diamonds of four lines, squares, R's equilateral and matplotlib's triangles, pentagons, hexagons, stars, plus, cross, asterisks); the true values are in `random-*.reference.csv`, and every point must come out within the 3-decimal precision of the PDF's coordinates (run with `--digits 10`) |
+| random-*.pdf, random10-*.pdf | made by `tests/make_random_symbols_pdf.py`: 1000 points drawn uniformly from [0, 100]², one file per marker kind (circles of 4 or 8 Béziers, Dingbats circles, diamonds of four lines, squares, R's equilateral and matplotlib's triangles, pentagons, hexagons, stars, plus, cross, asterisks); the true values are in `random-*.reference.csv`, and every point must come out within the precision of the PDF's coordinates: written with 3 decimals in random-*.pdf (0.000125 data units), with 10 significant digits in random10-*.pdf (1.25e-8) |
 | encrypted*.pdf, enc-*.pdf, bad-stream.pdf | RC4-40/128, AES-128/256 (R2-R6), user password (`--password secret`), all decrypted by pikepdf; corrupt ASCII85 and Flate streams skipped with qpdf's reason as the warning |
 | damaged.pdf (beyond qpdf's repair), not-a-pdf.pdf, no-graph.pdf, many-shapes.pdf, zero-width-glyph.pdf, doubtful-axes.pdf | must fail cleanly or report that no graph was found (cases without `--expect` check only the exit status and the message) |
 
 `schumpeter-001.reference.csv` is the reference supplied with the PDF
 (compared with tolerance 0.001 and never overwritten).  The other expected
 CSVs were produced by the program; for the matplotlib files they equal the
-plotted values exactly.
+plotted values to within 5e-7 (relative), the error of the axis mapping fitted
+to the tick marks, which matplotlib writes with 5 decimals.
 
 ### Adding a case
 
@@ -136,7 +150,7 @@ The synthetic test PDFs are made by Python programs in `tests/`;
 
     make_line_plus_pdf.py    synthetic-line-plus.pdf, synthetic-rotated-*.pdf
     make_date_axis_pdf.py    synthetic-date-axis.pdf and its reference CSV
-    make_random_symbols_pdf.py  random-*.pdf: 1000 random points per marker kind, with their true values
+    make_random_symbols_pdf.py  random-*.pdf, random10-*.pdf: 1000 random points per marker kind, with their true values
     make_synthetic_pdfs.py   mpl-*.pdf (needs matplotlib)
 
 `tests/make_digit_templates.py` prints the digit templates embedded in

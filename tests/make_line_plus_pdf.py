@@ -105,6 +105,9 @@ def write_pdf(path, rotate=0):
         b"/Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
         b"<< /Length %d >>\nstream\n" % len(body) + body + b"\nendstream",
         b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        # document information as R's pdf() device writes it (the plus signs
+        # are drawn the way R draws them): the meta file's tool is "R 4.3.1"
+        b"<< /Creator (R) /Producer (R 4.3.1) /Title (R Graphics Output) >>",
     ]
     out = bytearray(b"%PDF-1.4\n")
     offsets = []
@@ -115,7 +118,8 @@ def write_pdf(path, rotate=0):
     out += b"xref\n0 %d\n0000000000 65535 f \n" % (len(objs) + 1)
     for off in offsets:
         out += b"%010d 00000 n \n" % off
-    out += b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (len(objs) + 1, xref)
+    out += b"trailer\n<< /Size %d /Root 1 0 R /Info %d 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (
+        len(objs) + 1, len(objs), xref)
     with open(path, "wb") as f:
         f.write(out)
 

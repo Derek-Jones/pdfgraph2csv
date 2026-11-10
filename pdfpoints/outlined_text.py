@@ -8,13 +8,14 @@ that cannot be read are returned as "blobs" (usable as category labels or
 legend labels whose text is unknown).
 """
 
+import bisect
 import collections
 import math
 import re
 
 from .context import PAGE
 from .geometry import bbox_of, flatten_subpath, thin_rect_line, to_frame
-from .grouping import DisjointSets
+from .grouping import BoxGrid, DisjointSets
 from .occlusion import CoverIndex
 from .symbols import classify_subpath
 from .text import parse_number
@@ -71,14 +72,20 @@ _DIGIT_TEMPLATES = [  # (char, aspect w/h, 12x16 bitmap rows top->bottom as hex)
 _TGW, _TGH = 12, 16
 
 
-_TEMPLATES = [(ch, asp, [(int(hx, 16) >> (_TGW * _TGH - 1 - i)) & 1
-                         for i in range(_TGW * _TGH)])
-              for ch, asp, hx in _DIGIT_TEMPLATES]
+_NCELLS = _TGW * _TGH
+
+# each template as one integer: cell i (row-major, top row first) is bit
+# _NCELLS - 1 - i, so a glyph's agreement with it is a popcount of the XOR
+_TEMPLATES = [(ch, asp, int(hx, 16)) for ch, asp, hx in _DIGIT_TEMPLATES]
+
+# number of set bits (int.bit_count is Python 3.10+)
+_popcount = int.bit_count if hasattr(int, "bit_count") else (lambda v: bin(v).count("1"))
 
 
 def _raster(polys, box):
     """Even-odd fill of polygons inside box onto the template grid with 3x3
-    supersampling; returns a list of 0/1 cells (row-major, top row first)."""
+    supersampling; returns the cells as an integer (cell i, row-major from
+    the top row, is bit _NCELLS - 1 - i; set when most samples are inside)."""
     x0, y0, x1, y1 = box
     w, h = max(x1 - x0, 1e-9), max(y1 - y0, 1e-9)
     edges = []
@@ -94,17 +101,16 @@ def _raster(polys, box):
                     for a, b in edges if (a[1] <= y < b[1]) or (b[1] <= y < a[1]))
         if not xs:
             continue
+        row = (ry // S) * _TGW
         for rx in range(_TGW * S):
-            x = x0 + (rx + 0.5) * w / (_TGW * S)
-            n = 0
-            for xi in xs:
-                if xi < x:
-                    n += 1
-                else:
-                    break
-            if n % 2:
-                cov[(ry // S) * _TGW + rx // S] += 1
-    return [1 if c > S * S / 2 else 0 for c in cov]
+            # crossings left of the sample (strictly): inside when odd
+            if bisect.bisect_left(xs, x0 + (rx + 0.5) * w / (_TGW * S)) % 2:
+                cov[row + rx // S] += 1
+    bits = 0
+    half = S * S / 2
+    for c in cov:
+        bits = (bits << 1) | (1 if c > half else 0)
+    return bits
 
 
 def _read_glyph(polys, box, word_box):
@@ -132,7 +138,7 @@ def _read_glyph(polys, box, word_box):
     cells = _raster(polys, box)
     best = ("?", 0.0)
     for ch, tasp, bits in _TEMPLATES:
-        agree = sum(1 for a, b in zip(cells, bits) if a == b) / float(len(bits))
+        agree = (_NCELLS - _popcount(cells ^ bits)) / float(_NCELLS)
         q = agree - 0.5 * abs(asp - tasp)
         if q > best[1]:
             best = (ch, q)
@@ -240,10 +246,23 @@ def outlined_text(paths, blobs=None, covers=()):
     Unreadable words are appended to `blobs` (as text items without text),
     and outline parts hidden under a later opaque box (`covers`) are
     ignored."""
-    parts, dashes = _glyph_parts(paths, covers)
+    parts, dashes, markerlike, stems = _glyph_parts(paths, covers)
     if not parts:
         return [], set()
-    words = _group_words(_group_glyphs(parts))
+    markerlike_keys = {(g[0], g[1]) for g in markerlike}
+    words = _words_with_markerlike(_group_words(_group_glyphs(parts + markerlike)),
+                                   markerlike_keys)
+
+    def n_real(word):          # glyphs that are not marker-like ('.', 'o')
+        return sum(1 for g in word if not set(g["members"]) <= markerlike_keys)
+    cache = {}
+
+    def read(word, rot):       # _read_word, each word and direction read once
+        key = (tuple(id(g) for g in word), rot)
+        got = cache.get(key)
+        if got is None:
+            got = cache[key] = _read_word(word, rot)
+        return got
     readings = []
     for word in words:
         if len(word) > 12:          # far too long for a tick label
@@ -252,25 +271,37 @@ def outlined_text(paths, blobs=None, covers=()):
         # read the word in each of the four directions, keep the best
         best = None
         for rot in (0, 90, -90, 180):
-            text, q, wb = _read_word(word, rot)
+            text, q, wb = read(word, rot)
             if best is None or q > best[1]:
                 best = (rot, q, text, wb)
         readings.append((word, best))
     # short words (one or two glyphs) are ambiguous: use the reading
     # direction that the longer numeric words on the page agree on
+    # (marker-like glyphs do not count towards the length: a full stop must
+    # not let "0.5" vote where "05" would not)
     votes = collections.Counter(
         rot for word, (rot, q, text, wb) in readings
-        if len(word) >= 3 and q >= 0.75 and parse_number(text) is not None)
+        if n_real(word) >= 3 and q >= 0.75 and parse_number(text) is not None)
     page_rot = max(votes, key=votes.get) if votes else None
     readings = [_exponent_minus(word, best, dashes) for word, best in readings]
-    readings = _join_split_exponents(readings, _read_word, dashes, page_rot)
+    readings = _join_split_exponents(readings, read, dashes, page_rot)
     texts, used = [], set()
+    used.update(_letter_dots(markerlike, stems, {m for word in words for g in word
+                                                 for m in g["members"]}))
     for word, best in readings:
         for gl in word:
             used.update(gl["members"])
         if len(word) < 3 and page_rot is not None:
-            text, q, wb = _read_word(word, page_rot)
-            best = (page_rot, q, text, wb)
+            # a short word is read in the page's direction - unless it reads
+            # well as a number in its own direction and that direction is
+            # not the page's turned upside down (6 / 9): R writes y labels
+            # sideways and x labels upright on one plot
+            own_rot, own_q, own_text, _ = best
+            keep_own = (own_rot != page_rot and abs(own_rot - page_rot) != 180 and
+                        own_q >= 0.75 and parse_number(own_text) is not None)
+            if not keep_own:
+                text, q, wb = read(word, page_rot)
+                best = (page_rot, q, text, wb)
         rot, q, text, wb = best
         if q >= 0.75 and parse_number(text) is not None:
             texts.append(_text_item(word, rot, text, wb))
@@ -279,13 +310,87 @@ def outlined_text(paths, blobs=None, covers=()):
     return texts, used
 
 
+def _words_with_markerlike(words, markerlike_keys):
+    """Shapes that look like markers - an 'o' (a circle with a round hole),
+    a full stop (a small square) - are characters only inside a word of
+    real characters: no bigger than they are, not overlapping another
+    glyph (characters of a word never overlap; a run of markers does), and
+    within the line of the word's real characters.  A word of marker-like
+    shapes alone is markers (stacked open circles, say), not text.
+    "No bigger" allows a capital among small letters ('N' of "New")."""
+    def size(g):
+        return max(g["box"][2] - g["box"][0], g["box"][3] - g["box"][1])
+
+    out = []
+    for word in words:
+        real = [g for g in word if not set(g["members"]) <= markerlike_keys]
+        if not real:
+            continue
+        big = max(size(g) for g in real)
+        rx0 = min(g["box"][0] for g in real)
+        ry0 = min(g["box"][1] for g in real)
+        rx1 = max(g["box"][2] for g in real)
+        ry1 = max(g["box"][3] for g in real)
+        slack = 0.5 * big                 # (capitals reach above small letters)
+        horizontal = rx1 - rx0 >= ry1 - ry0       # the line the real glyphs form
+        # real glyphs that make one letter ('i' and its dot) set no direction
+        single = rx1 - rx0 < 1.5 * big and ry1 - ry0 < 1.5 * big
+        keep = []
+        overlaps_any = _overlap_test(word)
+        real_ids = set(id(g) for g in real)
+        for g in word:
+            if id(g) in real_ids:
+                keep.append(g)
+                continue
+            b = g["box"]
+            in_line = (ry0 - slack <= b[1] and b[3] <= ry1 + slack) if horizontal or single \
+                else False
+            if not horizontal or single:
+                in_line = in_line or (rx0 - slack <= b[0] and b[2] <= rx1 + slack)
+            if size(g) <= 1.6 * big and in_line and not overlaps_any(g, word):
+                keep.append(g)
+        out.append(keep)
+    return out
+
+
+def _overlap_test(word):
+    """overlaps_any(g, word): does glyph g overlap (by more than a tenth of
+    the smaller box) another glyph of its word?  Big words (runs of
+    overlapping marker fragments: thousands of shapes) use a grid."""
+    def overlap(a, b):
+        w = min(a[2], b[2]) - max(a[0], b[0])
+        h = min(a[3], b[3]) - max(a[1], b[1])
+        if w <= 0 or h <= 0:
+            return False
+        area = min((a[2] - a[0]) * (a[3] - a[1]), (b[2] - b[0]) * (b[3] - b[1]))
+        return w * h > 0.1 * max(area, 1e-12)
+
+    if len(word) <= 64:
+        return lambda g, _w: any(o is not g and overlap(g["box"], o["box"]) for o in word)
+    sizes = sorted(max(o["box"][2] - o["box"][0], o["box"][3] - o["box"][1]) for o in word)
+    grid = BoxGrid(max(sizes[len(sizes) // 2], 0.05))
+    for k, o in enumerate(word):
+        grid.add(k, o["box"])
+    index = {id(o): k for k, o in enumerate(word)}
+
+    def test(g, _w):
+        me = index[id(g)]
+        return any(k != me and overlap(g["box"], word[k]["box"]) for k in grid.near(g["box"]))
+    return test
+
+
 def _glyph_parts(paths, covers):
     """Contours of filled paths that may be characters:
-    [(path idx, subpath no, polygon, bbox, rgb)], and the short thin
-    shapes that may be minus signs."""
+    [(path idx, subpath no, polygon, bbox, rgb)], the short thin shapes
+    that may be minus signs, and the contours of paths made only of
+    marker-like shapes (letters such as 'o' and '.' look like markers;
+    see _words_with_markerlike)."""
     cover_ix = CoverIndex(covers) if covers else None
     parts = []
     dashes = []            # short thin shapes: tick marks or minus signs
+    markerlike = []        # contours of paths made only of marker shapes (or
+                           # round letters): text only beside real letters
+    stems = []             # thin straight bars: stems of 'i' and 'j' (boxes)
     # colours of marker circles: a single round shape of such a colour is a
     # marker (or its converted outline ring), never a character - characters
     # like 'o' or '0' come with a hole, i.e. two contours
@@ -300,6 +405,11 @@ def _glyph_parts(paths, covers):
             continue
         subs = p["subpaths"]
         if len(subs) == 1 and p["fill_rgb"] in marker_rgb and _round_blob(subs[0]):
+            # a marker disc - or a round letter ('c', 'o', '.') beside other
+            # letters: decided by _words_with_markerlike (flattened only if
+            # the page has characters at all: see the end)
+            if subs[0]["segs"]:
+                markerlike.append(("disc", p["idx"], subs[0], p["fill_rgb"]))
             continue
         info = []
         for k, sp in enumerate(subs):
@@ -313,8 +423,19 @@ def _glyph_parts(paths, covers):
             continue
         if all(classify_subpath(sp) is not None or thin_rect_line(sp) is not None
                for _, _, _, sp in info):
+            if len(info) == 1 and thin_rect_line(info[0][3]) is not None:
+                stems.append(info[0][2])
             if len(info) == 1 and thin_rect_line(info[0][3]) is not None and big < 6:
                 dashes.append(_Dash(info[0][1], p["idx"]))  # maybe a minus sign
+            elif all(classify_subpath(sp) is not None for _, _, _, sp in info):
+                # markers - or letters that look like them ('o', '.'): text
+                # only if they join a word of real characters
+                markerlike.extend((p["idx"], k, poly, b, p["fill_rgb"]) for k, poly, b, _ in info)
+            elif len(info) >= 2:
+                # marker shapes and thin bars in one path: a letter such as
+                # 'i', 'j', '!' (a dot and a stem)
+                markerlike.extend((p["idx"], k, poly, b, p["fill_rgb"]) for k, poly, b, _ in info)
+                stems.extend(b for _, _, b, sp in info if thin_rect_line(sp) is not None)
             continue                               # markers / lines only
         for k, poly, b, sp in info:
             if cover_ix is not None:
@@ -323,6 +444,19 @@ def _glyph_parts(paths, covers):
                     PAGE.hiding_paths.update(hid)
                     continue
             parts.append((p["idx"], k, poly, b, p["fill_rgb"]))
+    if not parts:
+        return parts, dashes, [], stems           # (outlined_text stops here)
+    full = []
+    for m in markerlike:
+        if m[0] == "disc":
+            _, idx, sp, rgb = m
+            poly = flatten_subpath(sp)
+            b = bbox_of(poly)
+            if max(b[2] - b[0], b[3] - b[1]) <= 30:
+                full.append((idx, 0, poly, b, rgb))
+        else:
+            full.append(m)
+    markerlike = full
     if parts:
         # tall slender pieces (axis-break wiggles, brackets) are no digits
         # and would glue neighbouring labels into one unreadable word
@@ -331,7 +465,39 @@ def _glyph_parts(paths, covers):
         parts = [g for g in parts
                  if not (g[3][3] - g[3][1] > 1.8 * hmed and
                          g[3][3] - g[3][1] > 4 * (g[3][2] - g[3][0]))]
-    return parts, dashes
+    return parts, dashes, markerlike, stems
+
+
+def _letter_dots(markerlike, stems, in_words):
+    """The dots of 'i' and 'j': a small marker-like shape (a tiny square or
+    disc) just beyond one end of a thin bar, centred on it and smaller than
+    it.  The bar is set aside as a possible minus sign or tick, so the dot
+    finds no character to join; without this it would be reported as a
+    marker.  Either end, so that turned text is covered too.  Returns the
+    (path idx, subpath no) of the dots."""
+    dots = set()
+    if not stems:
+        return dots
+    for idx, k, poly, b, rgb in markerlike:
+        if (idx, k) in in_words:
+            continue
+        w, h = b[2] - b[0], b[3] - b[1]
+        sz = max(w, h)
+        cx, cy = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
+        for s in stems:
+            sw, sh = s[2] - s[0], s[3] - s[1]
+            if sh >= sw:                         # vertical bar: dot above or below
+                if sh < 1.5 * sz or abs(cx - (s[0] + s[2]) / 2) > 0.6 * sz:
+                    continue
+                gap = max(b[1] - s[3], s[1] - b[3])
+            else:                                # horizontal bar: dot left or right
+                if sw < 1.5 * sz or abs(cy - (s[1] + s[3]) / 2) > 0.6 * sz:
+                    continue
+                gap = max(b[0] - s[2], s[0] - b[2])
+            if -0.2 * sz <= gap <= 1.5 * sz:
+                dots.add((idx, k))
+                break
+    return dots
 
 
 def _round_blob(sp):
@@ -367,35 +533,52 @@ def _group_glyphs(parts):
 
 
 def _group_words(glyphs):
-    """Words = glyphs of one colour closer to each other than about half a
-    glyph.  Neighbours are found through a spatial grid (pages can hold
-    100 000+ shapes)."""
-    sets = DisjointSets(len(glyphs))
-    sizes = sorted(max(g["box"][2] - g["box"][0], g["box"][3] - g["box"][1]) for g in glyphs)
-    cell = max(sizes[len(sizes) // 2] if sizes else 1.0, 0.5)
-    grid = {}
-    for i, g in enumerate(glyphs):
-        b = g["box"]
-        for gx in range(int(b[0] // cell), int(b[2] // cell) + 1):
-            for gy in range(int(b[1] // cell), int(b[3] // cell) + 1):
-                grid.setdefault((gx, gy), []).append(i)
-    for i, gi in enumerate(glyphs):
-        bi = gi["box"]
-        si = max(bi[2] - bi[0], bi[3] - bi[1])
-        reach = 0.45 * si
-        cand = set()
-        for gx in range(int((bi[0] - reach) // cell) - 1, int((bi[2] + reach) // cell) + 2):
-            for gy in range(int((bi[1] - reach) // cell) - 1, int((bi[3] + reach) // cell) + 2):
-                cand.update(grid.get((gx, gy), ()))
-        for j in cand:
-            if j <= i or glyphs[j]["rgb"] != gi["rgb"]:
+    """Words = glyphs of one colour closer to each other than 0.45 times
+    the bigger glyph's size.
+
+    Pages can hold 100 000+ shapes of very different sizes (clipped marker
+    fragments of 0.1 pt beside 7 pt glyphs), so glyphs are filed by size
+    class (powers of two), each class in a grid of cells as big as its
+    biggest glyph.  Each glyph looks for partners in its own class and the
+    bigger ones, within 0.45 times the biggest size of that class (a pair
+    joins within reach of its bigger glyph): the cells of a bigger class are
+    big, so a lookup touches only a few cells, and small glyphs are never
+    scanned cell by cell from a big one.  Each pair is examined once."""
+    n = len(glyphs)
+    sets = DisjointSets(n)
+    parent = sets.parent
+    find = sets.find
+    boxes = [g["box"] for g in glyphs]
+    rgbs = [g["rgb"] for g in glyphs]
+    size = [max(b[2] - b[0], b[3] - b[1], 1e-6) for b in boxes]
+    klass = [int(math.floor(math.log2(s))) for s in size]
+    grids = {}
+    for i in range(n):
+        k = klass[i]
+        grid = grids.get(k)
+        if grid is None:
+            grid = grids[k] = BoxGrid(2.0 ** (k + 1))
+        grid.add(i, boxes[i])
+    order = sorted(grids)
+    for i in range(n):
+        bx0, by0, bx1, by1 = boxes[i]
+        si, ki, rgb = size[i], klass[i], rgbs[i]
+        for k in order:
+            if k < ki:
                 continue
-            bj = glyphs[j]["box"]
-            sj = max(bj[2] - bj[0], bj[3] - bj[1])
-            dx = max(bj[0] - bi[2], bi[0] - bj[2], 0)
-            dy = max(bj[1] - bi[3], bi[1] - bj[3], 0)
-            if math.hypot(dx, dy) < 0.45 * max(si, sj):
-                sets.union(i, j)
+            same = k == ki
+            for j in grids[k].near(boxes[i], 0.45 * 2.0 ** (k + 1)):
+                if (same and j <= i) or rgbs[j] != rgb:
+                    continue                  # (a pair in one class: from its first glyph)
+                cx0, cy0, cx1, cy1 = boxes[j]
+                dx = cx0 - bx1 if cx0 > bx1 else (bx0 - cx1 if bx0 > cx1 else 0.0)
+                dy = cy0 - by1 if cy0 > by1 else (by0 - cy1 if by0 > cy1 else 0.0)
+                sj = size[j]
+                lim = 0.45 * (si if si > sj else sj)
+                if dx < lim and dy < lim and math.hypot(dx, dy) < lim:
+                    ri, rj = find(i), find(j)
+                    if ri != rj:
+                        parent[rj] = ri
     return [[glyphs[i] for i in members] for members in sets.groups()]
 
 
@@ -426,8 +609,18 @@ def _read_word(word, rot):
             n_main -= 1
         else:
             break
-    if n_main < len(fr) and any(fr[k][1][3] - fr[k][1][1] >= 0.4 * hmax
-                                for k in range(n_main, len(fr))):
+    split = n_main < len(fr) and any(fr[k][1][3] - fr[k][1][1] >= 0.4 * hmax
+                                     for k in range(n_main, len(fr)))
+    # the glyphs must form one line of text in this orientation: the
+    # word is not much taller than its tallest glyph, and successive
+    # glyphs do not overlap along the line (checked first: a word that is
+    # no line here is not worth reading glyph by glyph)
+    line_ok = (wb[3] - wb[1]) <= (1.6 if split else 1.25) * hmax and all(
+        b2[0] - b1[2] > -0.3 * min(b1[2] - b1[0], b2[2] - b2[0])
+        for (_, b1), (_, b2) in zip(fr, fr[1:]))
+    if not line_ok:
+        return "", 0.0, wb
+    if split:
         main, expo = fr[:n_main], fr[n_main:]
         mb, eb = box_of(main), box_of(expo)
         chars = [_read_glyph(polys, b, mb) for polys, b in main]
@@ -438,12 +631,6 @@ def _read_word(word, rot):
         chars = [_read_glyph(polys, b, wb) for polys, b in fr]
         text = "".join(c for c, _ in chars)
     qual = min(q for _, q in chars)
-    # the glyphs must form one line of text in this orientation: the
-    # word is not much taller than its tallest glyph, and successive
-    # glyphs do not overlap along the line
-    line_ok = (wb[3] - wb[1]) <= (1.6 if "^" in text else 1.25) * hmax and all(
-        b2[0] - b1[2] > -0.3 * min(b1[2] - b1[0], b2[2] - b2[0])
-        for (_, b1), (_, b2) in zip(fr, fr[1:]))
     if not any(c not in ".-" for c, _ in chars):
         line_ok = False                    # punctuation alone is no number
     if pct:

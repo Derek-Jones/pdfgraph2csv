@@ -1,0 +1,16 @@
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
+1,1,filled-circle,,0,9.9999944,0.999999873,black,#000000
+1,1,filled-circle,,0,19.99999888,3.000000127,black,#000000
+1,1,filled-circle,,0,30.00000336,2,black,#000000
+1,2,filled-square,,0,15,100,blue,#0000ff
+1,2,filled-square,,0,25,300,blue,#0000ff
+1,2,filled-square,,0,35,200,blue,#0000ff
+2,3,filled-circle,,0,0.999999933,5.000000154,black,#000000
+2,3,filled-circle,,0,1.999999842,14.999999799,black,#000000
+2,3,filled-circle,,0,2.999999751,9.999999976,black,#000000
+2,4,filled-square,,0,100,7,blue,#0000ff
+2,4,filled-square,,0,200,12,blue,#0000ff
+2,4,filled-square,,0,300,18,blue,#0000ff
+3,5,filled-square,,0,15,100,blue,#0000ff
+3,5,filled-square,,0,25,300,blue,#0000ff
+3,5,filled-square,,0,35,200,blue,#0000ff

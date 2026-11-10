@@ -117,8 +117,37 @@ def point_in_polys(polys, x, y):
     return n % 2 == 1
 
 
+# Results of pure functions of one subpath that several steps ask for
+# (flattening, classification as a marker, thin-stroke test) are kept on
+# the subpath itself, under "_" + the kind of result: pages can hold
+# hundreds of thousands of subpaths, and each was worked out two or three
+# times.  A changed copy of a subpath must leave them out (see
+# symbols.as_closed).
+_MISSING = object()
+
+
+def memoized(kind, sp, compute):
+    """compute(sp), worked out once per subpath."""
+    key = "_" + kind
+    value = sp.get(key, _MISSING)
+    if value is _MISSING:
+        value = sp[key] = compute(sp)
+    return value
+
+
 def flatten_subpath(sp, steps=6):
-    """Subpath -> polygon (list of points), Beziers flattened."""
+    """Subpath -> polygon (list of points), Beziers flattened (a new list
+    each time; the work is done once per subpath)."""
+    if steps == 6:
+        return list(memoized("flat", sp, _flatten6))
+    return _flatten(sp, steps)
+
+
+def _flatten6(sp):
+    return _flatten(sp, 6)
+
+
+def _flatten(sp, steps):
     pts = [sp["start"]]
     cur = sp["start"]
     for seg in sp["segs"]:
@@ -140,6 +169,10 @@ def thin_rect_line(sp):
     """A thin axis-aligned filled shape - a straight stroke converted to an
     outline, with butt ends (a rectangle) or round/square caps - -> its
     centre line ((x0, y0), (x1, y1)), else None."""
+    return memoized("thin", sp, _thin_rect_line)
+
+
+def _thin_rect_line(sp):
     if not sp["segs"]:
         return None
     pts = [sp["start"]] + [q for s in sp["segs"] for q in s[1:]]

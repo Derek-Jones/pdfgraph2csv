@@ -1,0 +1,37 @@
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex,axis
+1,1,filled-circle,SRAM,0,2015.99195,0.0400434,dodgerblue,#2879ff,left
+1,1,filled-circle,SRAM,0,2013.99717,0.058849,dodgerblue,#2879ff,left
+1,1,filled-circle,SRAM,0,2011.99303,0.0919916,dodgerblue,#2879ff,left
+1,1,filled-circle,SRAM,0,2008.99629,0.148036,dodgerblue,#2879ff,left
+1,1,filled-circle,SRAM,0,2007.00139,0.346305,dodgerblue,#2879ff,left
+1,1,filled-circle,SRAM,0,2004.00488,0.571648,dodgerblue,#2879ff,left
+1,1,filled-circle,SRAM,0,2002.00051,1.000046,dodgerblue,#2879ff,left
+1,1,filled-circle,SRAM,0,2000.00596,2.09031,dodgerblue,#2879ff,left
+1,1,filled-circle,SRAM,0,1998.01129,5.5934,dodgerblue,#2879ff,left
+1,1,filled-circle,SRAM,0,1996.00692,10.25819,dodgerblue,#2879ff,left
+1,1,filled-circle,SRAM,0,1994.01225,20.5275,dodgerblue,#2879ff,left
+1,1,filled-square,CGP,0,2015.99204,0.0642257,firebrick,#c50000,right
+1,1,filled-square,CGP,0,2013.99726,0.070188,firebrick,#c50000,right
+1,1,filled-square,CGP,0,2011.99301,0.0902961,firebrick,#c50000,right
+1,1,filled-square,CGP,0,2008.99638,0.1128445,firebrick,#c50000,right
+1,1,filled-square,CGP,0,2007.00148,0.1603932,firebrick,#c50000,right
+1,1,filled-square,CGP,0,2004.00474,0.2202492,firebrick,#c50000,right
+1,1,filled-square,CGP,0,2002.0006,0.26021,firebrick,#c50000,right
+1,1,filled-square,CGP,0,2000.00605,0.335966,firebrick,#c50000,right
+1,1,filled-square,CGP,0,1998.01115,0.480116,firebrick,#c50000,right
+1,1,filled-square,CGP,0,1996.00701,0.639322,firebrick,#c50000,right
+1,1,filled-square,CGP,0,1994.01234,0.918594,firebrick,#c50000,right
+1,1,filled-triangle,M1 pitch,0,1994.01552,0.878965,limegreen,#3bff2b,right
+1,1,filled-triangle,M1 pitch,0,1996.01341,0.639687,limegreen,#3bff2b,right
+1,1,filled-triangle,M1 pitch,0,1998.01111,0.500062,limegreen,#3bff2b,right
+1,1,filled-triangle,M1 pitch,0,2000.00882,0.350301,limegreen,#3bff2b,right
+1,1,filled-triangle,M1 pitch,0,2002.00592,0.2204224,limegreen,#3bff2b,right
+1,1,filled-triangle,M1 pitch,0,2004.00413,0.2104236,limegreen,#3bff2b,right
+1,1,filled-triangle,M1 pitch,0,2007.0004,0.1604036,limegreen,#3bff2b,right
+1,1,filled-triangle,M1 pitch,0,2008.998,0.1128821,limegreen,#3bff2b,right
+1,1,filled-triangle,M1 pitch,0,2011.99413,0.0803236,limegreen,#3bff2b,right
+1,1,filled-triangle,M1 pitch,0,2013.99173,0.0522655,limegreen,#3bff2b,right
+1,1,filled-triangle,M1 pitch,0,2015.98954,0.0482562,limegreen,#3bff2b,right
+1,1,filled-circle,SRAM,1,2011.17949,42.1862,dodgerblue,#2879ff,left
+1,1,filled-square,CGP,1,2011.17949,0.445339,firebrick,#c50000,right
+1,1,filled-triangle,M1 pitch,1,2011.17951,0.305852,limegreen,#3bff2b,right

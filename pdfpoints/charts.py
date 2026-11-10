@@ -20,6 +20,7 @@ def find_bars(graph, paths):
             bases.append(yz)
     tol = max(0.75, 0.005 * h)
     bars = []
+    hanging = []                    # bars going down from the lowest line
     seen = set()
     for p in paths:
         if not p["fill"]:
@@ -33,13 +34,21 @@ def find_bars(graph, paths):
             if not all(abs(a[0] - b[0]) < 1e-3 or abs(a[1] - b[1]) < 1e-3
                        for a, b in zip(pts, pts[1:] + pts[:1])):
                 continue                     # not an axis-aligned rectangle
-            if bw <= 0.3 or bw > 0.25 * w or bh <= 0 or bx0 < x0 - tol or bx1 > x1 + tol:
+            # (the box of a category axis ends at the outer categories'
+            # centres: a bar's middle must be inside it, not the whole bar)
+            if bw <= 0.3 or bw > 0.25 * w or bh <= 0 or \
+                    not x0 - tol <= (bx0 + bx1) / 2 <= x1 + tol:
                 continue
             for base in bases:
                 if abs(by0 - base) <= tol and by1 <= y1 + tol:
                     top = by1
                 elif abs(by1 - base) <= tol and by0 >= y0 - tol and base != y0:
                     top = by0                # a bar going down from zero
+                elif abs(by1 - base) <= tol and base == y0 and by0 >= y0 - 0.25 * h:
+                    # going down from the lowest line, which is not 0 (bars of
+                    # ratios from 1x): kept if as wide as the standing bars
+                    hanging.append(((bx0 + bx1) / 2, by0, bw, p))
+                    break
                 else:
                     continue
                 key = (round(bx0, 2), round(bx1, 2), round(top, 2))
@@ -49,6 +58,15 @@ def find_bars(graph, paths):
                 bars.append({"shape": "bar", "cx": (bx0 + bx1) / 2, "cy": top, "size": bw,
                              "filled": True, "rgb": p["fill_rgb"], "idx": p["idx"]})
                 break
+    if hanging and len(bars) >= 3:
+        widths = sorted(b["size"] for b in bars)
+        wm = widths[len(widths) // 2]
+        for cx, top, bw, p in hanging:
+            key = (round(cx - bw / 2, 2), round(cx + bw / 2, 2), round(top, 2))
+            if abs(bw - wm) <= 0.05 * wm and key not in seen:
+                seen.add(key)
+                bars.append({"shape": "bar", "cx": cx, "cy": top, "size": bw,
+                             "filled": True, "rgb": p["fill_rgb"], "idx": p["idx"]})
     return bars
 
 

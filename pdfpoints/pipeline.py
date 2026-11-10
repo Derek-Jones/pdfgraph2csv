@@ -3,46 +3,54 @@ axes and graphs, find the markers (or bars / line vertices), name their
 series from the legends and map each point through its graph's axes.
 """
 
+import re
 import sys
 
 from .axes import drop_duplicate_axes, find_axes
 from .charts import find_bars, find_line_series
-from .colours import color_name
 from .context import PAGE
 from .document import Document
+from .errbars import find_error_bars
 from .fragments import rebuild_fragmented_circles
 from .graphs import (
-    add_panel_graphs, build_graphs, clip_graph, graph_for_symbol, graph_rotation,
+    add_panel_graphs, build_graphs, forget_graphs, graph_for_symbol, graph_rotation,
     set_graph_backgrounds)
 from .interpreter import Interpreter
 from .labels import apply_axis_multipliers, resolve_shared_labels
 from .legend import SeriesNamer, find_page_legend, legend_for_lines
+from .meta import graph_meta
 from .occlusion import cover_rects, drop_hidden_glyphs
 from .outlined_text import outlined_text
-from .scales import find_break_marks, map_value
-from .symbols import LINE_SHAPES, drop_highlight_boxes, find_symbols
+from .rows import make_rows
+from .scales import find_break_marks
+from .styles import guess_tool
+from .symbols import drop_highlight_boxes, find_symbols
 from .text import attach_vector_minus, merge_texts
 from .titles import find_figure_caption, text_lines
+from .tools import PathsByX, graph_tool
+from .twin import twin_axes, warn_twin_unsure
 
 
 class Options:
     """What to report (from the command line)."""
 
-    def __init__(self, inside_only=False, max_frac=0.1, debug=False, exclude_legend=False):
+    def __init__(self, inside_only=False, max_frac=0.1, debug=False, exclude_legend=False,
+                 errbars=False):
         self.inside_only = inside_only        # drop symbols outside the axes box
         self.max_frac = max_frac              # largest marker, as part of the plot
         self.debug = debug                    # axis details on stderr
         self.exclude_legend = exclude_legend  # drop legend-key markers
+        self.errbars = errbars                # low/high ends of error bars
 
 
 def extract(pdf_path, pages=None, inside_only=False, max_frac=0.1, debug=False,
-            exclude_legend=False, password=b"", info=None):
+            exclude_legend=False, password=b"", info=None, errbars=False):
     """Return the data point rows of a PDF file (one dict per point).
     `pages` limits the work to a set of page numbers.  If `info` is a dict
     it receives 'graphs' (number of graphs found) and 'warnings'."""
     with open(pdf_path, "rb") as f:
         pdf = Document(f.read(), password)
-    opts = Options(inside_only, max_frac, debug, exclude_legend)
+    opts = Options(inside_only, max_frac, debug, exclude_legend, errbars)
     if info is None:
         info = {}
     info["graphs"] = 0
@@ -56,7 +64,15 @@ def extract(pdf_path, pages=None, inside_only=False, max_frac=0.1, debug=False,
                 if opts.debug:
                     raise
                 pdf.warn("page %d could not be analysed (%s: %s)" % (pno, type(e).__name__, e))
+            finally:
+                forget_page()          # the page's cached answers (and memory)
     return rows
+
+
+def forget_page():
+    """Drop what was cached about the page just done (graph lookups that
+    hold on to its graphs; results cached on subpaths go with them)."""
+    forget_graphs()
 
 
 def extract_page(pdf, pno, page, opts, info):
@@ -77,50 +93,29 @@ def extract_page(pdf, pno, page, opts, info):
     info["graph_no"] += len(graphs)
     symbols = find_page_symbols(pdf, pno, it, text_parts)
     describe_graphs(graphs, texts, symbols, first_no, opts.debug)
+    by_x = PathsByX(it.paths)
+    for g in graphs:
+        x0, _, x1, _ = g["rect"]
+        mine = by_x.between(x0 - 0.1 * (x1 - x0), x1 + 0.1 * (x1 - x0))
+        g["tool"] = graph_tool(g, mine, it.glyph_symbols) or pdf.tool
+        g["tool_guess"] = guess_tool(g["rect"], mine, it.texts, it.glyph_symbols)
     line_names = add_bars_and_lines(graphs, symbols, it.paths, texts)
+    # the resolution of each symbol's coordinates (from the path drawing it)
+    res_of = {p["idx"]: p.get("res") for p in it.paths}
+    for s in symbols:
+        if s.get("res") is None:
+            s["res"] = res_of.get(s["idx"])
     legend = find_page_legend(symbols, texts, blobs, graphs, it.paths)
     if opts.debug and legend:
         print("[debug] legend keys: %s" % sorted(set(legend.values())), file=sys.stderr)
     namer = SeriesNamer(symbols, legend, graphs, line_names)
-    rows = make_rows(pno, graphs, symbols, legend, namer, opts)
+    twin_axes(graphs, symbols, namer, texts, pdf.warnings, opts.debug)
+    bars = find_error_bars(symbols, graphs, it.paths,
+                           lambda s: graph_for_symbol(graphs, s)[1]) if opts.errbars else {}
+    rows = make_rows(pno, graphs, symbols, legend, namer, opts, bars)
+    warn_twin_unsure(graphs, rows, pdf.warnings)
     info.setdefault("meta", []).extend(graph_meta(pno, graphs, rows))
     return rows
-
-
-def graph_meta(pno, graphs, rows):
-    """One record per graph for the --meta file: page and graph number,
-    title, figure number and caption, the number of data points reported,
-    and the values at the lowest and highest labelled tick of each axis."""
-    counts = {}
-    for r in rows:
-        counts[r["graph"]] = counts.get(r["graph"], 0) + 1
-    out = []
-    for g in graphs:
-        m = {"page": pno, "graph": g["no"], "title": g["title"],
-             "figure": g.get("figure", ""), "caption": g.get("caption", ""),
-             "points": counts.get(g["no"], 0)}
-        for k in ("x", "y"):
-            m[k + "_tick_min"], m[k + "_tick_max"] = tick_range(g[k])
-        out.append(m)
-    return out
-
-
-def tick_range(axis):
-    """The values of an axis's lowest and highest labelled ticks (for a
-    category axis the first and last category along it), with the axis
-    multiplier (e.g. x10^-9) applied.  ("", "") if unknown."""
-    m = axis.get("map")
-    if not m:
-        return "", ""
-    if m["kind"] == "nominal":
-        pos = sorted(m["ticks"], key=lambda tv: tv[0])
-        return (pos[0][1], pos[-1][1]) if pos else ("", "")
-    scale = 10.0 ** axis.get("multiplier", 0)
-    vals = [v * scale for _, v in axis.get("ticks", ())
-            if isinstance(v, (int, float)) and not isinstance(v, bool)]
-    if not vals:
-        return "", ""
-    return min(vals), max(vals)
 
 
 def read_page_text(it):
@@ -182,10 +177,19 @@ def describe_graphs(graphs, texts, symbols, first_no, debug):
         if lines is None:
             lines = text_lines(texts)
         g["figure"], g["caption"] = find_figure_caption(g["rect"], lines, PAGE.graph_rects)
+        if g["figure"] and g["title"] and re.match(
+                r"(?i)\s*fig(ure|\.)?\s*%s\b" % re.escape(g["figure"]), g["title"]):
+            g["title"] = ""     # the caption below, taken for want of a title: not one
         if g["rot"]:
             # turned graph: the axis running across the page carries the
             # data y values, the one running up/down the page the x values
             g["x"], g["y"] = g["y"], g["x"]
+            if "x2" in g or "y2" in g:            # a second scale follows its axis
+                x2, y2 = g.pop("x2", None), g.pop("y2", None)
+                if y2 is not None:
+                    g["x2"] = y2
+                if x2 is not None:
+                    g["y2"] = x2
         if debug:
             print("[debug] graph %d title: %r rotation: %d" % (no, g["title"], g["rot"]),
                   file=sys.stderr)
@@ -214,8 +218,12 @@ def add_bars_and_lines(graphs, symbols, paths, texts):
         if marks and all(s["shape"] == "square" for s in marks):
             bars = bars_of(g)
             bar_paths = {b["idx"] for b in bars}
-            if bars and all(s["idx"] in bar_paths for s in marks):
-                gone = {id(s) for s in marks}
+            short = [s for s in marks if s["idx"] in bar_paths]
+            # short bars taken for squares are bars; squares that are no
+            # bars (legend keys of the bar colours) stay, if the bars are
+            # most of the shapes
+            if bars and (len(short) == len(marks) or len(bars) >= 3 * (len(marks) - len(short))):
+                gone = {id(s) for s in short}
                 symbols[:] = [s for s in symbols if id(s) not in gone]
                 marks = []
         if marks:
@@ -234,39 +242,3 @@ def add_bars_and_lines(graphs, symbols, paths, texts):
                     line_names[id(sym)] = names[k]
                 symbols.append(sym)
     return line_names
-
-
-def make_rows(pno, graphs, symbols, legend, namer, opts):
-    """One output row per reported symbol."""
-    rows = []
-    for si, s in enumerate(symbols):
-        if s["shape"] == "rectangle" and si not in legend:
-            continue                      # oblong boxes count only as legend keys
-        d, g = graph_for_symbol(graphs, s)
-        x0, y0, x1, y1 = g["rect"]
-        w, h = x1 - x0, y1 - y0
-        if d > 0.5 * max(w, h) and si not in legend and clip_graph(graphs, s) is not g:
-            continue                      # far from every graph (and not drawn in one)
-        # markers are small, but in tiny panels (small multiples) a few
-        # points of marker are still a large share of the panel
-        if s["shape"] not in ("bar", "line") and \
-                s["size"] > max(opts.max_frac * min(w, h), min(3.5, 0.4 * min(w, h))):
-            continue
-        if opts.inside_only and d > 1e-6 or opts.exclude_legend and si in legend:
-            continue
-        name, hexs = color_name(s["rgb"])
-        if s["shape"] in LINE_SHAPES or s["shape"] in ("bar", "line"):
-            sym_name = s["shape"]
-        else:
-            sym_name = ("filled-" if s["filled"] else "open-") + s["shape"]
-        rows.append({
-            "page": pno, "graph": g["no"], "graph_title": g["title"],
-            "symbol": sym_name,
-            "x_coord": map_value(g["x"]["map"], s["cy"] if g["rot"] else s["cx"]),
-            "y_coord": map_value(g["y"]["map"], s["cx"] if g["rot"] else s["cy"]),
-            "color": name, "color_hex": hexs,
-            "series": namer.name(si, s, g),
-            "rotation": g["rot"],
-            "legend_key": 1 if si in legend else 0,
-            "pdf_x": s["cx"], "pdf_y": s["cy"]})
-    return rows

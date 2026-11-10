@@ -77,6 +77,38 @@ How it works
     duplicates included, in drawing order.  Multi-page files are handled
     page by page; graphs are numbered through the whole document.
 
+Background grids
+----------------
+  Plots without tick marks or axis lines (seaborn darkgrid, ggplot2):
+  white grid lines across a light background, or the white gaps between
+  light blocks tiling the plot area, give the tick positions, and the
+  background's edges the axis lines.
+
+Speed
+-----
+  Pages can hold hundreds of thousands of markers.  Every comparison of
+  shapes with shapes goes through a spatial index (grids, size-class grids
+  for shapes of very different sizes, sorted lists), stacks of identical
+  shapes are compared once, and results that several steps need are worked
+  out once per subpath, clipping box or page (docs/DESIGN.md, "Speed").
+
+Two scales
+----------
+  A graph with a y scale on both sides (or an x scale at the bottom and the
+  top) is one graph with a second scale; each series is read against the
+  one its legend label ("right axis"), the axis titles or the colour of an
+  axis's labels points to, and the rows get an `axis` column (left/right).
+
+Error bars (--errbars)
+----------------------
+  Straight, nearly vertical or horizontal strokes on a marker's centre line
+  that reach beyond it are its error bars: one segment (matplotlib) or two
+  halves meeting at the marker (Excel, whose rounding tilts them slightly).
+  Their ends, mapped through the axes, give x_low, x_high, y_low, y_high.
+  Grid lines, axes, ticks outside the plot and the strokes of '+' markers
+  are not bars; where points share an x, each bar goes to the marker its
+  pieces meet at, else to the one nearest its middle.
+
 Special axes and graphs
 -----------------------
   * Category (nominal) axes: words at the ticks, or midway between ticks as
@@ -91,6 +123,10 @@ Special axes and graphs
     are reported.  A single label beyond the break continues the scale.
     Labels that were painted over (a white box with new text on top) are
     ignored in favour of the visible ones.
+  * Shared axes: stacked graphs with the x labels under the lowest one only
+    (side-by-side graphs: the y labels left of the first) use that axis
+    when their own axis line has ticks at the same places (or, without
+    ticks, spans the same stretch).
   * Lattice / small-multiple panels sharing long frame lines, inset graphs
     (assigned by drawing order), bar charts and histograms (one point per
     bar top) and line charts without markers (one point per vertex).

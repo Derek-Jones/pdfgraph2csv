@@ -33,28 +33,31 @@ def main():
     ap.add_argument("--max-symbol-frac", type=float, default=0.1,
                     help="largest symbol size as a fraction of the plot area's "
                          "smaller side (default 0.1)")
+    ap.add_argument("--errbars", action="store_true",
+                    help="add columns x_low, x_high, y_low, y_high: the ends of each "
+                         "point's error bars (empty when it has none in that direction)")
     ap.add_argument("--rotation", action="store_true",
                     help="add a column with the rotation of each point's graph "
                          "(0, 90, -90 or 180 degrees)")
-    ap.add_argument("--digits", type=int, default=6, metavar="N",
-                    help="significant digits of the numbers written (default 6); the "
-                         "precision of the PDF's own coordinates limits what more digits "
-                         "can add")
+    ap.add_argument("--digits", type=int, default=None, metavar="N",
+                    help="significant digits of the numbers written (default: as many "
+                         "as the precision of the PDF's coordinates justifies, at least 6)")
     ap.add_argument("--internal", action="store_true",
                     help="also output the symbol centres in PDF page coordinates")
     ap.add_argument("--password", default="",
                     help="password of an encrypted PDF (user or owner password)")
     ap.add_argument("--debug", action="store_true", help="print axis detection details")
     args = ap.parse_args()
-    if not 1 <= args.digits <= 17:
+    if args.digits is not None and not 1 <= args.digits <= 17:
         ap.error("--digits must be between 1 and 17")
-    num = "%%.%dg" % args.digits
+    num = "%%.%dg" % args.digits if args.digits else "%g"
     pages = {int(p) for p in args.pages.split(",")} if args.pages else None
     SETTINGS.glyph_centre = args.glyph_centre
     info = {}
     try:
         rows = extract(args.pdf, pages, args.inside_only, args.max_symbol_frac, args.debug,
-                       args.exclude_legend, args.password.encode("utf-8"), info)
+                       args.exclude_legend, args.password.encode("utf-8"), info,
+                       errbars=args.errbars)
     except (OSError, ValueError) as e:
         sys.exit("error: %s" % e)
     for wmsg in info.get("warnings", []):
@@ -63,8 +66,13 @@ def main():
         write_meta(args.meta, info["meta"], num)
     cols = ["page", "graph", "symbol", "series", "legend_key",
             "x_coord", "y_coord", "color", "color_hex"]
+    if any(r.get("axis") for r in rows):
+        # a graph with a scale on both sides: which one each value is read against
+        cols.append("axis")
     if args.rotation:
         cols.append("rotation")
+    if args.errbars:
+        cols += ["x_low", "x_high", "y_low", "y_high"]
     if args.internal:
         cols += ["pdf_x", "pdf_y"]
     if not rows:
@@ -77,7 +85,7 @@ def main():
     try:
         w.writerow(cols)
         for r in rows:
-            w.writerow([num % r[c] if isinstance(r[c], float) else r[c] for c in cols])
+            w.writerow([cell(r, c, num, args.digits) for c in cols])
         out.flush()
     except BrokenPipeError:          # e.g. output piped into "head"
         sys.stderr.close()
@@ -86,8 +94,21 @@ def main():
         out.close()
 
 
-META_COLUMNS = ["page", "graph", "title", "figure", "caption", "points",
+def cell(row, col, num, digits):
+    """One CSV cell: a data value with the digits its precision justifies
+    (unless --digits fixes them), other numbers with `num`."""
+    v = row[col]
+    if not isinstance(v, float):
+        return v
+    if digits is None and col in ("x_coord", "y_coord", "x_low", "x_high", "y_low", "y_high"):
+        return "%%.%dg" % row.get(col[0] + "_digits", 6) % v
+    return num % v
+
+
+META_COLUMNS = ["page", "graph", "title", "figure", "caption", "tool", "tool_guess", "points",
                 "x_tick_min", "x_tick_max", "y_tick_min", "y_tick_max"]
+# graphs with a second scale (right y axis, top x axis): which, and its range
+META_TWIN = ["axis2", "axis2_tick_min", "axis2_tick_max"]
 
 
 def write_meta(path, records, num="%g"):
@@ -95,9 +116,10 @@ def write_meta(path, records, num="%g"):
     try:
         with open(path, "w", newline="") as f:
             w = csv.writer(f, lineterminator="\n")
-            w.writerow(META_COLUMNS)
+            cols = META_COLUMNS + (META_TWIN if any(r.get("axis2") for r in records) else [])
+            w.writerow(cols)
             for r in records:
                 w.writerow([num % r[c] if isinstance(r[c], float) else r[c]
-                            for c in META_COLUMNS])
+                            for c in cols])
     except OSError as e:
         sys.exit("error: %s" % e)

@@ -1,0 +1,2 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,Synthetic test plot,,,R 4.3.1,R,14,0,100,0,50

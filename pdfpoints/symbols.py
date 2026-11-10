@@ -7,7 +7,7 @@ outlines, highlight boxes).
 import math
 
 from .colours import color_name
-from .geometry import axis_aligned, bbox_of, flatten_subpath
+from .geometry import axis_aligned, bbox_of, flatten_subpath, memoized
 from .grouping import DisjointSets
 
 
@@ -21,20 +21,27 @@ def drop_highlight_boxes(symbols):
         if t["size"] > 0:
             cell = grid.setdefault((int(t["cx"] // 4), int(t["cy"] // 4)), {})
             cell.setdefault(t["rgb"], []).append(t)
-    out = []
-    for s in symbols:
-        if not s.get("filled") and s["shape"] in ("square", "circle") and s["size"] > 0:
-            gx, gy = int(s["cx"] // 4), int(s["cy"] // 4)
-            r = int(0.25 * s["size"] // 4) + 1
-            near = (t for dx in range(-r, r + 1) for dy in range(-r, r + 1)
-                    for rgb, ts in grid.get((gx + dx, gy + dy), {}).items()
-                    if rgb != s["rgb"] for t in ts)
-            if any(t["size"] < 0.8 * s["size"] and
-                   math.hypot(t["cx"] - s["cx"], t["cy"] - s["cy"]) < 0.25 * s["size"]
-                   for t in near):
-                continue
-        out.append(s)
-    return out
+    def highlights(s):
+        gx, gy = int(s["cx"] // 4), int(s["cy"] // 4)
+        r = int(0.25 * s["size"] // 4) + 1
+        own, lim, cut = s["rgb"], 0.8 * s["size"], 0.25 * s["size"]
+        for dx in range(-r, r + 1):
+            for dy in range(-r, r + 1):
+                cell = grid.get((gx + dx, gy + dy))
+                if not cell or (len(cell) == 1 and own in cell):
+                    continue                  # empty, or only its own colour
+                for rgb, ts in cell.items():
+                    if rgb == own:
+                        continue
+                    for t in ts:
+                        if t["size"] < lim and \
+                                math.hypot(t["cx"] - s["cx"], t["cy"] - s["cy"]) < cut:
+                            return True
+        return False
+
+    return [s for s in symbols
+            if not (not s.get("filled") and s["shape"] in ("square", "circle") and
+                    s["size"] > 0 and highlights(s))]
 
 
 def _rotationally_symmetric(verts, size):
@@ -93,6 +100,23 @@ def classify_subpath(sp):
     polygon), centre 'cx', 'cy', 'size' (larger side of its box) and
     'ring' when it is the outline ring of an open circle.  (Crosses and
     plus signs are open strokes: see match_crossing_strokes.)"""
+    c = memoized("cls", sp, _classify_subpath)
+    return dict(c) if c is not None else None      # (callers add to it)
+
+
+def as_closed(sp):
+    """A filled subpath is closed implicitly: the subpath marked closed (the
+    subpath itself when it is, so that its cached results serve; else a
+    copy)."""
+    if sp["closed"]:
+        return sp
+    # (results cached on the subpath, under "_..." keys, are not the copy's)
+    out = {k: v for k, v in sp.items() if not k.startswith("_")}
+    out["closed"] = True
+    return out
+
+
+def _classify_subpath(sp):
     pts = [sp["start"]]
     curves = lines = 0
     for seg in sp["segs"]:
@@ -114,7 +138,18 @@ def classify_subpath(sp):
     shape = None
     ring = False
     centre = ((x0 + x1) / 2, (y0 + y1) / 2)      # the middle of the box
-    if curves >= 3 and lines <= 1:          # a circle: 4, 8, ... Bezier arcs
+    if curves == 2 and lines <= 1:
+        # a circle of two half-circle arcs (GraphPad Prism): their control
+        # points stand 4/3 of the radius off the diameter, so the box and
+        # the roundness are measured on the curve itself
+        flat = flatten_subpath(sp, steps=12)
+        fx0, fy0, fx1, fy1 = bbox_of(flat)
+        fw, fh = fx1 - fx0, fy1 - fy0
+        if min(fw, fh) > 0.85 * max(fw, fh) > 1e-9:
+            cx0, cy0, r = (fx0 + fx1) / 2, (fy0 + fy1) / 2, max(fw, fh) / 2
+            if all(abs(math.hypot(q[0] - cx0, q[1] - cy0) - r) < 0.06 * r for q in flat):
+                shape, centre, size = "circle", (cx0, cy0), max(fw, fh)
+    elif curves >= 3 and lines <= 1:        # a circle: 4, 8, ... Bezier arcs
         shape = "circle" if aspect > 0.85 else None
     elif curves >= 6 and lines <= 3 and aspect > 0.85:
         # an outline ring drawn as one contour: outer circle, a short line
@@ -150,22 +185,25 @@ def classify_subpath(sp):
             if all(edges):
                 # oblong boxes are only ever used as legend keys (colour swatches)
                 shape = "square" if aspect > 0.85 else ("rectangle" if aspect >= 0.5 else None)
-            elif aspect > 0.85:
+            elif aspect >= 0.5:
                 # a diamond has one corner at the middle of each side of its
-                # bounding box: left, right (at mid height), top, bottom (mid width)
-                xm, ym, tol = (x0 + x1) / 2, (y0 + y1) / 2, 0.08 * size
+                # bounding box: left, right (at mid height), top, bottom (mid
+                # width); one in a box of aspect 0.5-0.85 is a thin diamond
+                # (matplotlib's 'd')
+                xm, ym = (x0 + x1) / 2, (y0 + y1) / 2
+                tx, ty = 0.08 * (x1 - x0), 0.08 * (y1 - y0)
                 sides = set()
                 for v in uniq:
-                    if abs(v[1] - ym) < tol and abs(v[0] - x0) < tol:
+                    if abs(v[1] - ym) < ty and abs(v[0] - x0) < tx:
                         sides.add("l")
-                    elif abs(v[1] - ym) < tol and abs(v[0] - x1) < tol:
+                    elif abs(v[1] - ym) < ty and abs(v[0] - x1) < tx:
                         sides.add("r")
-                    elif abs(v[0] - xm) < tol and abs(v[1] - y0) < tol:
+                    elif abs(v[0] - xm) < tx and abs(v[1] - y0) < ty:
                         sides.add("b")
-                    elif abs(v[0] - xm) < tol and abs(v[1] - y1) < tol:
+                    elif abs(v[0] - xm) < tx and abs(v[1] - y1) < ty:
                         sides.add("t")
                 if sides == {"l", "r", "t", "b"}:
-                    shape = "diamond"
+                    shape = "diamond" if aspect > 0.85 else "thin-diamond"
         elif 5 <= n <= 12 and aspect > 0.7 and _rotationally_symmetric(uniq, size):
             shape = "polygon"
             # the centre of symmetry (for a pentagon or a star it is not the
@@ -176,7 +214,8 @@ def classify_subpath(sp):
     # markers are compact; a short diagonal stroke (e.g. the dash of a dashed
     # line converted to an outline) has a square-ish bounding box but is long
     # and thin
-    if shape in ("polygon", "triangle", "diamond") and elongation(flatten_subpath(sp)) > 1.8:
+    if shape in ("polygon", "triangle", "diamond") and elongation(flatten_subpath(sp)) > 1.8 or \
+            shape == "thin-diamond" and elongation(flatten_subpath(sp)) > 2.2:
         return None
     out = {"shape": shape, "cx": centre[0], "cy": centre[1], "size": size}
     if ring:
@@ -211,18 +250,25 @@ def doubled_outlines(paths, text_parts=frozenset(), cls_of=None):
             seq.append(((p["idx"], k), p, sp))
     runs = []                       # [geometry, keys, (path, subpath) of the run]
     for key, p, sp in seq:
+        here = None
         if runs:
             q, sq = runs[-1][2]
             # outlines whose start points differ cannot be equal: skip the
             # full comparison (the common case)
             if abs(sq["start"][0] - sp["start"][0]) < 0.001 and \
                     abs(sq["start"][1] - sp["start"][1]) < 0.001:
+                if sp["start"] == sq["start"] and sp["segs"] == sq["segs"] and \
+                        (p["fill"], p["stroke"], p["fill_rgb"], p["stroke_rgb"]) == \
+                        (q["fill"], q["stroke"], q["fill_rgb"], q["stroke_rgb"]):
+                    runs[-1][1].append(key)     # the very same numbers: equal
+                    continue
                 if runs[-1][0] is None:
                     runs[-1][0] = geom(q, sq)
-                if runs[-1][0] == geom(p, sp):
+                here = geom(p, sp)
+                if runs[-1][0] == here:
                     runs[-1][1].append(key)
                     continue
-        runs.append([None, [key], (p, sp)])
+        runs.append([here, [key], (p, sp)])     # (its geometry, if worked out)
     if len(seq) < 4:
         return set()
     in_even = sum(len(r[1]) for r in runs if len(r[1]) % 2 == 0)
@@ -270,7 +316,7 @@ def find_symbols(paths, glyph_symbols=(), text_parts=frozenset()):
     syms = [dict(g) for g in glyph_symbols]
     open_lines = []
     # filling closes every outline implicitly
-    cls_of = {p["idx"]: [classify_subpath(dict(sp, closed=True) if p["fill"] else sp)
+    cls_of = {p["idx"]: [classify_subpath(as_closed(sp) if p["fill"] else sp)
                          for sp in p["subpaths"]] for p in paths}
     doubled = doubled_outlines(paths, text_parts, cls_of)
     for p in paths:
@@ -347,25 +393,54 @@ def match_crossing_strokes(lines):
         segs.append({"idx": idx, "a": a, "b": b, "rgb": rgb, "L": L, "mid": mid, "ang": ang})
     if not segs:
         return []
-    # spatial hash on midpoints, cell = typical stroke length
-    Ls = sorted(s["L"] for s in segs)
-    cell = max(Ls[len(Ls) // 2], 1e-6)
-    grid = {}
-    for i, s in enumerate(segs):
-        grid.setdefault((int(s["mid"][0] // cell), int(s["mid"][1] // cell)), []).append(i)
     sets = DisjointSets(len(segs))
+    # strokes drawn on top of each other (duplicate points: stacks of 30 in
+    # the corpus) join each other; only one of each needs comparing
+    first = {}
+    reps = []
     for i, s in enumerate(segs):
-        gx, gy = int(s["mid"][0] // cell), int(s["mid"][1] // cell)
-        for dx in (-1, 0, 1):
-            for dy in (-1, 0, 1):
-                for j in grid.get((gx + dx, gy + dy), ()):
-                    if j <= i:
-                        continue
-                    t = segs[j]
-                    if (t["rgb"] == s["rgb"] and abs(t["L"] / s["L"] - 1) < 0.2 and
-                            math.hypot(t["mid"][0] - s["mid"][0], t["mid"][1] - s["mid"][1])
-                            < 0.15 * min(s["L"], t["L"])):
-                        sets.union(i, j)
+        key = (s["mid"], s["L"], s["rgb"])
+        j = first.get(key)
+        if j is None:
+            first[key] = i
+            reps.append(i)
+        else:
+            sets.union(j, i)
+    # strokes join only when their lengths are within 20% of each other and
+    # their midpoints closer than 0.15 of the shorter one: file the
+    # midpoints by length class (factors of 1.2), each class in a grid of
+    # cells 0.15 times its longest stroke, and look only in the neighbouring
+    # classes - a few cells per stroke, whatever the mix of lengths (curves
+    # drawn as thousands of 0.01 pt strokes beside 300 pt axes once made a
+    # single grid scan 10^8 cells per long stroke)
+    step = math.log(1.2)
+    klass = {i: int(math.floor(math.log(max(segs[i]["L"], 1e-9)) / step)) for i in reps}
+    grids = {}
+    for i in reps:
+        k = klass[i]
+        cell = 0.15 * 1.2 ** (k + 1)
+        m = segs[i]["mid"]
+        grids.setdefault(k, (cell, {}))[1].setdefault(
+            (int(m[0] // cell), int(m[1] // cell)), []).append(i)
+    for i in reps:
+        s = segs[i]
+        mx, my = s["mid"]
+        r = 0.15 * s["L"]                       # >= the reach of any pair with s
+        for k in range(klass[i] - 2, klass[i] + 3):
+            got = grids.get(k)
+            if got is None:
+                continue
+            cell, grid = got
+            for gx in range(int((mx - r) // cell), int((mx + r) // cell) + 1):
+                for gy in range(int((my - r) // cell), int((my + r) // cell) + 1):
+                    for j in grid.get((gx, gy), ()):
+                        if j <= i:
+                            continue
+                        t = segs[j]
+                        if (t["rgb"] == s["rgb"] and abs(t["L"] / s["L"] - 1) < 0.2 and
+                                math.hypot(t["mid"][0] - mx, t["mid"][1] - my)
+                                < 0.15 * min(s["L"], t["L"])):
+                            sets.union(i, j)
     out = []
     for g in ([segs[i] for i in members] for members in sets.groups()):
         if len(g) < 2:

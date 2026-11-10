@@ -20,6 +20,8 @@ from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfparser import PDFParser
 
+from .tools import is_plotting_program, tool_name, xmp_creator_tool
+
 # pdfminer reports every oddity of a file through logging; the program
 # reports what matters itself
 logging.getLogger("pdfminer").setLevel(logging.CRITICAL)
@@ -58,6 +60,7 @@ class Document:
             raise ValueError("not a PDF file")
         self.warnings = []
         pdf = self._open(data, password)
+        self.tool = self._document_tool(pdf)
         self._empty_corrupt_streams(pdf)
         buf = io.BytesIO()
         try:
@@ -112,6 +115,25 @@ class Document:
                 self.warn("a corrupt %s stream was skipped (%s)" % (
                     "/".join(n.lstrip("/") for n in names), reason))
                 obj.write(b"")
+
+    @staticmethod
+    def _document_tool(pdf):
+        """The plotting program that wrote the file itself (a PDF that is a
+        plot), from its document information or XMP metadata; "" when the
+        file names no plotting program (a LaTeX or Word document, say)."""
+        try:
+            info = pdf.docinfo
+            creator, producer = str(info.get("/Creator", "")), str(info.get("/Producer", ""))
+        except Exception:
+            creator = producer = ""
+        xmp = ""
+        try:
+            if "/Metadata" in pdf.Root:
+                xmp = xmp_creator_tool(pdf.Root.Metadata.read_bytes())
+        except Exception:
+            pass
+        name = tool_name(creator, producer, xmp)
+        return name if is_plotting_program(name) else ""
 
     def warn(self, msg):
         """Record a warning (once) for the user."""

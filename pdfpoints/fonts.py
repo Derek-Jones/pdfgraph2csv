@@ -55,6 +55,15 @@ class FontInfo:
         spec = resolve1(spec) if spec else {}
         spec = spec if isinstance(spec, dict) else {}
         self.base = str(getattr(font, "basefont", "") or "")
+        # the font's name without a subset prefix ("ABCDEF+DejaVuSans")
+        name = self.base
+        if not name:                      # Type 3 fonts (matplotlib): /BaseFont or /Name
+            for key in ("BaseFont", "Name"):
+                v = resolve1(spec.get(key))
+                if v is not None:
+                    name = getattr(v, "name", None) or str(v)
+                    break
+        self.name = name.split("+", 1)[1] if len(name) > 7 and name[6] == "+" else name
         self.dingbats = "dingbat" in self.base.lower()
         self.two_byte = font.is_multibyte()
         self.diffs = _differences(spec)

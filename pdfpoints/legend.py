@@ -3,20 +3,28 @@ and the naming of every data symbol's series from them.
 """
 
 import bisect
+import math
 
 from .colours import color_name
 from .context import PAGE
-from .geometry import bbox_of, rect_distance
+from .geometry import thin_rect_line, bbox_of, rect_distance
 from .graphs import frame_symbols, frame_texts
 from .symbols import symbol_signature
 from .text import is_number
 
 
 def legend_line_samples(paths):
-    """Short horizontal strokes: the line samples of legend entries."""
+    """Short horizontal strokes: the line samples of legend entries; also
+    such strokes converted to thin filled rectangles (Inkscape, cairo)."""
     out = []
     for p in paths:
         if not p["stroke"]:
+            if p["fill"] and len(p["subpaths"]) == 1:
+                ln = thin_rect_line(p["subpaths"][0])
+                if ln is not None:
+                    (ax, ay), (bx, by) = ln
+                    if abs(ay - by) < 0.05 and 2 < abs(ax - bx) < 60:
+                        out.append((min(ax, bx), max(ax, bx), (ay + by) / 2))
             continue
         for sp in p["subpaths"]:
             if sp["closed"] or len(sp["segs"]) != 1 or sp["segs"][0][0] != "l":
@@ -39,15 +47,26 @@ def find_legend(symbols, texts, hlines=()):
                              or len(t["text"].strip()) > 60)), key=lambda ct: ct[0])
     label_y = [cy for cy, _ in labels]
     reach = 0.6 * max((t["size"] or 1.0 for _, t in labels), default=1.0)
-    hlines = sorted(hlines, key=lambda h: h[2])     # line samples by height, likewise
-    hline_y = [h[2] for h in hlines]
+    # line samples (horizontal) filed in a grid by height and by every x cell
+    # they span, so a marker looks only at the samples around itself
+    hl_cell = 8.0
+    hl_grid = {}
+    for x0, x1, y in hlines:
+        gy = int(math.floor(y / hl_cell))
+        for gx in range(int(math.floor((x0 - 0.5) / hl_cell)),
+                        int(math.floor((x1 + 0.5) / hl_cell)) + 1):
+            hl_grid.setdefault((gx, gy), []).append((x0, x1, y))
+    by_left = sorted(texts, key=lambda o: o["bbox"][0])     # (for label continuations)
     for i, s in enumerate(symbols):
         right = s["cx"] + s["size"] / 2
         tol = 0.3 * max(s["size"], 1.0)
-        for x0, x1, y in hlines[bisect.bisect_left(hline_y, s["cy"] - tol):
-                                bisect.bisect_right(hline_y, s["cy"] + tol)]:
-            if x0 - 0.5 <= s["cx"] <= x1 + 0.5 and abs(y - s["cy"]) < tol:
-                right = max(right, x1)
+        if hl_grid:
+            gx = int(math.floor(s["cx"] / hl_cell))
+            for gy in range(int(math.floor((s["cy"] - tol) / hl_cell)),
+                            int(math.floor((s["cy"] + tol) / hl_cell)) + 1):
+                for x0, x1, y in hl_grid.get((gx, gy), ()):
+                    if x0 - 0.5 <= s["cx"] <= x1 + 0.5 and abs(y - s["cy"]) < tol:
+                        right = max(right, x1)
         best = None
         lo = bisect.bisect_left(label_y, s["cy"] - reach)
         hi = bisect.bisect_right(label_y, s["cy"] + reach)
@@ -71,7 +90,7 @@ def find_legend(symbols, texts, hlines=()):
             label = t["text"].strip()
             # subscripts / superscripts that continue the label: f + 16
             end = t["bbox"][2]
-            for o in sorted(texts, key=lambda o: o["bbox"][0]):
+            for o in by_left:
                 if o["size"] < 0.3 * t["size"]:
                     continue                 # invisible helper glyphs
                 if o is not t and o["size"] < 0.9 * t["size"] and \
@@ -257,10 +276,16 @@ def _unreadable_legend_keys(symbols, texts, blobs, graphs, hlines, legend):
             cands[i] = s
         elif d == 0:
             inner[i] = s
-    # keys of a legend line up: a lone candidate is something else
+    # keys of a legend line up: a lone candidate is something else, unless
+    # it lines up with a line sample of the same legend (a marker key above
+    # or below the key of a fitted line, left edges aligned)
+    def beside_line_sample(s):
+        left = s["cx"] - s["size"] / 2
+        return any(abs(x0 - left) <= s["size"] and 0 < abs(y - s["cy"]) <= 3 * s["size"]
+                   for x0, x1, y in hlines)
     keys = [i for i, s in cands.items()
             if any(j != i and (abs(o["cy"] - s["cy"]) < 1.0 or abs(o["cx"] - s["cx"]) < 1.0)
-                   for j, o in cands.items())]
+                   for j, o in cands.items()) or beside_line_sample(s)]
     for i, s in inner.items():
         column = sorted((o for o in inner.values() if abs(o["cx"] - s["cx"]) < 1.0),
                         key=lambda o: o["cy"])

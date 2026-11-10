@@ -11,17 +11,27 @@ import re
 
 from dateutil import parser as dateparser
 
-from .geometry import bbox_of
+from .geometry import bbox_of, straight_segments
 
 
 _NUMTXT_RE = re.compile(r"^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$")
 
 
+# a number followed by a unit or scale suffix: byte sizes (SI kB, MB, ...
+# and binary KiB, MiB, ...; the value is in bytes), thousands / millions
+# ("10k", "2M": ggplot2's label_number(scale_cut)), factors ("1.5x")
+_SUFFIX = {"b": 1.0, "kb": 1e3, "mb": 1e6, "gb": 1e9, "tb": 1e12, "pb": 1e15,
+           "kib": 1024.0, "mib": 1024.0 ** 2, "gib": 1024.0 ** 3, "tib": 1024.0 ** 4,
+           "k": 1e3, "m": 1e6, "x": 1.0, "\u00d7": 1.0}
+_SUFFIX_RE = re.compile(r"([+-]?(?:\d+\.?\d*|\.\d+))(B|[kKMGTP]B|[KMGT]iB|k|K|M|x|\u00d7)")
+
+
 def parse_number(s):
     """Numeric value of a label: plain numbers, 1,000 / $5 / 25%, 10^3 and
-    2x10^3, unicode minus signs, '95-style years and dates (as decimal
-    years, see parse_date); None if not a number, or not one a float can
-    hold (such as 10^602 in body text)."""
+    2x10^3, unicode minus signs, sizes and scaled numbers (10kB, 1MB, 2KiB,
+    10k, 1.5x: see _SUFFIX), '95-style years and dates (as decimal years,
+    see parse_date); None if not a number, or not one a float can hold
+    (such as 10^602 in body text)."""
     t = (s.strip().replace("\u2212", "-").replace("\u2013", "-")
          .replace("\u2014", "-").replace("\u00a0", "").replace(" ", ""))
     t = t.replace(",", "").replace("$", "").replace("%", "")
@@ -38,6 +48,9 @@ def parse_number(s):
     if _NUMTXT_RE.match(t):
         v = float(t)
         return v if math.isfinite(v) else None
+    m = _SUFFIX_RE.fullmatch(t)
+    if m:  # 10kB, 1MB, 10k, 1.5x
+        return float(m.group(1)) * _SUFFIX[m.group(2).lower()]
     m = SHORT_YEAR_RE.fullmatch(t)
     if m:  # '95 = 1995, '05 = 2005 (century checked per axis)
         yy = int(m.group(1))
@@ -107,8 +120,13 @@ def merge_texts(texts):
         if out:
             o = out[-1]
             d = math.hypot(t["p0"][0] - o["p1"][0], t["p0"][1] - o["p1"][1])
+            # mathtext spaces a multiplication sign: "3 × 10^1" (matplotlib's
+            # log-axis labels)
+            times = (t["text"].strip() == "\u00d7" and o["text"].strip()[-1:].isdigit()) or \
+                (o["text"].strip().endswith("\u00d7") and t["text"].strip()[:1].isdigit())
+            gap = 0.45 if times else 0.15
             if (abs(t["size"] - o["size"]) < 0.05 * max(t["size"], 1e-6) and
-                    d < 0.15 * max(t["size"], 1e-6) and t["text"].strip() and
+                    d < gap * max(t["size"], 1e-6) and t["text"].strip() and
                     o["text"].strip()):
                 o = dict(o)
                 o["text"] += t["text"]
@@ -163,8 +181,11 @@ def attach_vector_minus(texts, paths):
     """Some generators (e.g. matplotlib with Type3 fonts) draw the minus sign
     of a tick label as a filled path instead of text.  Find a thin horizontal
     bar just left of a numeric label and make the label negative."""
-    bars, uprights = [], set()
+    bars, uprights, axis_lines = [], set(), []
     for p in paths:
+        for a, b in straight_segments(p):
+            if abs(a[0] - b[0]) < 0.1 and abs(a[1] - b[1]) >= 20:
+                axis_lines.append((a[0], min(a[1], b[1]), max(a[1], b[1])))
         for sp in p["subpaths"]:
             x0, y0, x1, y1 = bbox_of([sp["start"]] + [q for s in sp["segs"] for q in s[1:]])
             w, h = x1 - x0, y1 - y0
@@ -175,6 +196,10 @@ def attach_vector_minus(texts, paths):
     # the cross bar of a '+' marker is no minus sign
     bars = [b for b in bars
             if (round((b[0] + b[2]) / 2, 1), round((b[1] + b[3]) / 2, 1)) not in uprights]
+    # nor is a tick mark touching a vertical axis or frame line
+    bars = [b for b in bars
+            if not any(min(abs(b[0] - lx), abs(b[2] - lx)) <= 0.3 and ly0 - 0.5 <= b[1] <= ly1 + 0.5
+                       for lx, ly0, ly1 in axis_lines)]
     for t in texts:
         if t["value"] is None or t["rotated"] or t["text"].strip().startswith("-"):
             continue

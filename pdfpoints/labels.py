@@ -4,6 +4,7 @@ category labels, labels shared by neighbouring axes and axis multipliers
 such as "x10^-9".
 """
 
+import bisect
 import re
 import sys
 
@@ -92,6 +93,8 @@ def _label_anchor(tx, orient, axis_pos):
         c = min(tx["centres"], key=lambda c: abs(c[1 - i] - axis_pos))
         return c[i]
     ang = abs(tx.get("angle", 0.0)) % 180
+    if orient == "x" and tx["rotated"] and abs(ang - 90) <= 15:
+        return tx["center"][i]             # upright text: centred on its tick
     if orient == "x" and tx["rotated"] or orient == "y" and abs(ang - 90) < 75 and tx["rotated"]:
         p0, p1 = tx["p0"], tx["p1"]
         end = p0 if abs(p0[1 - i] - axis_pos) < abs(p1[1 - i] - axis_pos) else p1
@@ -169,6 +172,7 @@ def nominal_axis(g, orient, line, debug):
     between = match([(a + b) / 2 for a, b in zip(ticks, ticks[1:])])
     best = None
     for pairs, n_places in ((on_ticks, len(ticks)), (between, len(ticks) - 1)):
+        layout = "between" if pairs is between else "on"
         if len(pairs) < max(2, 0.6 * n_places):
             continue
         side = [1 if tx["bbox"][1 if orient == "x" else 0] > apos else -1 for _, tx, _ in pairs]
@@ -176,11 +180,17 @@ def nominal_axis(g, orient, line, debug):
             continue                          # labels on both sides: not a label row
         key = (len(pairs) / n_places, -sum(d for _, _, d in pairs) / len(pairs))
         if best is None or key > best[0]:
-            best = (key, pairs)
+            best = (key, pairs, layout, n_places)
     if best is None:
         return None
     pairs = sorted(best[1], key=lambda p: p[0])
-    if len(pairs) < 3:            # two stray words are no category axis
+    # two stray words are no category axis; but two readable names, one in
+    # each of the two gaps between three ticks on an axis line, are an Excel
+    # bar chart of two categories ("Yes", "No")
+    two = (len(pairs) == 2 and best[2] == "between" and best[3] == 2 and line is not None
+           and all(tx.get("text") and not tx.get("outlined") and
+                   any(ch.isalpha() for ch in tx["text"]) for _, tx, _ in pairs))
+    if len(pairs) < 3 and not two:
         return None
     # categories are spread along a real axis, not crowded into specks
     if ahi - alo < 30 or min(b[0] - a[0] for a, b in zip(pairs, pairs[1:])) < 3:
@@ -276,36 +286,45 @@ def assign_labels(ticks, orient, outer, sign, numeric):
     side of `outer`, centred on the tick).  Each label and each tick is used
     once, best matches first.  Returns a LabelPairs list of (tick, value)."""
     spacing = min((b - a for a, b in zip(ticks, ticks[1:])), default=0) or 1e9
+    ordered = all(a <= b for a, b in zip(ticks, ticks[1:]))
     cands = []
-    for i, t in enumerate(ticks):
-        for j, tx in enumerate(numeric):
-            size = tx["size"] or 1.0
-            x0, y0, x1, y1 = tx["bbox"]
-            cx, cy = tx["center"]
-            # ref: the label's position along the axis; gap: its distance
-            # beyond the tick ends; ptol: how far off-centre it may be
-            if orient == "y":       # tick is horizontal, labels left/right
-                ref = cy
-                gap = (outer - x1) if sign < 0 else (x0 - outer)
+    for j, tx in enumerate(numeric):
+        size = tx["size"] or 1.0
+        x0, y0, x1, y1 = tx["bbox"]
+        cx, cy = tx["center"]
+        # ref: the label's position along the axis; gap: its distance
+        # beyond the tick ends; ptol: how far off-centre it may be
+        if orient == "y":           # tick is horizontal, labels left/right
+            ref = cy
+            gap = (outer - x1) if sign < 0 else (x0 - outer)
+            ptol = 0.8 * size
+        else:                       # tick is vertical, labels below/above
+            ang = abs(tx.get("angle", 0.0)) % 180
+            if tx["rotated"] and abs(ang - 90) > 15:
+                # oblique labels point at their tick with the end
+                # nearest to the axis
+                p0, p1 = tx["p0"], tx["p1"]
+                anc = p1 if abs(p1[1] - outer) < abs(p0[1] - outer) else p0
+                ref = anc[0]
+                ptol = 1.5 * size
+            else:
+                ref = cx
                 ptol = 0.8 * size
-            else:                   # tick is vertical, labels below/above
-                ang = abs(tx.get("angle", 0.0)) % 180
-                if tx["rotated"] and abs(ang - 90) > 15:
-                    # oblique labels point at their tick with the end
-                    # nearest to the axis
-                    p0, p1 = tx["p0"], tx["p1"]
-                    anc = p1 if abs(p1[1] - outer) < abs(p0[1] - outer) else p0
-                    ref = anc[0]
-                    ptol = 1.5 * size
-                else:
-                    ref = cx
-                    ptol = 0.8 * size
-                gap = (outer - y1) if sign < 0 else (y0 - outer)
-            dperp = abs(ref - t)
-            if dperp > min(ptol, 0.5 * spacing + 1e-9):
+            gap = (outer - y1) if sign < 0 else (y0 - outer)
+        if gap < -0.5 * size or gap > 5 * size:
+            continue                          # on the wrong side, or too far
+        lim = min(ptol, 0.5 * spacing + 1e-9)
+        # the ticks it may be centred on (by bisection: rows of ticks can
+        # be long and labels many)
+        if ordered:
+            near = range(bisect.bisect_left(ticks, ref - lim),
+                         bisect.bisect_right(ticks, ref + lim))
+        else:
+            near = range(len(ticks))
+        for i in near:
+            dperp = abs(ref - ticks[i])
+            if dperp > lim:
                 continue                      # not centred on this tick
-            if gap < -0.5 * size or gap > 5 * size:
-                continue                      # on the wrong side, or too far
             cands.append((dperp + 0.2 * max(gap, 0), i, j))
     # greedy matching: the best centred, closest pairs first
     cands.sort()

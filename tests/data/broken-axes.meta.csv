@@ -1,0 +1,5 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,a) LLVM,4.4,Accuracy comparison between ROpt and PM approaches.,,Excel,28,0,180,0,12
+1,2,b) x264,4.4,Accuracy comparison between ROpt and PM approaches.,,Excel,25,0,220,0,25
+1,3,c) BerkeleyDBC,4.4,Accuracy comparison between ROpt and PM approaches.,,Excel,36,0,360,0,160
+1,4,d) Apache,4.4,Accuracy comparison between ROpt and PM approaches.,,Excel,31,0,100,0,80

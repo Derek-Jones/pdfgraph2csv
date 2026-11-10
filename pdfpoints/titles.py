@@ -37,15 +37,41 @@ def _continues_caption(t, texts, depth=12):
     return False
 
 
+def _running_headers(texts):
+    """Ids of the texts of a running header (footer): the topmost
+    (bottommost) line of the page's text, spanning the text block from its
+    left margin to its right one ("Copy-and-Patch ... for R" at the left,
+    "VMIL '25, October ..., Singapore" at the right)."""
+    flat = [t for t in texts if not t["rotated"] and t["text"].strip()]
+    if len(flat) < 3:
+        return set()
+    tx0 = min(t["bbox"][0] for t in flat)
+    tx1 = max(t["bbox"][2] for t in flat)
+    width = tx1 - tx0
+    if width <= 0:
+        return set()
+    out = set()
+    for edge in (max(flat, key=lambda t: t["bbox"][3]), min(flat, key=lambda t: t["bbox"][1])):
+        s = max(edge["size"], 1e-6)
+        line = [t for t in flat if abs(t["p0"][1] - edge["p0"][1]) < 0.3 * s]
+        if min(t["bbox"][0] for t in line) <= tx0 + 0.05 * width and \
+                max(t["bbox"][2] for t in line) >= tx1 - 0.05 * width and \
+                max(o["bbox"][0] - t["bbox"][2] for t in line for o in line) > 0.25 * width:
+            out.update(id(t) for t in line)
+    return out
+
+
 def _find_title(rect, texts, symbols):
     """Text centred above a plot, alone on its line (so legend headings such
-    as "Post-TOF  [key] FALSE [key] TRUE" are not mistaken for titles)."""
+    as "Post-TOF  [key] FALSE [key] TRUE" are not mistaken for titles), and
+    not a running header of the page."""
     x0, y0, x1, y1 = rect
     w, h = x1 - x0, y1 - y0
     best = None
+    headers = _running_headers(texts)
     for t in texts:
         txt = t["text"].strip()
-        if not txt or is_number(t) or t["rotated"]:
+        if not txt or is_number(t) or t["rotated"] or id(t) in headers:
             continue
         if t["size"] < 0.85 * PAGE.label_size:
             continue            # sub/superscripts and small print are no titles
@@ -161,7 +187,8 @@ _CAPTION_RE = re.compile(r"^(\(?[a-zA-Z]\)|Fig(ure|\.)?\s*\d)")
 # -- figure captions ----------------------------------------------------------
 
 # "Fig. 5.", "Figure 3:", "FIGURE 12 -", "Fig 2", "Figure S3", "Figure 4.2"
-_FIGURE_RE = re.compile(r"^\s*(?:Fig(?:ure)?|FIG(?:URE)?)\.?\s*([A-Z]?\d+(?:\.\d+)?[a-z]?)"
+# (small-caps fonts may map the label to lower case: "figure 2.")
+_FIGURE_RE = re.compile(r"^\s*(?:Fig(?:ure)?|FIG(?:URE)?|fig(?:ure)?)\.?\s*([A-Z]?\d+(?:\.\d+)?[a-z]?)"
                         r"\s*(?:[.:|–—-]\s*)?(.*)$", re.S)
 
 

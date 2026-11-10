@@ -38,7 +38,8 @@ from pdfminer.psparser import LIT, PSEOF, PSKeyword, keyword_name, literal_name
 from .context import PAGE, SETTINGS
 from .fonts import DINGBAT_ANCHOR, DINGBAT_SYMBOLS, FontInfo
 from .geometry import bbox_of, mapply, mmul
-from .tokenizer import Floats, has_inline_image, operators
+from .tokenizer import Floats, coordinate_decimals, has_inline_image, operators
+from .tools import tool_name, xmp_creator_tool
 
 IDENTITY = (1, 0, 0, 1, 0, 0)
 
@@ -89,6 +90,7 @@ class ExtraState:
         self.ca = 1.0                     # fill opacity
         self.clip = None                  # clipping box (x0, y0, x1, y1), None = page
         self.font = None                  # FontInfo of the current font
+        self.gs_name = ""                 # name of the last ExtGState set (drawing style)
 
     def copy(self):
         c = ExtraState.__new__(ExtraState)
@@ -111,6 +113,10 @@ class ContentInterpreter(PDFPageInterpreter):
         self.depth = depth
         self.inherit = inherit            # state handed down to a Form XObject
         self.clip_next = False            # W / W*: the current path becomes a clip
+        self.unit = None                  # resolution of the stream's numbers (10^-decimals)
+        self.tool = None                  # the program that drew this content (if recorded)
+        self.decimals = None              # decimals the stream's numbers are written with
+        self.form_name = ""               # resource name of the Form XObject being run
 
     def dup(self):
         return self.__class__(self.rsrcmgr, self.device, self.page, self.depth)
@@ -146,6 +152,9 @@ class ContentInterpreter(PDFPageInterpreter):
         except Exception:
             self._execute_pdfminer(valid)
             return
+        # coordinates are known to half a unit of their last decimal
+        self.decimals = coordinate_decimals(data)
+        self.unit = 10.0 ** -self.decimals
         if len(data) > 15000000:          # say why the program is busy
             print("note: page %d has %d MB of drawing instructions; this may take a minute or two"
                   % (PAGE.number, len(data) // 1000000), file=sys.stderr, flush=True)
@@ -221,6 +230,7 @@ class ContentInterpreter(PDFPageInterpreter):
     def do_gs(self, name):
         """ExtGState: only the fill opacity /ca is used."""
         eg = self._resource("ExtGState", name)
+        self.extra.gs_name = literal_name(name) if not isinstance(name, str) else name
         if isinstance(eg, dict) and eg.get("ca") is not None:
             self.extra.ca = _num(resolve1(eg.get("ca")))
 
@@ -243,7 +253,9 @@ class ContentInterpreter(PDFPageInterpreter):
             self.page.record("paths", {
                 "subpaths": subpaths, "fill": fill, "stroke": stroke,
                 "fill_rgb": e.fill, "stroke_rgb": e.stroke,
-                "opaque": e.ca >= 0.99, "clip": e.clip})
+                "opaque": e.ca >= 0.99, "clip": e.clip,
+                "res": _resolution(self.unit, self.ctm), "tool": self.tool,
+                "style": self._style()})
         if self.clip_next and subpaths:
             pts = [q for sp in subpaths for q in [sp["start"]] +
                    [r for seg in sp["segs"] for r in seg[1:]]]
@@ -252,6 +264,20 @@ class ContentInterpreter(PDFPageInterpreter):
                                                    min(b[2], c[2]), min(b[3], c[3]))
         self.clip_next = False
         self.curpath = []
+
+    def _style(self):
+        """How the current path is drawn, for guessing the program that drew
+        it (styles.py): (line width in page units, line cap, line join,
+        decimals of the numbers, Form XObject name, ExtGState name).  Equal
+        tuples are shared."""
+        gs = self.graphicstate
+        try:
+            lw = round(float(gs.linewidth) * math.sqrt(abs(self.ctm[0] * self.ctm[3] -
+                                                            self.ctm[1] * self.ctm[2])), 3)
+        except (TypeError, ValueError):
+            lw = None
+        t = (lw, gs.linecap, gs.linejoin, self.decimals, self.form_name, self.extra.gs_name)
+        return _STYLES.setdefault(t, t)
 
     def do_S(self):
         self._paint(False, True)
@@ -404,6 +430,7 @@ class ContentInterpreter(PDFPageInterpreter):
             self.page.record("texts", {
                 "text": txt, "p0": p0, "p1": mapply(base, s1, rise),
                 "up": (top[0] - p0[0], top[1] - p0[1]), "size": size,
+                "font": font.name, "rgb": self.extra.fill,
                 # each glyph: (char, start point, end point) on the page
                 "glyphs": [(c, mapply(base, a, rise), mapply(base, b, rise))
                            for c, a, b in gl]})
@@ -423,6 +450,7 @@ class ContentInterpreter(PDFPageInterpreter):
         e1 = mapply(base, pen + bx1 / 1000.0 * fs * th, rise + by1 / 1000.0 * fs)
         filled = ts.render in (0, 2, 4, 6)    # modes 0/2/4/6 fill the glyph; 1/5 stroke it
         self.page.record("glyph_symbols", {
+            "res": _resolution(self.unit, base), "tool": self.tool,
             "shape": shape, "cx": c[0], "cy": c[1],
             "size": max(abs(e1[0] - e0[0]), abs(e1[1] - e0[1])),
             "filled": filled, "rgb": e.fill if filled else e.stroke})
@@ -445,12 +473,48 @@ class ContentInterpreter(PDFPageInterpreter):
                                  (self.textstate.copy(), self.graphicstate.copy(),
                                   self.extra.copy()))
             sub.parent_stream_ids.update(self.parent_stream_ids | self.stream_ids)
+            # an embedded graphic that records its own program (innermost wins)
+            sub.tool = form_tool(xobj) or self.tool
+            sub.form_name = literal_name(xobjid) if not isinstance(xobjid, str) else xobjid
             sub.render_contents(res, [xobj], ctm=mmul(matrix, self.ctm))
         elif subtype == "Image":
             pts = [mapply(self.ctm, u, v) for u, v in ((0, 0), (1, 0), (0, 1), (1, 1))]
             xs, ys = [p[0] for p in pts], [p[1] for p in pts]
             self.page.images.append(((min(xs), min(ys), max(xs), max(ys)), self.page.order))
             self.page.order += 1
+
+
+_FORM_TOOLS = {}                          # id(XObject stream) -> tool name
+_STYLES = {}                              # shared drawing-style tuples
+
+
+def form_tool(xobj):
+    """The program that made an embedded graphic, from the document
+    information pdfTeX keeps (/PTEX.InfoDict) or its XMP metadata; "" if
+    none is recorded."""
+    key = id(xobj)
+    if key not in _FORM_TOOLS:
+        name = ""
+        try:
+            info = resolve1(xobj.get("PTEX.InfoDict"))
+            if isinstance(info, dict):
+                name = tool_name(resolve1(info.get("Creator")), resolve1(info.get("Producer")))
+            if not name:
+                meta = resolve1(xobj.get("Metadata"))
+                if isinstance(meta, PDFStream):
+                    name = tool_name("", "", xmp_creator_tool(meta.get_data()))
+        except Exception:
+            name = ""
+        _FORM_TOOLS[key] = (xobj, name)          # (the stream keeps its id valid)
+    return _FORM_TOOLS[key][1]
+
+
+def _resolution(unit, m):
+    """The page-space size of one unit of the last decimal of the numbers
+    drawn with matrix m (None when unknown)."""
+    if unit is None:
+        return None
+    return unit * math.sqrt(abs(m[0] * m[3] - m[1] * m[2]))
 
 
 _HANDLERS = {}                            # (class, operator) -> (method, operand count)
@@ -488,7 +552,10 @@ def _from_pikepdf(o):
 def build_subpaths(curpath, ctm):
     """pdfminer's path segments (user space) -> subpaths in page
     coordinates: [{start, segs: [("l", p) | ("c", p1, p2, p3)], closed}].
-    A segment after a close-path starts a new subpath at the current point."""
+    A segment after a close-path starts a new subpath at the current point.
+    Subpaths without segments (a bare move-to, as Inkscape writes after
+    every shape) draw nothing and are left out: kept, their zero-size box
+    on a marker's edge looked like a hole and made the marker a letter."""
     subpaths, sub, cur = [], None, None
     ma, mb, mc, md, me, mf = ctm
 
@@ -534,7 +601,7 @@ def build_subpaths(curpath, ctm):
             sub["closed"] = True
             cur = sub["start"]
             sub = None
-    return subpaths
+    return [sp for sp in subpaths if sp["segs"]]
 
 
 # -- colour spaces ------------------------------------------------------------

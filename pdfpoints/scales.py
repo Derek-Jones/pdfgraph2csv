@@ -10,7 +10,7 @@ from .context import PAGE
 from .geometry import bbox_of
 
 
-def fit_axis(pairs):
+def fit_axis(pairs, rescue=False):
     """Fit tick positions to label values: [(coord, value)] -> mapping dict
     (see map_value) or None.
 
@@ -19,8 +19,17 @@ def fit_axis(pairs):
     or fit a log scale ten times better.  A fit is accepted when every label
     lies within 2% of the value range of the line.  Otherwise the worst
     label (probably a misread or misassigned one) is dropped and the fit
-    repeated, as long as more than half of the labels remain."""
+    repeated, as long as more than half of the labels remain.
+
+    With `rescue` (axes that have an axis line), if that fails, dropping
+    the one label whose removal leaves an acceptable fit is tried: a wrong
+    label pulls the line towards itself, so the label farthest from it can
+    be a right one ("0.5 0.0 0.5 1.0", where the first should read -0.5,
+    loses the 0.0).  Not for axes without a line: short strokes of '+'
+    markers pass for their ticks, and some subset of stray numbers nearby
+    nearly always fits."""
     pairs = list(pairs)
+    original = list(pairs)
 
     def lsq(pp, logv=False):
         """(a, b, relative residual of each pair) or None."""
@@ -65,6 +74,25 @@ def fit_axis(pairs):
                     "range": max(vals) - min(vals)}
         worst = max(range(len(pairs)), key=lambda i: res[i])
         pairs.pop(worst)  # drop a mismatched label and refit
+    if rescue and len(original) >= 4:
+        # a misread label lies far off the line through the others, which
+        # fit almost exactly; labels that only roughly follow a scale (a
+        # category axis of sizes 250, 180, 130, 100, 70) are no misreading
+        best = None
+        for i in range(len(original)):
+            rest = original[:i] + original[i + 1:]
+            m = fit_axis(rest) if len(rest) >= 3 else None
+            if m is None or m["n"] != len(rest) or m["resid"] > 0.002:
+                continue
+            c, v = original[i]
+            pred = map_value(m, c)
+            off = abs(pred - v) / m["range"] if m["kind"] != "log" else \
+                abs(math.log10(max(pred, 1e-300)) - math.log10(v)) / max(
+                    math.log10(max(x for _, x in rest) / min(x for _, x in rest)), 1e-12) \
+                if v > 0 else float("inf")
+            if off >= 0.1 and (best is None or m["resid"] < best["resid"]):
+                best = m
+        return best
     return None
 
 

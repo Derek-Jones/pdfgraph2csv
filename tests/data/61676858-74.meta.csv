@@ -1,0 +1,3 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,Waiting Time of Class: 1,3.3,The GS evaluation of the waiting time distribution function for class-1 and class-2 customers under RCS (G = 0.9).,TeX,,9999,0,300,0.2,1
+1,2,Waiting Time of Class: 2,3.3,The GS evaluation of the waiting time distribution function for class-1 and class-2 customers under RCS (G = 0.9).,TeX,R,9999,0,300,0.2,1
