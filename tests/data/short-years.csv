@@ -1,37 +1,32 @@
 page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
 1,1,filled-triangle,SIA Scaling,0,1991.99998068,31.69991497,black,#000000
-1,1,filled-triangle,SIA Scaling,0,1994.99997672,26.20008977,black,#000000
-1,1,filled-triangle,SIA Scaling,0,1997.00002396,14.79981959,black,#000000
-1,1,filled-triangle,SIA Scaling,0,1999.00000885,12.40002849,black,#000000
-1,1,filled-triangle,SIA Scaling,0,2001.99998619,10.19998619,black,#000000
-1,1,filled-triangle,SIA Scaling,0,2004.99996352,7.90006949,black,#000000
-1,1,filled-triangle,SIA Scaling,0,2008.0000032,6.60001899,black,#000000
-1,1,filled-triangle,SIA Scaling,0,2011.00004288,5.60015279,black,#000000
-1,1,filled-triangle,SIA Scaling,0,2014.00002022,5.90005654,black,#000000
 1,1,filled-circle,Intel Data,0,1991.99998068,53.00009495,white,#ffffff
 1,1,filled-circle,Intel Data,0,1993.99998428,45.99990936,white,#ffffff
-1,1,filled-circle,Intel Data,0,1995.99996917,39.00000432,white,#ffffff
-1,1,filled-circle,Intel Data,0,1998.0000164,24.00004748,white,#ffffff
-1,1,filled-circle,Intel Data,0,2000.0000013,15.00012948,white,#ffffff
 1,1,filled-circle,ISSCC Data,0,1993.99998428,46.30009366,black,#000000
 1,1,filled-circle,ISSCC Data,0,1993.99998428,36.09999957,black,#000000
 1,1,filled-circle,ISSCC Data,0,1993.99998428,13.89982779,black,#000000
+1,1,filled-triangle,SIA Scaling,0,1994.99997672,26.20008977,black,#000000
 1,1,filled-circle,ISSCC Data,0,1994.99997672,45.09991756,black,#000000
 1,1,filled-circle,ISSCC Data,0,1994.99997672,41.80013466,black,#000000
 1,1,filled-circle,ISSCC Data,0,1994.99997672,18.49994173,black,#000000
+1,1,filled-circle,Intel Data,0,1995.99996917,39.00000432,white,#ffffff
 1,1,filled-circle,ISSCC Data,0,1995.99996917,22.20006388,black,#000000
 1,1,filled-circle,ISSCC Data,0,1995.99996917,18.29991238,black,#000000
+1,1,filled-triangle,SIA Scaling,0,1997.00002396,14.79981959,black,#000000
 1,1,filled-circle,ISSCC Data,0,1997.00002396,24.09992188,black,#000000
 1,1,filled-circle,ISSCC Data,0,1997.00002396,26.49999353,black,#000000
 1,1,filled-circle,ISSCC Data,0,1997.00002396,13.20014589,black,#000000
+1,1,filled-circle,Intel Data,0,1998.0000164,24.00004748,white,#ffffff
 1,1,filled-circle,ISSCC Data,0,1998.0000164,18.49994173,black,#000000
 1,1,filled-circle,ISSCC Data,0,1998.0000164,48.19995166,black,#000000
+1,1,filled-triangle,SIA Scaling,0,1999.00000885,12.40002849,black,#000000
 1,1,filled-circle,ISSCC Data,0,1999.00000885,25.30009798,black,#000000
 1,1,filled-circle,ISSCC Data,0,1999.00000885,18.49994173,black,#000000
 1,1,filled-circle,ISSCC Data,0,1999.00000885,39.89999611,black,#000000
 1,1,filled-circle,ISSCC Data,0,1999.00000885,22.20006388,black,#000000
 1,1,filled-circle,ISSCC Data,0,1999.00000885,30.89979757,black,#000000
 1,1,filled-circle,ISSCC Data,0,1999.00000885,18.49994173,black,#000000
+1,1,filled-circle,Intel Data,0,2000.0000013,15.00012948,white,#ffffff
 1,1,filled-circle,ISSCC Data,0,2000.0000013,15.40018818,black,#000000
 1,1,filled-circle,ISSCC Data,0,2000.0000013,12.59977729,black,#000000
 1,1,filled-circle,ISSCC Data,0,2000.0000013,18.49994173,black,#000000
@@ -40,30 +35,35 @@ page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
 1,1,filled-circle,ISSCC Data,0,2000.0000013,16.59980319,black,#000000
 1,1,filled-circle,ISSCC Data,0,2000.0000013,15.40018818,black,#000000
 1,1,filled-circle,ISSCC Data,0,2000.0000013,25.70015667,black,#000000
+1,1,filled-triangle,SIA Scaling,0,2001.99998619,10.19998619,black,#000000
+1,1,filled-triangle,SIA Scaling,0,2004.99996352,7.90006949,black,#000000
+1,1,filled-triangle,SIA Scaling,0,2008.0000032,6.60001899,black,#000000
 1,1,filled-triangle,SIA Scaling,1,2008.61134522,34.89982347,black,#000000
 1,1,filled-circle,Intel Data,1,2008.61134522,30.50001942,white,#ffffff
 1,1,filled-circle,ISSCC Data,1,2008.61134522,26.09993483,black,#000000
+1,1,filled-triangle,SIA Scaling,0,2011.00004288,5.60015279,black,#000000
+1,1,filled-triangle,SIA Scaling,0,2014.00002022,5.90005654,black,#000000
 1,2,filled-circle,f16,0,250,36599613.5,black,#000000
-1,2,filled-circle,f16,0,180,79400685.7,black,#000000
-1,2,filled-circle,f16,0,130,157001675.5,black,#000000
-1,2,filled-circle,f16,0,100,144000989.1,black,#000000
-1,2,filled-circle,f16,0,70,160997792.3,black,#000000
-1,2,filled-circle,f16,0,50,124003265.9,black,#000000
-1,2,filled-circle,f16,0,35,61299354.3,black,#000000
 1,2,filled-triangle,f8,0,250,36599613.5,black,#000000
-1,2,filled-triangle,f8,0,180,49500288.4,black,#000000
-1,2,filled-triangle,f8,0,130,39700467.8,black,#000000
-1,2,filled-triangle,f8,0,100,36399894.8,black,#000000
-1,2,filled-triangle,f8,0,70,40201326.6,black,#000000
-1,2,filled-triangle,f8,0,50,31500843.2,black,#000000
-1,2,filled-triangle,f8,0,35,15300075.21,black,#000000
 1,2,cross,fSIA,0,250,36599613.5,black,#000000
-1,2,cross,fSIA,0,180,79400685.7,black,#000000
-1,2,cross,fSIA,0,130,64100079.7,black,#000000
-1,2,cross,fSIA,0,100,35601154.3,black,#000000
-1,2,cross,fSIA,0,70,27200570.4,black,#000000
-1,2,cross,fSIA,0,50,15300075.21,black,#000000
-1,2,cross,fSIA,0,35,8350258.38,black,#000000
 1,2,filled-circle,f16,1,250,520108908,black,#000000
 1,2,filled-triangle,f8,1,250,299282224,black,#000000
 1,2,cross,fSIA,1,250,172223998,black,#000000
+1,2,filled-circle,f16,0,180,79400685.7,black,#000000
+1,2,filled-triangle,f8,0,180,49500288.4,black,#000000
+1,2,cross,fSIA,0,180,79400685.7,black,#000000
+1,2,filled-circle,f16,0,130,157001675.5,black,#000000
+1,2,filled-triangle,f8,0,130,39700467.8,black,#000000
+1,2,cross,fSIA,0,130,64100079.7,black,#000000
+1,2,filled-circle,f16,0,100,144000989.1,black,#000000
+1,2,filled-triangle,f8,0,100,36399894.8,black,#000000
+1,2,cross,fSIA,0,100,35601154.3,black,#000000
+1,2,filled-circle,f16,0,70,160997792.3,black,#000000
+1,2,filled-triangle,f8,0,70,40201326.6,black,#000000
+1,2,cross,fSIA,0,70,27200570.4,black,#000000
+1,2,filled-circle,f16,0,50,124003265.9,black,#000000
+1,2,filled-triangle,f8,0,50,31500843.2,black,#000000
+1,2,cross,fSIA,0,50,15300075.21,black,#000000
+1,2,filled-circle,f16,0,35,61299354.3,black,#000000
+1,2,filled-triangle,f8,0,35,15300075.21,black,#000000
+1,2,cross,fSIA,0,35,8350258.38,black,#000000

@@ -1,0 +1,11 @@
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
+1,1,filled-circle,,0,-3.000000341,2,forestgreen,#2ca02c
+1,1,filled-circle,,0,-1.000000233,-2.5,forestgreen,#2ca02c
+1,1,filled-circle,,0,1.499999901,1,forestgreen,#2ca02c
+1,1,filled-circle,,0,2.499999955,2.5,forestgreen,#2ca02c
+1,1,filled-circle,,0,2.999999982,-1,forestgreen,#2ca02c
+1,2,filled-circle,,0,0.499999878,0.3,black,#000000
+1,2,filled-circle,,0,0.799999788,2,black,#000000
+1,2,filled-circle,,0,1.49999956,1.2,black,#000000
+1,2,filled-circle,,0,1.999999388,3,black,#000000
+1,2,filled-circle,,0,3.999998651,0.5,black,#000000

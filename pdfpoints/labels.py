@@ -114,9 +114,17 @@ def nominal_axis(g, orient, line, debug):
     ticks = g["pos"]
 
     def gap_of(tx):
-        """Distance of a label from the axis line."""
+        """Distance of a label from the axis line (for grid lines standing
+        in for ticks: from the nearer end of the grid, the label wholly
+        beyond it - the labels may be at the end with no axis line)."""
         b = tx["bbox"]
         lo, hi = (b[1], b[3]) if orient == "x" else (b[0], b[2])
+        if g.get("grid"):
+            if hi <= g["lo"]:
+                return g["lo"] - hi
+            if lo >= g["hi"]:
+                return lo - g["hi"]
+            return -1e9                       # across the grid: no label of it
         return max(lo - apos, apos - hi)
 
     def match(places):
@@ -131,7 +139,7 @@ def nominal_axis(g, orient, line, debug):
             s = tx["size"] or 1.0
             lo, hi = (b[1], b[3]) if orient == "x" else (b[0], b[2])
             gp = gap_of(tx)
-            if lo <= apos <= hi or not (-0.3 * s <= gp <= 4 * s):
+            if (lo <= apos <= hi and not g.get("grid")) or not (-0.3 * s <= gp <= 4 * s):
                 continue
             # where along the axis the label points (for unreadable outlined
             # words any of its glyphs or ends may be the anchor)

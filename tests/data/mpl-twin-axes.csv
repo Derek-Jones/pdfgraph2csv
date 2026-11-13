@@ -1,37 +1,37 @@
 page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex,axis
 1,1,filled-circle,Density,0,1999.999999629,9.99999429,steelblue,#1f77b4,left
-1,1,filled-circle,Density,0,2003.999999936,30.00000098,steelblue,#1f77b4,left
-1,1,filled-circle,Density,0,2008.000000244,19.99999763,steelblue,#1f77b4,left
-1,1,filled-circle,Density,0,2012.000000552,50.00000766,steelblue,#1f77b4,left
-1,1,filled-circle,Density,0,2016.000000859,40.00000432,steelblue,#1f77b4,left
 1,1,filled-square,Pitch,0,2000,0.5,crimson,#d62728,right
-1,1,filled-square,Pitch,0,2004,0.4,crimson,#d62728,right
-1,1,filled-square,Pitch,0,2008,0.3,crimson,#d62728,right
-1,1,filled-square,Pitch,0,2012,0.2,crimson,#d62728,right
-1,1,filled-square,Pitch,0,2016,0.0999999,crimson,#d62728,right
 1,1,filled-triangle,Gate,0,2000,0.45,forestgreen,#2ca02c,right
+1,1,filled-circle,Density,0,2003.999999936,30.00000098,steelblue,#1f77b4,left
+1,1,filled-square,Pitch,0,2004,0.4,crimson,#d62728,right
 1,1,filled-triangle,Gate,0,2004,0.35,forestgreen,#2ca02c,right
-1,1,filled-triangle,Gate,0,2008,0.25,forestgreen,#2ca02c,right
-1,1,filled-triangle,Gate,0,2012,0.15,forestgreen,#2ca02c,right
-1,1,filled-triangle,Gate,0,2016,0.12,forestgreen,#2ca02c,right
 1,1,filled-circle,Density,1,2006.81136248678,51.086379802927,steelblue,#1f77b4,left
 1,1,filled-square,Pitch,1,2006.81136248678,0.47525652606678,crimson,#d62728,right
 1,1,filled-triangle,Gate,1,2006.81136248678,0.43964925202196,forestgreen,#2ca02c,right
+1,1,filled-circle,Density,0,2008.000000244,19.99999763,steelblue,#1f77b4,left
+1,1,filled-square,Pitch,0,2008,0.3,crimson,#d62728,right
+1,1,filled-triangle,Gate,0,2008,0.25,forestgreen,#2ca02c,right
+1,1,filled-circle,Density,0,2012.000000552,50.00000766,steelblue,#1f77b4,left
+1,1,filled-square,Pitch,0,2012,0.2,crimson,#d62728,right
+1,1,filled-triangle,Gate,0,2012,0.15,forestgreen,#2ca02c,right
+1,1,filled-circle,Density,0,2016.000000859,40.00000432,steelblue,#1f77b4,left
+1,1,filled-square,Pitch,0,2016,0.0999999,crimson,#d62728,right
+1,1,filled-triangle,Gate,0,2016,0.12,forestgreen,#2ca02c,right
 2,2,filled-diamond,Cost (left axis),0,1.000000559,99.9999572,black,#000000,left
-2,2,filled-diamond,Cost (left axis),0,2.000000506,300.000024,black,#000000,left
-2,2,filled-diamond,Cost (left axis),0,3.000000453,199.9999906,black,#000000,left
-2,2,filled-diamond,Cost (left axis),0,4.000000399,400.0000575,black,#000000,left
 2,2,filled-circle,Speed (right axis),0,1.000000559,4.999999572,darkorange,#ff7f0e,right
-2,2,filled-circle,Speed (right axis),0,2.000000506,7.00000024,darkorange,#ff7f0e,right
-2,2,filled-circle,Speed (right axis),0,3.000000453,5.999999906,darkorange,#ff7f0e,right
-2,2,filled-circle,Speed (right axis),0,4.000000399,8.000000575,darkorange,#ff7f0e,right
 2,2,filled-diamond,Cost (left axis),1,1.8876598455668,408.14784852195,black,#000000,left
 2,2,filled-circle,Speed (right axis),1,1.8876598455668,7.8144239455009,darkorange,#ff7f0e,right
+2,2,filled-diamond,Cost (left axis),0,2.000000506,300.000024,black,#000000,left
+2,2,filled-circle,Speed (right axis),0,2.000000506,7.00000024,darkorange,#ff7f0e,right
+2,2,filled-diamond,Cost (left axis),0,3.000000453,199.9999906,black,#000000,left
+2,2,filled-circle,Speed (right axis),0,3.000000453,5.999999906,darkorange,#ff7f0e,right
+2,2,filled-diamond,Cost (left axis),0,4.000000399,400.0000575,black,#000000,left
+2,2,filled-circle,Speed (right axis),0,4.000000399,8.000000575,darkorange,#ff7f0e,right
 3,3,filled-circle,,0,0,0.999999572,steelblue,#1f77b4,left
-3,3,filled-circle,,0,9.99999928,4.000000575,steelblue,#1f77b4,left
-3,3,filled-circle,,0,19.9999995,1.999999906,steelblue,#1f77b4,left
-3,3,filled-circle,,0,29.99999972,3.00000024,steelblue,#1f77b4,left
 3,3,filled-square,,0,0,-50,crimson,#d62728,right
+3,3,filled-circle,,0,9.99999928,4.000000575,steelblue,#1f77b4,left
 3,3,filled-square,,0,10,0,crimson,#d62728,right
+3,3,filled-circle,,0,19.9999995,1.999999906,steelblue,#1f77b4,left
 3,3,filled-square,,0,20,50,crimson,#d62728,right
+3,3,filled-circle,,0,29.99999972,3.00000024,steelblue,#1f77b4,left
 3,3,filled-square,,0,30,25,crimson,#d62728,right

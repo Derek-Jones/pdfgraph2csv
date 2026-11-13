@@ -1,0 +1,8 @@
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
+1,1,filled-square,,0,0.985777,1,black,#000000
+1,1,filled-square,,0,200.985,1.2,black,#000000
+1,1,filled-square,,0,400.985,1.5,black,#000000
+1,1,filled-square,,0,600.985,2,black,#000000
+1,1,filled-square,,0,800.984,3,black,#000000
+1,1,filled-square,,0,1000.98,7,black,#000000
+1,1,filled-square,,0,1060.98,15,black,#000000

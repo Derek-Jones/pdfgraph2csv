@@ -1,0 +1,5 @@
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
+1,1,filled-circle,,0,1.000000304,10000,black,#000000
+1,1,filled-circle,,0,2.000000101,20000,black,#000000
+1,1,filled-circle,,0,2.999999899,15000,black,#000000
+1,1,filled-circle,,0,3.999999696,40000,black,#000000

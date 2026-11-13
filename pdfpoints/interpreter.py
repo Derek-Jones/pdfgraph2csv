@@ -453,7 +453,7 @@ class ContentInterpreter(PDFPageInterpreter):
             "res": _resolution(self.unit, base), "tool": self.tool,
             "shape": shape, "cx": c[0], "cy": c[1],
             "size": max(abs(e1[0] - e0[0]), abs(e1[1] - e0[1])),
-            "filled": filled, "rgb": e.fill if filled else e.stroke})
+            "filled": filled, "rgb": e.fill if filled else e.stroke, "clip": e.clip})
 
     # -- XObjects ----------------------------------------------------------------
     def do_Do(self, xobjid):

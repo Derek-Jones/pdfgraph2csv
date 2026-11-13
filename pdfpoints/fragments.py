@@ -33,6 +33,38 @@ def _cluster_centres(arcs, rr):
     return cent
 
 
+def _hue_family(c):
+    """Colours of one series blended into darker shades share a hue: the
+    hue in 24 steps, or 'grey' for colours without one."""
+    import colorsys
+    h, l, s = colorsys.rgb_to_hls(*c)
+    if max(c) - min(c) < 0.08:
+        return "grey"
+    return int(round(h * 24)) % 24
+
+
+def _stack_shade(c, base, deepest):
+    """Is colour `c` what n layers of the semi-transparent marker colour
+    `base` give (one layer of alpha a over white: 1 - a (1 - m); n layers:
+    1 - (1 - m)(1 - (1 - a)^n)), with `deepest` taken as the marker colour m
+    itself (the saturated stack)?  Other shades in the hue are other things
+    over a marker: an error bar's own transparency."""
+    if c == base or c == deepest:
+        return True
+    k = max(range(3), key=lambda i: 1 - deepest[i])
+    span = 1 - deepest[k]
+    if span < 0.05:
+        return True
+    a = (1 - base[k]) / span
+    if not 0 < a < 1:
+        return True
+    for n in range(2, 40):
+        f = 1 - (1 - a) ** n
+        if all(abs((1 - (1 - deepest[i]) * f) - c[i]) <= 0.012 for i in range(3)):
+            return True
+    return False
+
+
 def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
     """Return the symbol list with flattened-marker fragments replaced by
     rebuilt circles (one entry per marker, stacked markers repeated)."""
@@ -57,13 +89,17 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
             if (p["idx"], k) in text_parts and not chromatic:
                 continue
             cur = sp["start"]
+            # (round joins of a thick line drawn as an outline are arcs too;
+            # their subpath runs far beyond the circle)
+            sb = bbox_of([cur] + [q for s in sp["segs"] for q in s[1:]])
+            extent = max(sb[2] - sb[0], sb[3] - sb[1])
             for s in sp["segs"]:
                 if s[0] == "c":
                     p0, p1, p2, p3 = cur, s[1], s[2], s[3]
                     chord = math.hypot(p3[0] - p0[0], p3[1] - p0[1])
                     if chord > 0.05:
                         c = circumcircle(p0, bezier_point(p0, p1, p2, p3, .5), p3)
-                        if c and 0.2 < c[2] < 8:
+                        if c and 0.2 < c[2] < 8 and extent <= 5 * c[2]:
                             q1, q3 = bezier_point(p0, p1, p2, p3, .25), bezier_point(p0, p1, p2, p3, .75)
                             e = max(abs(math.hypot(q[0] - c[0], q[1] - c[1]) - c[2]) for q in (q1, q3))
                             if e < 0.01 * c[2] + 0.002 and chord > 0.3 * c[2]:
@@ -104,13 +140,32 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
     wgrid = {}
     for s in whole:
         wgrid.setdefault((int(s["cx"] // r_out), int(s["cy"] // r_out)), []).append(s)
-    intact = 0
+    # whole markers of a graph that was not flattened (a page may have
+    # both) stay as they are
+    agrid = {}
+    for a in sel:
+        agrid.setdefault((int(a[0] // r_out), int(a[1] // r_out)), []).append(a)
+    intact, opaque = [], []
+    keep_idx = set()                     # paths of opaque whole markers
     for k in cents:
         gx, gy = int(k[0] // r_out), int(k[1] // r_out)
-        if any(math.hypot(s["cx"] - k[0], s["cy"] - k[1]) < 0.15 * r_out
-               for dx in (-1, 0, 1) for dy in (-1, 0, 1) for s in wgrid.get((gx + dx, gy + dy), ())):
-            intact += 1
-    if intact >= 0.6 * len(cents):
+        hits = [s for dx in (-1, 0, 1) for dy in (-1, 0, 1) for s in wgrid.get((gx + dx, gy + dy), ())
+                if math.hypot(s["cx"] - k[0], s["cy"] - k[1]) < 0.15 * r_out]
+        intact.append(bool(hits))
+        # all the arcs there drawn by those circles themselves: whole
+        # markers, not the top of a stack of fragments
+        own = {s["idx"] for s in hits}
+        arc_paths = {a[3] for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+                     for a in agrid.get((gx + dx, gy + dy), ())
+                     if math.hypot(a[0] - k[0], a[1] - k[1]) < 0.15 * r_out}
+        op = bool(hits) and arc_paths <= own
+        opaque.append(op)
+        if op:
+            keep_idx.update(own)
+    if sum(intact) >= 0.6 * len(cents):
+        return symbols
+    cents = [k for k, op in zip(cents, opaque) if not op]
+    if len(cents) < 5:
         return symbols
     # 4. how many markers are stacked at each centre: semi-transparent
     #    markers blend into darker colours where they overlap, so the colour
@@ -142,9 +197,23 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
                     best = (idx, col)
         return best[1] if best else None
 
-    # layer ladder: lightest colour = 1 marker, next = 2 stacked, ...
-    ladder = sorted(fam_cols, key=lambda c: -sum(c))
-    layer = {c: i + 1 for i, c in enumerate(ladder)}
+    # layer ladder: lightest colour = 1 marker, next = 2 stacked, ...; one
+    # ladder per hue (several series in different colours)
+    ladders = {}
+    for c in fam_cols:
+        ladders.setdefault(_hue_family(c), []).append(c)
+    layer, lightest = {}, {}
+    for fam_key, cs in list(ladders.items()):
+        cs.sort(key=lambda c: -sum(c))
+        # one marker alone: the colour with the most arcs, the darkest
+        # aside (an opaque line or a saturated stack); lighter colours are
+        # other things (an error bar's own colour where it meets a marker)
+        base = max(cs[:-1] or cs, key=lambda c: cols[c])
+        cs[:] = [c for c in cs[cs.index(base):] if _stack_shade(c, base, cs[-1])]
+        for i, c in enumerate(cs):
+            layer[c] = i + 1
+            lightest[c] = cs[0]
+    ladder_len = {c: len(ladders[_hue_family(c)]) for c in layer}
     cgrid = {}
     for j, k in enumerate(cents):
         cgrid.setdefault((int(k[0] // r_out), int(k[1] // r_out)), []).append(j)
@@ -156,7 +225,7 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
                 if math.hypot(cents[j][0] - x, cents[j][1] - y) < r_out - 0.02]
 
     # sample each marker where it overlaps as few others as possible
-    samples = []         # (overlap key, covering markers, layers seen) or None
+    samples = []         # (overlap key, covering markers, layers seen, colour) or None
     for i, k in enumerate(cents):
         best = None
         for rr in (0, 0.3 * r_out, 0.55 * r_out, 0.8 * r_out):
@@ -169,9 +238,7 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
                     continue
                 key = (len(cov), rr)
                 if best is None or key < best[0]:
-                    best = (key, cov, layer[col])
-            if best and len(best[1]) == 1:
-                break
+                    best = (key, cov, layer[col], col)
         samples.append(best)
     # solve for the count at each centre: the layers seen at a sample are the
     # counts of all markers covering it (iterate until stable)
@@ -187,16 +254,26 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
                 changed = True
         if not changed:
             break
-    sat = sum(1 for s in samples if s and len(ladder) >= 3 and s[2] == len(ladder))
+    sat = [s for s in samples if s and ladder_len[s[3]] >= 3 and s[2] == ladder_len[s[3]]]
     if sat:
         warnings.append("%d marker positions are stacked so deep that the blended colour "
-                        "saturates (%d+ layers): their counts are lower bounds" % (sat, len(ladder)))
+                        "saturates (%d+ layers): their counts are lower bounds" % (
+                            len(sat), min(ladder_len[s[3]] for s in sat)))
     # drop the fragment pieces that find_symbols took for symbols
-    frag_paths = set(f[2] for f in frags)
-    out = [s for s in symbols if s["idx"] not in frag_paths]
-    single = ladder[0]                   # the colour of one marker alone
+    frag_paths = set(f[2] for f in frags) - keep_idx
+    # (only those at a rebuilt marker: whole markers elsewhere on the page,
+    # in a graph that was not flattened, stay)
+    def at_rebuilt(s):
+        gx, gy = int(s["cx"] // r_out), int(s["cy"] // r_out)
+        return any(math.hypot(cents[j][0] - s["cx"], cents[j][1] - s["cy"]) < 2 * r_out
+                   for dx in (-1, 0, 1, 2, -2) for dy in (-1, 0, 1, 2, -2)
+                   for j in cgrid.get((gx + dx, gy + dy), ()))
+    out = [s for s in symbols if s["idx"] not in frag_paths or not at_rebuilt(s)]
+    default = max(fam_cols, key=sum)
     rebuilt_idx = min(frags[0][2], 0) - 1      # drawn "before" everything
     for i, k in enumerate(cents):
+        # the colour of one marker of its series alone
+        single = lightest[samples[i][3]] if samples[i] else default
         for _ in range(m[i]):
             out.append({"shape": "circle", "cx": k[0], "cy": k[1], "size": 2 * r_out,
                         "filled": True, "rgb": single, "idx": rebuilt_idx, "rebuilt": True})

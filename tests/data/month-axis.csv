@@ -1,49 +1,49 @@
 page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
+1,1,line,matched model indexes /2,0,2000.00011906,1.0007087,darkslategray,#333333
 1,1,line,hedonic indexes /1,0,2000.00053419,0.99996365,black,#0e0e0e
 1,1,line,hedonic indexes /1,0,2000.08356086,0.97444902,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2000.16658753,0.93537974,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2000.25044447,0.91943309,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2000.33347114,0.90946644,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2000.41732808,0.88474914,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2000.50035475,0.89312113,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2000.58338142,0.8887358,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2000.66723836,0.86361984,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2000.75026503,0.83810521,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2000.83329171,0.81697591,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2000.91714864,0.80541459,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2001.00017532,0.78986661,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2001.08403225,0.76514931,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2001.16705893,0.72129604,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2001.2500856,0.72010004,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2001.33394254,0.71132939,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2001.41696921,0.69817341,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2001.49999588,0.7053494,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2001.58385282,0.71093072,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2001.66687949,0.67345611,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2001.75073643,0.65033347,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2001.8337631,0.63837349,black,#0e0e0e
-1,1,line,hedonic indexes /1,0,2001.91678977,0.62162951,black,#0e0e0e
-1,1,line,matched model indexes /2,0,2000.00011906,1.0007087,darkslategray,#333333
 1,1,line,matched model indexes /2,0,2000.08356086,0.9678378,darkslategray,#333333
+1,1,line,hedonic indexes /1,0,2000.16658753,0.93537974,black,#0e0e0e
 1,1,line,matched model indexes /2,0,2000.16658753,0.91718709,darkslategray,#333333
 1,1,line,matched model indexes /2,0,2000.25002934,0.90647645,darkslategray,#333333
+1,1,line,hedonic indexes /1,0,2000.25044447,0.91943309,black,#0e0e0e
+1,1,line,hedonic indexes /1,0,2000.33347114,0.90946644,black,#0e0e0e
 1,1,line,matched model indexes /2,0,2000.33347114,0.89219922,darkslategray,#333333
 1,1,line,matched model indexes /2,0,2000.41649781,0.87278916,darkslategray,#333333
+1,1,line,hedonic indexes /1,0,2000.41732808,0.88474914,black,#0e0e0e
 1,1,line,matched model indexes /2,0,2000.49993962,0.85136469,darkslategray,#333333
+1,1,line,hedonic indexes /1,0,2000.50035475,0.89312113,black,#0e0e0e
+1,1,line,hedonic indexes /1,0,2000.58338142,0.8887358,black,#0e0e0e
 1,1,line,matched model indexes /2,0,2000.58338142,0.84089587,darkslategray,#333333
 1,1,line,matched model indexes /2,0,2000.6664081,0.80932603,darkslategray,#333333
+1,1,line,hedonic indexes /1,0,2000.66723836,0.86361984,black,#0e0e0e
 1,1,line,matched model indexes /2,0,2000.7498499,0.79130794,darkslategray,#333333
+1,1,line,hedonic indexes /1,0,2000.75026503,0.83810521,black,#0e0e0e
+1,1,line,hedonic indexes /1,0,2000.83329171,0.81697591,black,#0e0e0e
 1,1,line,matched model indexes /2,0,2000.83329171,0.76425756,darkslategray,#333333
 1,1,line,matched model indexes /2,0,2000.91673351,0.73944507,darkslategray,#333333
+1,1,line,hedonic indexes /1,0,2000.91714864,0.80541459,black,#0e0e0e
+1,1,line,hedonic indexes /1,0,2001.00017532,0.78986661,black,#0e0e0e
 1,1,line,matched model indexes /2,0,2001.00017532,0.72697867,darkslategray,#333333
 1,1,line,matched model indexes /2,0,2001.08320199,0.70645295,darkslategray,#333333
+1,1,line,hedonic indexes /1,0,2001.08403225,0.76514931,black,#0e0e0e
 1,1,line,matched model indexes /2,0,2001.16664379,0.68202743,darkslategray,#333333
+1,1,line,hedonic indexes /1,0,2001.16705893,0.72129604,black,#0e0e0e
+1,1,line,hedonic indexes /1,0,2001.2500856,0.72010004,black,#0e0e0e
 1,1,line,matched model indexes /2,0,2001.2500856,0.65587493,darkslategray,#333333
 1,1,line,matched model indexes /2,0,2001.33311227,0.64163699,darkslategray,#333333
+1,1,line,hedonic indexes /1,0,2001.33394254,0.71132939,black,#0e0e0e
 1,1,line,matched model indexes /2,0,2001.41655408,0.61955209,darkslategray,#333333
+1,1,line,hedonic indexes /1,0,2001.41696921,0.69817341,black,#0e0e0e
+1,1,line,hedonic indexes /1,0,2001.49999588,0.7053494,black,#0e0e0e
 1,1,line,matched model indexes /2,0,2001.49999588,0.61209777,darkslategray,#333333
 1,1,line,matched model indexes /2,0,2001.58343769,0.60704112,darkslategray,#333333
+1,1,line,hedonic indexes /1,0,2001.58385282,0.71093072,black,#0e0e0e
+1,1,line,hedonic indexes /1,0,2001.66687949,0.67345611,black,#0e0e0e
 1,1,line,matched model indexes /2,0,2001.66687949,0.58295392,darkslategray,#333333
 1,1,line,matched model indexes /2,0,2001.74990616,0.56728194,darkslategray,#333333
+1,1,line,hedonic indexes /1,0,2001.75073643,0.65033347,black,#0e0e0e
 1,1,line,matched model indexes /2,0,2001.83334797,0.55206228,darkslategray,#333333
+1,1,line,hedonic indexes /1,0,2001.8337631,0.63837349,black,#0e0e0e
+1,1,line,hedonic indexes /1,0,2001.91678977,0.62162951,black,#0e0e0e
 1,1,line,matched model indexes /2,0,2001.91678977,0.53660589,darkslategray,#333333

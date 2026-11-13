@@ -275,6 +275,8 @@ def outlined_text(paths, blobs=None, covers=()):
             if best is None or q > best[1]:
                 best = (rot, q, text, wb)
         readings.append((word, best))
+    readings = _split_unread(readings, read, markerlike_keys)
+    words = [word for word, _ in readings]
     # short words (one or two glyphs) are ambiguous: use the reading
     # direction that the longer numeric words on the page agree on
     # (marker-like glyphs do not count towards the length: a full stop must
@@ -288,9 +290,19 @@ def outlined_text(paths, blobs=None, covers=()):
     texts, used = [], set()
     used.update(_letter_dots(markerlike, stems, {m for word in words for g in word
                                                  for m in g["members"]}))
+    # diamonds are never letters: one in a word that reads as no number is
+    # a marker beside other shapes (seen: data points on a fitted curve
+    # drawn as a chain of small filled slivers)
+    crowded = _crowded_words(parts + markerlike)
+    by_idx = {p["idx"]: p for p in paths}
+    diamonds = set()
+    for key in markerlike_keys:
+        p = by_idx.get(key[0])
+        if p is not None and isinstance(key[1], int) and key[1] < len(p["subpaths"]):
+            c = classify_subpath(p["subpaths"][key[1]])
+            if c and c["shape"] in ("diamond", "thin-diamond"):
+                diamonds.add(key)
     for word, best in readings:
-        for gl in word:
-            used.update(gl["members"])
         if len(word) < 3 and page_rot is not None:
             # a short word is read in the page's direction - unless it reads
             # well as a number in its own direction and that direction is
@@ -303,11 +315,79 @@ def outlined_text(paths, blobs=None, covers=()):
                 text, q, wb = read(word, page_rot)
                 best = (page_rot, q, text, wb)
         rot, q, text, wb = best
-        if q >= 0.75 and parse_number(text) is not None:
+        if q >= 0.75 and parse_number(text) is not None and not crowded(word):
             texts.append(_text_item(word, rot, text, wb))
-        elif blobs is not None:
-            blobs.extend(_blob_items(word))
+        else:
+            word = [gl for gl in word if not set(gl["members"]) <= diamonds]
+            if word and blobs is not None:
+                blobs.extend(_blob_items(word))
+        for gl in word:
+            used.update(gl["members"])
     return texts, used
+
+
+def _crowded_words(shapes):
+    """A test for words overlapped by three or more other filled shapes: a
+    label stands clear (one shape may touch it, such as an axis-break
+    wiggle), but slivers of error bars and markers traced from a bitmap
+    (hundreds of overlapping pieces) can read as '1' or '-1'."""
+    if not shapes:
+        return lambda word: False
+    hs = sorted(max(g[3][2] - g[3][0], g[3][3] - g[3][1]) for g in shapes)
+    grid = BoxGrid(max(hs[len(hs) // 2], 1.0))
+    for g in shapes:
+        grid.add(((g[0], g[1]), g[3]), g[3])
+
+    def crowded(word):
+        mine = {m for gl in word for m in gl["members"]}
+        x0 = min(gl["box"][0] for gl in word)
+        y0 = min(gl["box"][1] for gl in word)
+        x1 = max(gl["box"][2] for gl in word)
+        y1 = max(gl["box"][3] for gl in word)
+        n = 0
+        for key, b in grid.near((x0, y0, x1, y1)):
+            if key not in mine and b[0] < x1 and b[2] > x0 and b[1] < y1 and b[3] > y0:
+                n += 1
+                if n >= 3:
+                    return True
+        return False
+    return crowded
+
+
+def _split_unread(readings, read, markerlike_keys):
+    """A word that reads as no number may be a label run into a nearby word
+    of big glyphs (a y tick label "0.50" 3.5 pt from the sideways axis title,
+    whose 8 pt letters reach that far): regroup its glyphs with a tighter
+    reach (0.25 of the bigger glyph) and read the pieces.  Only for words of
+    up to 40 glyphs."""
+    out = []
+    for word, best in readings:
+        rot, q, text, wb = best
+        if (q >= 0.75 and parse_number(text) is not None) or len(word) > 40 or len(word) < 2:
+            out.append((word, best))
+            continue
+        pieces = _words_with_markerlike(_group_words(word, reach=0.25), markerlike_keys)
+        if len(pieces) < 2:
+            out.append((word, best))
+            continue
+        got = []
+        for piece in pieces:
+            pb = None
+            # (one glyph alone is no label here: a round fragment of a
+            # clipped marker reads as "0")
+            if 2 <= len(piece) <= 12:
+                for r in (0, 90, -90, 180):
+                    t, qq, b = read(piece, r)
+                    if pb is None or qq > pb[1]:
+                        pb = (r, qq, t, b)
+            got.append((piece, pb or (0, 0.0, "", (0, 0, 0, 0))))
+        # only a split that frees a number counts (a word of letters stays
+        # whole: it may be a category label)
+        if any(b[1] >= 0.75 and parse_number(b[2]) is not None for _, b in got):
+            out.extend(got)
+        else:
+            out.append((word, best))
+    return out
 
 
 def _words_with_markerlike(words, markerlike_keys):
@@ -478,20 +558,26 @@ def _letter_dots(markerlike, stems, in_words):
     dots = set()
     if not stems:
         return dots
+    ts = sorted(min(s[2] - s[0], s[3] - s[1]) for s in stems)
+    grid = BoxGrid(max(10 * ts[len(ts) // 2], 1.0))
+    for s in stems:
+        grid.add(s, s)
     for idx, k, poly, b, rgb in markerlike:
         if (idx, k) in in_words:
             continue
         w, h = b[2] - b[0], b[3] - b[1]
         sz = max(w, h)
         cx, cy = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
-        for s in stems:
+        for s in grid.near(b, 1.5 * sz):
             sw, sh = s[2] - s[0], s[3] - s[1]
+            # (a dot is about as wide as its stem: a marker disc at the end
+            # of a thin error bar is several times wider)
             if sh >= sw:                         # vertical bar: dot above or below
-                if sh < 1.5 * sz or abs(cx - (s[0] + s[2]) / 2) > 0.6 * sz:
+                if sh < 1.5 * sz or abs(cx - (s[0] + s[2]) / 2) > 0.6 * sz or w > 2 * sw:
                     continue
                 gap = max(b[1] - s[3], s[1] - b[3])
             else:                                # horizontal bar: dot left or right
-                if sw < 1.5 * sz or abs(cy - (s[1] + s[3]) / 2) > 0.6 * sz:
+                if sw < 1.5 * sz or abs(cy - (s[1] + s[3]) / 2) > 0.6 * sz or h > 2 * sh:
                     continue
                 gap = max(b[0] - s[2], s[0] - b[2])
             if -0.2 * sz <= gap <= 1.5 * sz:
@@ -532,7 +618,7 @@ def _group_glyphs(parts):
     return glyphs
 
 
-def _group_words(glyphs):
+def _group_words(glyphs, reach=0.45):
     """Words = glyphs of one colour closer to each other than 0.45 times
     the bigger glyph's size.
 
@@ -567,14 +653,14 @@ def _group_words(glyphs):
             if k < ki:
                 continue
             same = k == ki
-            for j in grids[k].near(boxes[i], 0.45 * 2.0 ** (k + 1)):
+            for j in grids[k].near(boxes[i], reach * 2.0 ** (k + 1)):
                 if (same and j <= i) or rgbs[j] != rgb:
                     continue                  # (a pair in one class: from its first glyph)
                 cx0, cy0, cx1, cy1 = boxes[j]
                 dx = cx0 - bx1 if cx0 > bx1 else (bx0 - cx1 if bx0 > cx1 else 0.0)
                 dy = cy0 - by1 if cy0 > by1 else (by0 - cy1 if by0 > cy1 else 0.0)
                 sj = size[j]
-                lim = 0.45 * (si if si > sj else sj)
+                lim = reach * (si if si > sj else sj)
                 if dx < lim and dy < lim and math.hypot(dx, dy) < lim:
                     ri, rj = find(i), find(j)
                     if ri != rj:

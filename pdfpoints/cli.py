@@ -71,6 +71,10 @@ def main():
         cols.append("axis")
     if args.rotation:
         cols.append("rotation")
+    if any(r.get("x_coord_low") != "" or r.get("y_coord_low") != "" for r in rows):
+        # an axis without tick marks, its label centres taken as ticks: the
+        # range each value may really lie in
+        cols += ["x_coord_low", "x_coord_high", "y_coord_low", "y_coord_high"]
     if args.errbars:
         cols += ["x_low", "x_high", "y_low", "y_high"]
     if args.internal:
@@ -100,7 +104,8 @@ def cell(row, col, num, digits):
     v = row[col]
     if not isinstance(v, float):
         return v
-    if digits is None and col in ("x_coord", "y_coord", "x_low", "x_high", "y_low", "y_high"):
+    if digits is None and col in ("x_coord", "y_coord", "x_low", "x_high", "y_low", "y_high",
+                                  "x_coord_low", "x_coord_high", "y_coord_low", "y_coord_high"):
         return "%%.%dg" % row.get(col[0] + "_digits", 6) % v
     return num % v
 

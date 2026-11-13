@@ -24,7 +24,8 @@ from .outlined_text import outlined_text
 from .rows import make_rows
 from .scales import find_break_marks
 from .styles import guess_tool
-from .symbols import drop_highlight_boxes, find_symbols
+from .symbols import (drop_covered_bits, drop_hidden_dots, drop_highlight_boxes,
+                      drop_outline_rings, drop_specks, find_symbols)
 from .text import attach_vector_minus, merge_texts
 from .titles import find_figure_caption, text_lines
 from .tools import PathsByX, graph_tool
@@ -75,6 +76,30 @@ def forget_page():
     forget_graphs()
 
 
+def drop_corner_ticks(symbols, graphs):
+    """Ticks drawn across the axis line (seen with Excel) meet where the
+    axes meet: the first x tick and the first y tick there make a '+' one
+    or two tick lengths across.  Such a plus, on a tick of each axis at the corner
+    where the axis lines cross, is not a data point."""
+    corners = []
+    for g in graphs:
+        ax = {a.get("orient"): a for a in (g.get("x"), g.get("y")) if a}
+        if set(ax) != {"x", "y"} or ax["x"].get("pos") is None or ax["y"].get("pos") is None:
+            continue
+        cx, cy = ax["y"]["pos"], ax["x"]["pos"]
+        L = max(ax["x"].get("tick_len") or 0, ax["y"].get("tick_len") or 0)
+        tol = max(0.5, 0.15 * L)
+        if any(abs(t - cx) <= tol for t in ax["x"].get("tick_pos", ())) and \
+                any(abs(t - cy) <= tol for t in ax["y"].get("tick_pos", ())):
+            corners.append((cx, cy, L, tol))
+    if not corners:
+        return symbols
+    return [s for s in symbols if not (
+        s["shape"] == "plus" and any(
+            abs(s["cx"] - cx) <= tol and abs(s["cy"] - cy) <= tol and 0.7 * L <= s["size"] <= 2.2 * L
+            for cx, cy, L, tol in corners))]
+
+
 def extract_page(pdf, pno, page, opts, info):
     """The pipeline for one page: draw it, read its text, find the axes and
     graphs, find the markers (or bars / line vertices), name the series from
@@ -91,7 +116,7 @@ def extract_page(pdf, pno, page, opts, info):
     # graphs are numbered through the document: info carries the count
     first_no = info.setdefault("graph_no", 0) + 1
     info["graph_no"] += len(graphs)
-    symbols = find_page_symbols(pdf, pno, it, text_parts)
+    symbols = drop_corner_ticks(find_page_symbols(pdf, pno, it, text_parts), graphs)
     describe_graphs(graphs, texts, symbols, first_no, opts.debug)
     by_x = PathsByX(it.paths)
     for g in graphs:
@@ -145,6 +170,11 @@ def find_page_graphs(it, texts, pno, debug):
                 file=sys.stderr)
     if graphs:
         PAGE.graph_rects = [g["rect"] for g in graphs]
+        # where each graph's x tick labels end: text just below them is its
+        # axis title, not the title of a graph further down
+        PAGE.xlabel_zones = [(g["rect"][0], g["rect"][2],
+                              min(tx["bbox"][1] for _, tx in g["x"]["labels"]))
+                             for g in graphs if g["x"].get("labels") and g["x"]["orient"] == "x"]
         sizes = sorted(tx["size"] for g in graphs for k in ("x", "y")
                        for _, tx in g[k].get("labels", ()))
         PAGE.label_size = sizes[len(sizes) // 2] if sizes else 0.0
@@ -160,10 +190,12 @@ def find_page_symbols(pdf, pno, it, text_parts):
     symbols = find_symbols(it.paths, it.glyph_symbols, text_parts)
     symbols = rebuild_fragmented_circles(it.paths, symbols, text_parts, pdf.warnings)
     symbols = [s for s in symbols if s["idx"] not in PAGE.hiding_paths]
-    symbols = drop_highlight_boxes(symbols)
+    symbols = drop_hidden_dots(drop_outline_rings(drop_highlight_boxes(symbols)), it.paths)
+    symbols = drop_specks(drop_covered_bits(symbols, it.paths))
     clip_of = {p["idx"]: p.get("clip") for p in it.paths}
     for s in symbols:
-        s["clip"] = clip_of.get(s["idx"])
+        # (glyph markers carry their own clipping box)
+        s["clip"] = clip_of[s["idx"]] if s["idx"] in clip_of else s.get("clip")
     return symbols
 
 

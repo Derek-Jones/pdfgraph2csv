@@ -164,4 +164,184 @@ with PdfPages(os.path.join(DATA, "mpl-background-grid.pdf")) as pp:
     ax.plot([0.5, 1.5, 2.5, 3.5, 4.5], [5, 12, 18, 27, 35], "s", color="k", clip_on=False)
     pp.savefig(fig)
     plt.close(fig)
+# axes crossing inside the plot, the tick labels in its body: spines through
+# the origin (points in all four quadrants), and log axes crossing at 1 with
+# a frame round the figure and grid lines at the ends of the y axis (as
+# Excel draws them) - lines that are not axes
+def crossing_axes():
+    fig, axs = plt.subplots(1, 2, figsize=(8, 3.5))
+    ax = axs[0]
+    for side in ("left", "bottom"):
+        ax.spines[side].set_position("zero")
+    for side in ("right", "top"):
+        ax.spines[side].set_visible(False)
+    ax.set_xlim(-4, 4)
+    ax.set_ylim(-3, 3)
+    ax.set_xticks([-4, -2, 2, 4])
+    ax.set_yticks([-3, -2, -1, 1, 2, 3])
+    ax.plot([-3, -1, 1.5, 3, 2.5], [2, -2.5, 1, -1, 2.5], "o", color="tab:green")
+    ax = axs[1]
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlim(0.1, 10)
+    ax.set_ylim(0.1, 10)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_position(("data", 1))
+    for side in ("right", "top"):
+        ax.spines[side].set_visible(False)
+    ax.minorticks_off()
+    ax.set_xticks([0.1, 1, 10], ["0.1", "1", "10"])
+    ax.set_yticks([0.1, 1, 10], ["0.1", "1", "10"])
+    ax.axhline(0.1, color="0.5", lw=0.6)
+    ax.axhline(10, color="0.5", lw=0.6)
+    ax.plot([0.5, 2, 4, 0.8, 1.5], [0.3, 3, 0.5, 2, 1.2], "o", color="k", ms=4)
+    fig.patches.append(plt.Rectangle((0.01, 0.01), 0.98, 0.98, transform=fig.transFigure,
+                                     fill=False, edgecolor="k", lw=0.8))
+    fig.savefig(os.path.join(DATA, "mpl-crossing-axes.pdf"))
+    plt.close(fig)
+
+
+crossing_axes()
+# no tick marks: the x labels alone mark their positions (Excel's category
+# axis of a line chart: 1, 101, 201, ...), the y axis a log scale with only
+# two grid lines (1 and 10); a box round the chart, with a line of body
+# text centred above it that is no title
+def label_ticks():
+    fig = plt.figure(figsize=(6, 3.4))
+    ax = fig.add_axes([0.12, 0.15, 0.82, 0.58])
+    ax.set_yscale("log")
+    ax.set_xlim(1, 1061)
+    ax.set_ylim(1, 20)
+    ax.minorticks_off()
+    ax.set_xticks(range(1, 1062, 100))
+    ax.set_yticks([1, 10], ["1", "10"])
+    ax.tick_params(length=0)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    ax.spines["left"].set_color("0.55")
+    ax.spines["bottom"].set_color("0.55")
+    ax.axhline(10, color="0.55", lw=0.8)
+    ax.plot([1, 201, 401, 601, 801, 1001, 1061], [1, 1.2, 1.5, 2, 3, 7, 15], "s-", color="k",
+            ms=3, lw=0.6)
+    fig.patches.append(plt.Rectangle((0.02, 0.03), 0.96, 0.8, transform=fig.transFigure,
+                                     fill=False, edgecolor="0.55", lw=0.8))
+    fig.text(0.5, 0.9, "the plot clearly shows the difference between the compilers",
+             ha="center", fontsize=10)
+    fig.savefig(os.path.join(DATA, "mpl-label-ticks.pdf"))
+    plt.close(fig)
+
+
+label_ticks()
+# no tick marks on any axis (ggplot2 with axis.ticks blank): the labels
+# beside the axis lines mark their positions - 0.00 ... 1.00, and only
+# 4, 8, 12 on a 1..15 axis; two facets in grey frames share the y labels of
+# the left one; a line through dots no wider than it (model points)
+def no_ticks():
+    fig = plt.figure(figsize=(8, 2.8))
+    axs = [fig.add_axes([0.08, 0.15, 0.25, 0.75]), fig.add_axes([0.35, 0.15, 0.25, 0.75]),
+           fig.add_axes([0.72, 0.15, 0.25, 0.75])]
+    for k, ax in enumerate(axs[:2]):
+        ax.set_xlim(-0.05, 1.05)
+        ax.set_ylim(-0.05, 1.05)
+        ax.set_xticks([0, 0.25, 0.5, 0.75, 1.0], ["0.00", "0.25", "0.50", "0.75", "1.00"])
+        ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0], ["0.00", "0.25", "0.50", "0.75", "1.00"])
+        ax.tick_params(length=0, labelleft=(k == 0))
+        for sp in ax.spines.values():
+            sp.set_color("0.5")
+        xs = [0.1, 0.3, 0.5, 0.7, 0.9]
+        for lab in ax.get_yticklabels():
+            lab.set_verticalalignment("center")
+        ax.plot(xs, [x * (0.9 + 0.2 * k) for x in xs], "o", color="blue" if k == 0 else "red")
+    ax = axs[2]
+    ax.set_xlim(0.3, 15.7)
+    ax.set_ylim(0.1, 1.05)
+    ax.set_xticks([4, 8, 12])
+    ax.tick_params(length=0, labelleft=True)
+    ax.set_yticks([0.25, 0.5, 0.75, 1.0], ["0.25", "0.50", "0.75", "1.00"])
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    for lab in ax.get_yticklabels():
+        lab.set_verticalalignment("center")
+    n = list(range(1, 16))
+    ax.plot(n, [0.2 + 0.7 * 0.8 ** (i - 1) for i in n], "-o", color="tab:orange", lw=1.5, ms=1.6)
+    ax.plot([2, 5, 9, 14], [0.8, 0.55, 0.3, 0.25], "o", color="k", ms=4)
+    fig.savefig(os.path.join(DATA, "mpl-no-ticks.pdf"))
+    plt.close(fig)
+
+
+no_ticks()
+# text in a font with no map to Unicode: TrueType (Type 42) fonts, then the
+# strings re-encoded as glyph numbers (CIDToGIDMap /Identity, as cairo
+# writes them), /ToUnicode and the program's cmap table removed (only glyph
+# names are left); one copy keeps the Type 0 font, one loses its /Subtype
+# (so the strings must be read as byte pairs).  Both must read as the
+# original: mpl-font-type42.pdf.
+def _font_variants():
+    import io
+    import pikepdf
+    from fontTools.ttLib import TTFont
+    with plt.rc_context({"pdf.fonttype": 42}):
+        fig, ax = plt.subplots(figsize=(4, 3))
+        ax.bar([1, 2, 3, 4], [12000, 30000, 25000, 60000], color="#4878d0")
+        ax.plot([1, 2, 3, 4], [10000, 20000, 15000, 40000], "o", color="k")
+        base = os.path.join(DATA, "mpl-font-type42.pdf")
+        fig.savefig(base)
+        plt.close(fig)
+    for name, keep_subtype in (("mpl-font-no-unicode.pdf", True),
+                               ("mpl-font-no-subtype.pdf", False)):
+        pdf = pikepdf.open(base)
+        cid2gid = {}
+        for obj in pdf.objects:
+            if isinstance(obj, pikepdf.Dictionary) and obj.get("/Subtype") == "/CIDFontType2":
+                raw = obj.CIDToGIDMap.read_bytes()
+                cid2gid = {k // 2: (raw[k] << 8) | raw[k + 1] for k in range(0, len(raw) - 1, 2)}
+                obj.CIDToGIDMap = pikepdf.Name("/Identity")
+                widths, w, k = {}, obj.W, 0
+                while k < len(w):
+                    first, nxt = int(w[k]), w[k + 1]
+                    if isinstance(nxt, pikepdf.Array):
+                        for j, v in enumerate(nxt):
+                            widths[first + j] = float(v)
+                        k += 2
+                    else:
+                        for c in range(first, int(nxt) + 1):
+                            widths[c] = float(w[k + 2])
+                        k += 3
+                arr = []
+                for cid, wd in sorted(widths.items()):
+                    if cid2gid.get(cid):
+                        arr += [cid2gid[cid], pikepdf.Array([wd])]
+                obj.W = pikepdf.Array(arr)
+                ff = obj.FontDescriptor.FontFile2
+                tt = TTFont(io.BytesIO(ff.read_bytes()))
+                if "cmap" in tt:
+                    del tt["cmap"]
+                out = io.BytesIO()
+                tt.save(out)
+                ff.write(out.getvalue())
+        for obj in pdf.objects:
+            if isinstance(obj, pikepdf.Dictionary) and obj.get("/Subtype") == "/Type0":
+                del obj["/ToUnicode"]
+                if not keep_subtype:
+                    del obj["/Subtype"]
+
+        def conv(b):
+            b = bytes(b)
+            return pikepdf.String(b"".join(
+                cid2gid.get((b[i] << 8) | b[i + 1], 0).to_bytes(2, "big")
+                for i in range(0, len(b) - 1, 2)))
+        for page in pdf.pages:
+            new = []
+            for operands, op in pikepdf.parse_content_stream(page):
+                if str(op) == "Tj":
+                    operands = [conv(operands[0])]
+                elif str(op) == "TJ":
+                    operands = [pikepdf.Array([conv(x) if isinstance(x, pikepdf.String) else x
+                                               for x in operands[0]])]
+                new.append((operands, op))
+            page.Contents = pdf.make_stream(pikepdf.unparse_content_stream(new))
+        pdf.save(os.path.join(DATA, name))
+
+
+_font_variants()
 print("written to", DATA)

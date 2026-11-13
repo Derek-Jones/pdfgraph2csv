@@ -50,6 +50,9 @@ page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
 1,1,filled-circle,TRUE,0,9.00069,0.241208,darkturquoise,#00bfc4
 1,1,filled-circle,TRUE,0,10.0008,0.213234,darkturquoise,#00bfc4
 1,1,filled-circle,TRUE,0,11.0009,0.210525,darkturquoise,#00bfc4
+1,1,filled-circle,FALSE,1,11.5078,0.469841,salmon,#f8766d
+1,1,filled-square,FALSE,1,11.509,0.469833,white,#ffffff
+1,1,filled-square,FALSE,1,11.509,0.469833,darkgray,#999999
 1,1,filled-circle,TRUE,0,12.0011,0.269075,darkturquoise,#00bfc4
 1,1,filled-circle,TRUE,0,13.0012,0.298792,darkturquoise,#00bfc4
 1,1,filled-circle,TRUE,0,14.0002,0.274805,darkturquoise,#00bfc4
@@ -63,6 +66,9 @@ page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
 1,1,filled-circle,TRUE,0,22.0001,0.277834,darkturquoise,#00bfc4
 1,1,filled-circle,TRUE,0,23.0002,0.246627,darkturquoise,#00bfc4
 1,1,filled-circle,TRUE,0,24.0003,0.261232,darkturquoise,#00bfc4
+1,1,filled-circle,TRUE,1,24.2435,0.469841,darkturquoise,#00bfc4
+1,1,filled-square,TRUE,1,24.2447,0.469833,white,#ffffff
+1,1,filled-square,TRUE,1,24.2447,0.469833,darkgray,#999999
 1,1,filled-circle,TRUE,0,25.0005,0.309205,darkturquoise,#00bfc4
 1,1,filled-circle,TRUE,0,26.0006,0.266569,darkturquoise,#00bfc4
 1,1,filled-circle,TRUE,0,27.0007,0.251736,darkturquoise,#00bfc4
@@ -108,9 +114,3 @@ page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
 1,1,filled-circle,TRUE,0,67.0013,0.216861,darkturquoise,#00bfc4
 1,1,filled-circle,TRUE,0,68.0014,0.37735,darkturquoise,#00bfc4
 1,1,filled-circle,TRUE,0,69.0015,0.413043,darkturquoise,#00bfc4
-1,1,filled-square,FALSE,1,11.509,0.469833,white,#ffffff
-1,1,filled-circle,FALSE,1,11.5078,0.469841,salmon,#f8766d
-1,1,filled-square,FALSE,1,11.509,0.469833,darkgray,#999999
-1,1,filled-square,TRUE,1,24.2447,0.469833,white,#ffffff
-1,1,filled-circle,TRUE,1,24.2435,0.469841,darkturquoise,#00bfc4
-1,1,filled-square,TRUE,1,24.2447,0.469833,darkgray,#999999

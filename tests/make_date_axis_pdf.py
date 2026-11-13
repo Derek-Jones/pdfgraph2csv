@@ -95,7 +95,7 @@ def write_pdf(path):
 
 def write_reference(path):
     rows = ["page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex"]
-    for m, v in POINTS:
+    for m, v in sorted(POINTS, key=lambda p: p[0]):     # (rows in increasing x)
         rows.append("1,1,filled-square,,0,%r,%r,blue,#0000ff"
                     % (2010 + m / 12.0, float(v)))
     with open(path, "w") as f:

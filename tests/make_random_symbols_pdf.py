@@ -258,11 +258,12 @@ def write_pdf(path, sym, pts):
 
 
 def write_reference(path, sym, pts):
-    """The true values, in drawing order (x, y exactly, as Python writes them),
-    with the symbol name the program must report."""
+    """The true values in increasing order of x, as the program writes its
+    rows (x, y exactly, as Python writes them), with the symbol name the
+    program must report."""
     with open(path, "w") as fh:
         fh.write("symbol,x_coord,y_coord\n")
-        for v, w in pts:
+        for v, w in sorted(pts, key=lambda p: p[0]):
             fh.write("%s,%r,%r\n" % (REPORTED[sym], v, w))
 
 

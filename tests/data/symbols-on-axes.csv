@@ -838,6 +838,14 @@ page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
 1,3,plus,,0,2009.559567,53.0282,orangered,#ff5a00
 1,3,plus,,0,2009.559567,53.0282,orangered,#ff5a00
 1,3,plus,,0,2009.559567,53.0282,orangered,#ff5a00
+1,3,filled-rectangle,bau,1,2009.560374,842.2726,mediumspringgreen,#00ffb3
+1,3,filled-rectangle,ins,1,2009.560374,800.5468,springgreen,#00ff7a
+1,3,filled-rectangle,ivote,1,2009.560374,758.8616,springgreen,#00ff78
+1,3,filled-rectangle,weekly,1,2009.560374,717.1359,springgreen,#00ff65
+1,3,filled-rectangle,mps,1,2009.560374,675.4101,lime,#00ff04
+1,3,filled-rectangle,planning,1,2009.560374,633.7249,red,#ff1100
+1,3,filled-rectangle,meeting,1,2009.560374,591.9992,red,#ff0e00
+1,3,filled-rectangle,setup,1,2009.560374,550.3139,red,#ff0500
 1,3,plus,,0,2009.562526,1.01285,red,#ff0000
 1,3,plus,,0,2009.562526,24.0228,orangered,#ff2800
 1,3,plus,,0,2009.562526,1.01285,red,#ff0000
@@ -14849,11 +14857,3 @@ page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
 1,3,plus,,0,2019.101299,360.0162,springgreen,#00ff6f
 1,3,plus,,0,2019.101299,882.9653,red,#ff0003
 1,3,plus,,0,2019.101299,1.01285,red,#ff0000
-1,3,filled-rectangle,bau,1,2009.560374,842.2726,mediumspringgreen,#00ffb3
-1,3,filled-rectangle,ins,1,2009.560374,800.5468,springgreen,#00ff7a
-1,3,filled-rectangle,ivote,1,2009.560374,758.8616,springgreen,#00ff78
-1,3,filled-rectangle,weekly,1,2009.560374,717.1359,springgreen,#00ff65
-1,3,filled-rectangle,mps,1,2009.560374,675.4101,lime,#00ff04
-1,3,filled-rectangle,planning,1,2009.560374,633.7249,red,#ff1100
-1,3,filled-rectangle,meeting,1,2009.560374,591.9992,red,#ff0e00
-1,3,filled-rectangle,setup,1,2009.560374,550.3139,red,#ff0500

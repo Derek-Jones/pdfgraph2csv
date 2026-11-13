@@ -39,7 +39,7 @@
 | 6. Bars and lines | `add_bars_and_lines` (pipeline) → `find_bars`, `find_line_series` (charts) | data points of charts without markers |
 | 7. Legends | `find_page_legend`, `SeriesNamer` (legend) | series name of every point |
 | 7a. Error bars (`--errbars`) | `find_error_bars` (errbars) | each marker's bar ends, page coordinates |
-| 8. Rows | `make_rows` (rows) → `map_value` (scales), `error_bar_values`, `value_digits` (rows), `twin_view` (twin) | the CSV rows |
+| 8. Rows | `make_rows` (rows) → `map_value` (scales), `error_bar_values`, `value_digits` (rows), `twin_view` (twin) | the CSV rows, graph by graph in increasing x (`x_order`) |
 | 9. Meta records | `graph_meta` (meta) → `tick_range` (meta) | one record per graph for the -meta file |
 
 ## Modules and their dependencies
@@ -100,6 +100,8 @@ graph in its column (row) only when `borrows_axis` finds the graph's own
 axis line with ticks at the same places (`PAGE.bare_axes`, recorded by
 `axes_from_group` for tick rows that got no labels), or, without ticks, a
 dark axis line spanning the labelled axis (`PAGE.dark_lines`).
+Axes left without a corner are paired when their lines cross inside both
+(axes through the origin, Excel's log axes crossing at 1).
 
 **Graph** (`build_graphs`)
 : `x`, `y` (axes); `rect` (plot box); later `no`, `title`, `figure`, `caption`, `rot`, `bg`
@@ -156,7 +158,30 @@ such a graph (by legend name, or colour when unnamed) and
 ("right axis"), the axis titles that name it, or the colour of an axis's
 labels (text items carry `rgb`); `twin.twin_view` then maps its points
 through that scale and `make_rows` records the side in `axis`.  Frame sides
-with labels at the corners become axes in `axes._frame_side_axes`.
+with labels at the corners become axes in `axes._frame_side_axes`; a
+frame side, or any other line without ticks, may take its label centres
+as tick positions (`axes._label_ticks_axis`: Excel's category axes,
+ggplot2 without ticks, log axes labelled 1E-21 ... 1E-03;
+`axes._advance_centre` for outlined labels).  Such an axis records its
+uncertainty (`axes.label_tick_uncertainty`), which `rows.label_tick_ranges`
+turns into the columns `x_coord_low` ... `y_coord_high`.
+`graphs.build_graphs` also pairs axes that cross, and rejects an axis
+whose labels stand in the gap to the other (`wrong_side`).  Flattened
+markers (`fragments`): one shade ladder per hue (`_hue_family`), only
+shades that stacks of the marker colour give (`_stack_shade`); whole
+markers on the same page are kept.  `symbols.drop_outline_rings` and
+`symbols.drop_hidden_dots` remove outline rings (also a black border
+round a coloured disc) and dots hidden in lines;
+`outlined_text._split_unread` frees labels run into nearby words.
+Figures traced from a bitmap (thousands of staircase slivers):
+`outlined_text._crowded_words` refuses numbers overlapped by three or
+more other shapes, `_letter_dots` only takes a dot about as wide as its
+stem, `symbols.drop_covered_bits` drops small shapes hidden under a later
+opaque marker and `symbols.drop_specks` a few tiny one-off shapes; axes
+need ticks spanning 8 pt (`axes_from_group`), and panel borders drawn as
+filled outlines give axis lines (`axes.outlined_stroke_lines`).
+`graphs.set_graph_backgrounds` also records the box drawn round each chart
+(`PAGE.chart_frames`); a title is looked for inside it.
 
 ## Speed on pages with many points
 

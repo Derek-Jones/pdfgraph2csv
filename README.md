@@ -2,8 +2,6 @@
 
 A program to extract the x/y coordinates of data points, displayed as symbols within a graph, drawn using vector graphics within a pdf file.  Graphs represented using raster graphics (e.g., jpeg and png formats) are ignored.
 
-The program is still new and under active development.
-
 The following command will send the x/y coordinates of any detected data points within any graphs contained in ``interesting.pdf`` to standard output:
 
 ``python3 pdfgraph2csv.py interesting.pdf``
@@ -19,6 +17,11 @@ a file describing each graph found can also be written:
 with the columns page, graph, title, figure (number), caption, tool (the program that drew the graph, when the PDF records it: e.g. `R 4.0.2`, `Matplotlib v3.7.2`, `MATLAB ... (R2017b)`, `Adobe Illustrator CS5`; taken from the information an embedded graphic keeps about its own file, or from the document information when the PDF is itself a plot; programs that only convert to PDF, such as Ghostscript, Acrobat Distiller or a printer driver, are not reported), tool_guess (a best guess from the drawing style, independent of the recorded tool: `R`, `R (ggplot2)`, `R (lattice)`, `matplotlib`, `MATLAB`, `Excel`, `gnuplot`, `Mathematica` or `Stata`, from default colours, fonts, line caps and joins, the decimals of the coordinates and the names given to marker drawings and graphics states; empty when no program stands out; see `pdfpoints/styles.py`), points (the number of data points output for the graph), x_tick_min, x_tick_max, y_tick_min, y_tick_max (the values of the lowest and highest labelled ticks of each axis; for a category axis, the first and last category); and, when some graph has a scale on both sides, axis2, axis2_tick_min, axis2_tick_max (which second scale, e.g. `y right`, and its lowest and highest labelled ticks).  Title, figure and caption are empty when none is found; a caption is the paragraph starting "Fig. N" or "Figure N" below the graph, shared by all the graphs of that figure.  The file is only created when graphs are found.
 
 By default the message ``warning: No vector graphics found`` is output when no data points are detected.
+
+You can check whether any graphs are in image format using the [pdfcpu tool](https://github.com/pdfcpu/pdfcpu).  The following command will extract most rasther images contained in `interesting.pdf` and write them in the appropriate image format to the directory `im_dir`:
+
+    pdfcpu extract -m image interesting.pdf im_dir
+
 
 `python3 pdfgraph2csv.py --help` lists the options.  x/y values are written with as many significant digits as the precision of the PDF's own coordinates justifies, plus one (at least 6): a plot whose coordinates have 3 decimals gives about 6 or 7 digits, one written with 10 significant digits about 10; `--digits N` fixes the number of digits instead.
 
@@ -111,6 +114,10 @@ identical text columns, numeric columns within the case's tolerance.
 | overflow-exponent.pdf | body text with '2^2000 ≈ 10^602' (a superscript joined to its base): a number too big for a float is no number; no graph, no crash |
 | mpl-errorbars.pdf | made by `tests/make_synthetic_pdfs.py`: matplotlib error bars (`--errbars`) with asymmetric x and y errors, zero errors and two points at one x, and a log y panel labelled 3×10^1 ...; compared with the known values |
 | Rescaling_reliability_bounds_new_opprof-002.pdf | Excel error bars (`--errbars`) drawn as two slightly slanted halves from each marker's centre, with caps; dense stacks of points on log-log axes |
+| MollickMooresLawIEEE-009.pdf | two Excel scatter plots (via Distiller): filled diamonds whose corners sit on a coarse grid, outlines stroked as four separate edges (crossing edges of overlapping diamonds are no '+' or 'x'), a fitted curve of small filled slivers running through diamonds (not an outlined word), a y label misprinted 0.4 for 0.2, ticks crossing at the axes corner (no '+') |
+| 2610.30307v1-011.pdf | a log time axis labelled 1 s, 15 s, 1 min ... 64 h (durations, read in seconds) with vertical error bars, a point highlighted by a white circle over its dot; a second graph of model names with horizontal error bars (`--errbars`) |
+| 2017_End-of-Moores-Law-002.pdf | log y axis labelled 1E-21 ... 1E-03 (programming notation) with no tick marks: the label centres stand in for them, and `x_coord_low` ... `y_coord_high` give the range each value may lie in; legend keys filled white with coloured outlines name open and outlined markers |
+| LogicProbPragSyllogistic_Reasoning-013.pdf | three ggplot2 facets traced from a bitmap: 31 000 staircase slivers of error bars and dotted lines (not read as digits or markers), labels and legend drawn as outlines, axes with only the ticks 0 and 1 (y labels on the left facet only, shared), panel borders as filled outlines, points as a coloured disc inside a black ring; 576 points per facet |
 | number-sense-across-the-lifespan-004.pdf | GraphPad Prism: two stacked graphs share one x axis, labelled under the lower graph only; circles drawn as two Bézier arcs; interdecile bars (`--errbars`) |
 | mpl-shared-axes.pdf | made by `tests/make_synthetic_pdfs.py`: matplotlib panels sharing the x axis (stacked) or the y axis (side by side); a stacked panel with other, unlabelled ticks must not take the scale of the one below |
 | 2017_End-of-Moores-Law-004.pdf | a left and a right y scale: SRAM read on the left, CGP and M1 pitch on the right (from the axis titles), reported in an `axis` column; ticks drawn as tiny outlined boxes, end labels at the frame corners |
@@ -119,6 +126,17 @@ identical text columns, numeric columns within the case's tolerance.
 | mpl-background-grid.pdf | made by `tests/make_synthetic_pdfs.py`: a darkgrid plot, and a plot area tiled with grey blocks whose white gaps are the only tick positions; compared with the known values |
 | 3759548.3763370-007.pdf | ggplot2 with grid lines only (no ticks or axis lines): two log-log scatter plots, one with sizes 10kB ... 1MB, and a bar chart of speedups (1x ... 2.5x) with bars below 1x |
 | 61676858-74.pdf | R curves drawn as 441 000 one-segment strokes, 9 999 tiny circles per graph: once ran for hours, now about 20 s |
+| 2308.04748-008.pdf | six matplotlib panels on light blue backgrounds, grid lines standing in for ticks running through three panels in a row |
+| mpl-crossing-axes.pdf | made by `tests/make_synthetic_pdfs.py`: axes crossing inside the plot (through the origin; log axes crossing at 1), compared with the known values |
+| 3276496-020.pdf | three Excel scatter plots with log axes crossing at 1 in the middle of the plot |
+| mpl-label-ticks.pdf | made by `tests/make_synthetic_pdfs.py`: x labels without tick marks, log y axis with two grid lines, body text above the chart's box; compared with the known values |
+| 3276496-014.pdf | Excel line chart of 1061 loops: x labels 1 ... 1001 without tick marks, log y axis with lines at 1 and 10 only |
+| mpl-no-ticks.pdf | made by `tests/make_synthetic_pdfs.py`: axes without any tick marks, labels alone giving the positions; compared with the known values |
+| cheyette2024limited-008.pdf | five ggplot2 panels without tick marks (three facets sharing a y axis, two line-and-point graphs); markers flattened with transparent error bars |
+| 2610.20068v1-009.pdf | two ggplot2 panels close together sharing project-name categories, a grey block shading the positive side |
+| MSR23_Anisha-003.pdf | two R box plots placed by LaTeX after PDFTron rewrote them: text in Type 0 fonts whose /Encoding is an embedded one-byte Identity CMap, y labels written vertically; 33 751 ZapfDingbats outliers, most clipped far above the plots, all output (none taken for legend keys) |
+| 2305.15675v1-p7-13.pdf | pages 7 and 13 of 2305.15675v1: labels in Type 3 Arial whose glyph names spell glyph numbers (once output as control characters) |
+| mpl-font-type42.pdf, mpl-font-no-unicode.pdf, mpl-font-no-subtype.pdf | made by `tests/make_synthetic_pdfs.py`: one graph with TrueType text, then copies whose font has no map to Unicode (and one whose Type 0 font lost its /Subtype); all must read alike |
 | log-clipped-markers.pdf | circles flattened into clipped fragments; rebuilt from their arcs, with stacking counts from the alpha layers |
 | random-*.pdf, random10-*.pdf | made by `tests/make_random_symbols_pdf.py`: 1000 points drawn uniformly from [0, 100]², one file per marker kind (circles of 4 or 8 Béziers, Dingbats circles, diamonds of four lines, squares, R's equilateral and matplotlib's triangles, pentagons, hexagons, stars, plus, cross, asterisks); the true values are in `random-*.reference.csv`, and every point must come out within the precision of the PDF's coordinates: written with 3 decimals in random-*.pdf (0.000125 data units), with 10 significant digits in random10-*.pdf (1.25e-8) |
 | encrypted*.pdf, enc-*.pdf, bad-stream.pdf | RC4-40/128, AES-128/256 (R2-R6), user password (`--password secret`), all decrypted by pikepdf; corrupt ASCII85 and Flate streams skipped with qpdf's reason as the warning |

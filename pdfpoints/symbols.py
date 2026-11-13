@@ -4,11 +4,146 @@ and the removal of things that are not markers (letters, dashes, doubled
 outlines, highlight boxes).
 """
 
+import collections
 import math
 
 from .colours import color_name
 from .geometry import axis_aligned, bbox_of, flatten_subpath, memoized
-from .grouping import DisjointSets
+from .grouping import BoxGrid, DisjointSets
+
+
+def drop_hidden_dots(symbols, paths):
+    """Dots hardly wider than a line of their colour drawn through them
+    (at most 1.3 times its width: points at the vertices of a model curve,
+    the curve drawn about as thick as they are) cannot be told from the
+    line: they are not data points."""
+    cell = 5.0
+    segs = {}                            # (colour, cell) -> [(p, q, half width)]
+    for p in paths:
+        lw = (p.get("style") or (None,))[0]
+        if not p["stroke"] or not lw or lw < 0.5 or p["stroke_rgb"] is None:
+            continue
+        for sp in p["subpaths"]:
+            pts = flatten_subpath(sp)
+            for a, b in zip(pts, pts[1:]):
+                for gx in range(int(min(a[0], b[0]) // cell), int(max(a[0], b[0]) // cell) + 1):
+                    for gy in range(int(min(a[1], b[1]) // cell), int(max(a[1], b[1]) // cell) + 1):
+                        segs.setdefault((p["stroke_rgb"], gx, gy), []).append((a, b, lw))
+    if not segs:
+        return symbols
+
+    def hidden(s):
+        if not s["filled"] or s["shape"] != "circle":
+            return False
+        for a, b, lw in segs.get((s["rgb"], int(s["cx"] // cell), int(s["cy"] // cell)), ()):
+            if s["size"] > 1.3 * lw + 0.05:
+                continue
+            dx, dy = b[0] - a[0], b[1] - a[1]
+            L2 = dx * dx + dy * dy
+            t = 0.0 if L2 == 0 else max(0.0, min(1.0, ((s["cx"] - a[0]) * dx + (s["cy"] - a[1]) * dy) / L2))
+            if math.hypot(a[0] + t * dx - s["cx"], a[1] + t * dy - s["cy"]) <= 0.25 * lw:
+                return True
+        return False
+    return [s for s in symbols if not hidden(s)]
+
+
+def drop_covered_bits(symbols, paths):
+    """Small shapes painted before an opaque filled marker that covers them
+    entirely (pieces of error bars traced from a bitmap, under the points
+    drawn over them) are not seen and are no data points.  Only shapes at
+    most 0.4 times the covering marker's size count: a duplicate point
+    under an equal marker is still reported."""
+    opaque = {p["idx"] for p in paths if p.get("opaque", True)}
+    covers = [s for s in symbols if s["filled"] and s.get("idx") in opaque and 0 < s["size"] <= 20]
+    if not covers:
+        return symbols
+    biggest = max(c["size"] for c in covers)
+    if not any(s["size"] <= 0.4 * biggest for s in symbols):
+        return symbols
+    # of a stack of identical covers only the last painted one matters
+    last = {}
+    for c in covers:
+        k = (c["shape"], round(c["cx"], 2), round(c["cy"], 2), round(c["size"], 2))
+        if k not in last or c["idx"] > last[k]["idx"]:
+            last[k] = c
+    covers = list(last.values())
+    sizes = sorted(c["size"] for c in covers)
+    grid = BoxGrid(max(sizes[len(sizes) // 2], 0.5))
+    for c in covers:
+        r = c["size"] / 2
+        grid.add(id(c), (c["cx"] - r, c["cy"] - r, c["cx"] + r, c["cy"] + r))
+    by_id = {id(c): c for c in covers}
+
+    def covered(s):
+        if s["size"] > 0.4 * biggest:
+            return False
+        r = s["size"] / 2
+        for k in grid.near((s["cx"] - r, s["cy"] - r, s["cx"] + r, s["cy"] + r)):
+            c = by_id[k]
+            if c is s or c["idx"] <= s.get("idx", -1) or s["size"] > 0.4 * c["size"]:
+                continue
+            R = c["size"] / 2 if c["shape"] == "circle" else c["size"] / 2 * 0.95
+            if math.hypot(s["cx"] - c["cx"], s["cy"] - c["cy"]) + r <= R:
+                return True
+        return False
+    return [s for s in symbols if not covered(s)]
+
+
+def drop_specks(symbols):
+    """On a page of many markers, a few tiny one-off shapes - each far
+    smaller than the markers and of a shape and colour seen only a few
+    times on the page (at most twice, or 0.5% of the markers: specks of a
+    figure traced from a bitmap) - are no data points.  A
+    series of small dots repeats its look and is kept."""
+    if len(symbols) < 100:
+        return symbols
+    sizes = sorted(s["size"] for s in symbols)
+    small = [s for s in symbols if s["size"] < 0.35 * sizes[len(sizes) // 2]]
+    if not small:
+        return symbols
+    looks = collections.Counter((s["shape"], s["filled"], s["rgb"]) for s in symbols)
+    rare = max(2, 0.005 * len(symbols))
+    specks = {id(s) for s in small if looks[(s["shape"], s["filled"], s["rgb"])] <= rare}
+    if len(specks) > 0.02 * len(symbols):
+        return symbols
+    return [s for s in symbols if id(s) not in specks]
+
+
+def drop_outline_rings(symbols):
+    """A marker's outline drawn as a filled ring right after its filled
+    body (a stroke converted to an outline: ggplot2 points through some
+    converters) is found as an open circle round a filled one: the same
+    colour, the same centre, a little bigger, painted next.  Drop the ring.
+    A ring of another colour painted directly after a body that nearly
+    fills it is the border of a filled point (ggplot2's shape 21: coloured
+    inside, black border) and is dropped too.  So is a filled marker of the
+    same shape but another look painted directly over a filled marker,
+    a little bigger (up to 1.25 times) and on the same centre: it
+    highlights that point (a blue dot under a white circle with a blue
+    outline), which keeps its own series."""
+    filled, filled_any = {}, {}
+    for s in symbols:
+        if s["filled"] and s.get("idx") is not None:
+            filled_any.setdefault(s["idx"], []).append(s)
+            if s["shape"] == "circle":
+                filled.setdefault(s["idx"], []).append(s)
+    out = []
+    for s in symbols:
+        if not s["filled"] and s["shape"] == "circle" and s.get("idx") is not None:
+            body = [f for d in (1, 2) for f in filled.get(s["idx"] - d, ())
+                    if (f["rgb"] == s["rgb"] and 0.5 * s["size"] <= f["size"] <= s["size"] or
+                        d == 1 and s.get("ring") and 0.75 * s["size"] <= f["size"] <= s["size"])
+                    and math.hypot(f["cx"] - s["cx"], f["cy"] - s["cy"]) < 0.15 * s["size"]]
+            if body:
+                continue
+        if s["filled"] and s.get("idx") is not None and any(
+                f["shape"] == s["shape"] and (f["rgb"], f.get("outline_rgb")) != (s["rgb"], s.get("outline_rgb"))
+                and 0.8 * s["size"] <= f["size"] < s["size"]
+                and math.hypot(f["cx"] - s["cx"], f["cy"] - s["cy"]) < 0.15 * s["size"]
+                for f in filled_any.get(s["idx"] - 1, ())):
+            continue
+        out.append(s)
+    return out
 
 
 def drop_highlight_boxes(symbols):
@@ -39,9 +174,21 @@ def drop_highlight_boxes(symbols):
                             return True
         return False
 
+    # highlight boxes are a style of their own, each around a point; open
+    # markers of a series that only sometimes surround another marker
+    # (means drawn over the per-generator markers at the same value) stay
+    cand = [s for s in symbols
+            if not s.get("filled") and s["shape"] in ("square", "circle") and s["size"] > 0]
+    style = lambda s: (s["shape"], s["rgb"], round(s["size"], 1))
+    total, hits = {}, {}
+    hl = set()
+    for s in cand:
+        total[style(s)] = total.get(style(s), 0) + 1
+        if highlights(s):
+            hl.add(id(s))
+            hits[style(s)] = hits.get(style(s), 0) + 1
     return [s for s in symbols
-            if not (not s.get("filled") and s["shape"] in ("square", "circle") and
-                    s["size"] > 0 and highlights(s))]
+            if not (id(s) in hl and hits[style(s)] == total[style(s)])]
 
 
 def _rotationally_symmetric(verts, size):
@@ -189,9 +336,12 @@ def _classify_subpath(sp):
                 # a diamond has one corner at the middle of each side of its
                 # bounding box: left, right (at mid height), top, bottom (mid
                 # width); one in a box of aspect 0.5-0.85 is a thin diamond
-                # (matplotlib's 'd')
+                # (matplotlib's 'd').  The corners may be off the middle by
+                # up to 12% of the box: some programs (seen with Excel via
+                # Distiller) put them on a grid of about a fifth of the
+                # marker's size
                 xm, ym = (x0 + x1) / 2, (y0 + y1) / 2
-                tx, ty = 0.08 * (x1 - x0), 0.08 * (y1 - y0)
+                tx, ty = 0.12 * (x1 - x0), 0.12 * (y1 - y0)
                 sides = set()
                 for v in uniq:
                     if abs(v[1] - ym) < ty and abs(v[0] - x0) < tx:
@@ -315,6 +465,7 @@ def find_symbols(paths, glyph_symbols=(), text_parts=frozenset()):
     that belong to text (`text_parts`) are ignored."""
     syms = [dict(g) for g in glyph_symbols]
     open_lines = []
+    marker_edges = set()    # the edges of polygon markers
     # filling closes every outline implicitly
     cls_of = {p["idx"]: [classify_subpath(as_closed(sp) if p["fill"] else sp)
                          for sp in p["subpaths"]] for p in paths}
@@ -361,13 +512,30 @@ def find_symbols(paths, glyph_symbols=(), text_parts=frozenset()):
                     c["rgb"] = p["fill_rgb"] if filled else p["stroke_rgb"]
                 c["filled"] = filled
                 c["idx"] = p["idx"]
+                if filled and p["stroke"] and p["stroke_rgb"] is not None:
+                    c["outline_rgb"] = p["stroke_rgb"]      # (filled and stroked at once)
                 syms.append(c)
+                if all(seg[0] == "l" for seg in sp["segs"]):
+                    verts = [sp["start"]] + [seg[1] for seg in sp["segs"]]
+                    for a, b in zip(verts, verts[1:] + verts[:1]):
+                        marker_edges.add(_edge_key(a, b))
             elif (p["stroke"] and not sp["closed"] and len(sp["segs"]) == 1
                   and sp["segs"][0][0] == "l"):
                 open_lines.append((p["idx"], sp["start"], sp["segs"][0][1], p["stroke_rgb"]))
+    # a marker's outline stroked as separate edges (seen with Excel via
+    # Distiller: each filled diamond, then its four edges) is no '+' or 'x':
+    # crossing edges of overlapping diamonds would read as such
+    if marker_edges:
+        open_lines = [ln for ln in open_lines if _edge_key(ln[1], ln[2]) not in marker_edges]
     syms.extend(match_crossing_strokes(open_lines))
     syms.sort(key=lambda s: s["idx"])
     return merge_fill_outline(syms)
+
+
+def _edge_key(a, b):
+    """A straight edge whichever way it is drawn (to 0.01 pt)."""
+    a, b = (round(a[0], 2), round(a[1], 2)), (round(b[0], 2), round(b[1], 2))
+    return (a, b) if a <= b else (b, a)
 
 
 def match_crossing_strokes(lines):
@@ -531,6 +699,7 @@ def merge_fill_outline(syms):
                 fill = a if a["filled"] else b
                 m = dict(fill)
                 m["idx"] = min(a["idx"], b["idx"])
+                m["outline_rgb"] = (b if a["filled"] else a)["rgb"]
                 out.append(m)
                 i += 2
                 continue

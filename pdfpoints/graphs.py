@@ -27,7 +27,14 @@ def borrows_axis(shared, other):
     tol = 0.08 * max(span, other["hi"] - other["lo"])
     lines = PAGE.dark_lines[0 if k == "x" else 1]
     want = sorted(shared.get("tick_pos") or [])
-    edges = (other["lo"], other["hi"])
+    # its own axis line is at the end facing the labelled axis (a left axis
+    # serves the plots to its right through their left sides)
+    if shared["pos"] < other["lo"]:
+        edges = (other["lo"],)
+    elif shared["pos"] > other["hi"]:
+        edges = (other["hi"],)
+    else:
+        edges = (other["lo"], other["hi"])
     # its own ticks decide (rows of two are the frame's side lines)
     bare = [b for b in PAGE.bare_axes if b["orient"] == k and len(b["tick_pos"]) >= 3
             and any(abs(b["pos"] - e) <= tol for e in edges)
@@ -36,8 +43,12 @@ def borrows_axis(shared, other):
         ttol = max(0.5, 0.005 * span)
         return any(len(b["tick_pos"]) == len(want) and all(
             abs(u - v) <= ttol for u, v in zip(sorted(b["tick_pos"]), want)) for b in bare)
-    # no ticks: a plain axis line spanning the same stretch
+    # no ticks: a plain axis line spanning the same stretch (dark; or, when
+    # the labelled axis has no ticks either - ggplot2 facets without ticks,
+    # grey panel borders - a line of any shade)
     etol = max(1.0, 0.01 * span)
+    if not shared.get("tick_len") or shared.get("label_ticks"):
+        lines = list(lines) + list(PAGE.all_lines[0 if k == "x" else 1])
     return any(abs(pp - e) <= tol and lo <= shared["lo"] + etol and hi >= shared["hi"] - etol
                for lo, hi, pp in lines for e in edges)
 
@@ -67,6 +78,22 @@ def build_graphs(axes):
     def tol(xa, ya):
         return 0.08 * max(xa["hi"] - xa["lo"], ya["hi"] - ya["lo"])
 
+    def wrong_side(a, b):
+        """Is axis `a` beyond an end of axis `b` with its labels in the gap
+        between them?  Such an axis is the left (lower) axis of a plot on the
+        far side, not the right (upper) axis of b's plot."""
+        labs = a.get("labels") or ()
+        if not labs:
+            return False
+        k = 0 if a["orient"] == "y" else 1
+        mid = sum((tx["bbox"][k] + tx["bbox"][k + 2]) / 2 for _, tx in labs) / len(labs)
+        gap = 0.02 * (b["hi"] - b["lo"])
+        if a["pos"] > b["hi"] + gap:
+            return b["hi"] < mid < a["pos"]
+        if a["pos"] < b["lo"] - gap:
+            return a["pos"] < mid < b["lo"]
+        return False
+
     # every x axis takes the y axis that comes closest to forming a corner
     # with it, and every y axis the closest x axis; each choice is a graph
     # (an axis shared by side-by-side panels takes part in several).  The
@@ -77,15 +104,42 @@ def build_graphs(axes):
     for i, xa in enumerate(xs):
         cands = [(corner(xa, ya), j) for j, ya in enumerate(ys)]
         cands = [c for c in cands if c[0][1] <= tol(xa, ys[c[1]]) and (
-            c[0][0] <= 0.5 * (xa["hi"] - xa["lo"]) or borrows_axis(ys[c[1]], xa))]
+            c[0][0] <= 0.5 * (xa["hi"] - xa["lo"]) or borrows_axis(ys[c[1]], xa))
+            and not wrong_side(ys[c[1]], xa)]
         if cands:
             pairs.add((i, min(cands)[1]))
     for j, ya in enumerate(ys):
         cands = [(corner(xa, ya)[::-1], i) for i, xa in enumerate(xs)]
         cands = [c for c in cands if c[0][1] <= tol(xs[c[1]], ya) and (
-            c[0][0] <= 0.5 * (ya["hi"] - ya["lo"]) or borrows_axis(xs[c[1]], ya))]
+            c[0][0] <= 0.5 * (ya["hi"] - ya["lo"]) or borrows_axis(xs[c[1]], ya))
+            and not wrong_side(xs[c[1]], ya)]
         if cands:
             pairs.add((min(cands)[1], j))
+    # axes that cross inside the plot (Excel's log axes crossing at 1, axes
+    # through the origin): each line runs across the other one, well inside
+    # its ends, with the crossing point inside both; only for axes that
+    # found no corner
+    used_x = {i for i, _ in pairs}
+    used_y = {j for _, j in pairs}
+    for i, xa in enumerate(xs):
+        if i in used_x or not xa["has_line"]:
+            continue
+        best = None
+        for j, ya in enumerate(ys):
+            if j in used_y or not ya["has_line"]:
+                continue
+            wx, wy = xa["hi"] - xa["lo"], ya["hi"] - ya["lo"]
+            if not (0.3 * wx <= wy <= 3 * wx):
+                continue
+            ix = (ya["pos"] - xa["lo"]) / wx
+            iy = (xa["pos"] - ya["lo"]) / wy
+            if 0.05 < ix < 0.95 and 0.05 < iy < 0.95:
+                d = abs(ix - 0.5) + abs(iy - 0.5)
+                if best is None or d < best[0]:
+                    best = (d, j)
+        if best:
+            pairs.add((i, best[1]))
+            used_y.add(best[1])
     graphs = []
     for i, j in pairs:
         xa, ya = xs[i], ys[j]
@@ -254,13 +308,35 @@ def set_graph_backgrounds(graphs, paths):
     """Drawing step at which each graph's own opaque background box was
     painted (an inset is painted over its parent graph), or -1."""
     boxes = []                       # (box, drawing step) of filled single shapes
+    rects = []                       # boxes of single rectangles, filled or stroked
     for p in paths:
-        if not p["fill"] or len(p["subpaths"]) != 1:
+        if len(p["subpaths"]) != 1:
             continue
         sp = p["subpaths"][0]
         if len(sp["segs"]) < 3:
             continue
-        boxes.append((bbox_of([sp["start"]] + [s[-1] for s in sp["segs"]]), p["idx"]))
+        pts = [sp["start"]] + [s[-1] for s in sp["segs"]]
+        b = bbox_of(pts)
+        if p["fill"]:
+            boxes.append((b, p["idx"]))
+        if all(s[0] == "l" for s in sp["segs"]) and len(sp["segs"]) <= 5 and all(
+                min(abs(x - b[0]), abs(x - b[2])) < 0.1 and min(abs(y - b[1]), abs(y - b[3])) < 0.1
+                for x, y in pts):
+            rects.append(b)
+    # the box round a whole chart (Excel's chart area): the smallest
+    # rectangle holding the plot box with room for its labels, not much
+    # bigger; text outside it is not the chart's title
+    for g in graphs:
+        x0, y0, x1, y1 = g["rect"]
+        w, h = x1 - x0, y1 - y0
+        best = None
+        for b in rects:
+            m = min(x0 - b[0], y0 - b[1], b[2] - x1, b[3] - y1)
+            if m >= 2.0 and b[2] - b[0] <= 1.6 * w and b[3] - b[1] <= 2.0 * h and (
+                    best is None or (b[2] - b[0]) * (b[3] - b[1]) < (best[2] - best[0]) * (best[3] - best[1])):
+                best = b
+        if best:
+            PAGE.chart_frames[tuple(g["rect"])] = best
     for g in graphs:
         g["bg"] = -1
         x0, y0, x1, y1 = g["rect"]

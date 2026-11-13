@@ -7,7 +7,7 @@ import math
 
 from .colours import color_name
 from .graphs import clip_graph, graph_for_symbol
-from .scales import map_value
+from .scales import map_value, nominal_rank
 from .symbols import LINE_SHAPES
 from .twin import twin_key, twin_view
 
@@ -34,8 +34,10 @@ def value_digits(m, v, res, least=6, most=15):
 
 def make_rows(pno, graphs, symbols, legend, namer, opts, bars=None):
     """One output row per reported symbol (with the ends of its error bars,
-    `bars` from find_error_bars, when --errbars is given)."""
+    `bars` from find_error_bars, when --errbars is given), graph by graph
+    and, within a graph, in increasing order of x."""
     rows = []
+    keys_seen = set()
     for si, s in enumerate(symbols):
         if s["shape"] == "rectangle" and si not in legend:
             continue                      # oblong boxes count only as legend keys
@@ -56,6 +58,13 @@ def make_rows(pno, graphs, symbols, legend, namer, opts, bars=None):
             continue
         if opts.inside_only and d > 1e-6 or opts.exclude_legend and si in legend:
             continue
+        if si in legend:
+            # one key drawn by several layers (ggplot2 draws each point
+            # layer's glyph in the key box) is one key
+            k = (s["shape"], s["filled"], s["rgb"], round(s["cx"], 1), round(s["cy"], 1))
+            if k in keys_seen:
+                continue
+            keys_seen.add(k)
         name, hexs = color_name(s["rgb"])
         if s["shape"] in LINE_SHAPES or s["shape"] in ("bar", "line"):
             sym_name = s["shape"]
@@ -63,7 +72,8 @@ def make_rows(pno, graphs, symbols, legend, namer, opts, bars=None):
             sym_name = ("filled-" if s["filled"] else "open-") + s["shape"]
         series = namer.name(si, s, g)
         g, side = twin_view(g, twin_key(series, s)) if "twin" in g else (g, "")
-        x = map_value(g["x"]["map"], s["cy"] if g["rot"] else s["cx"])
+        xc = s["cy"] if g["rot"] else s["cx"]
+        x = map_value(g["x"]["map"], xc)
         y = map_value(g["y"]["map"], s["cx"] if g["rot"] else s["cy"])
         rows.append({
             "page": pno, "graph": g["no"], "graph_title": g["title"],
@@ -76,10 +86,43 @@ def make_rows(pno, graphs, symbols, legend, namer, opts, bars=None):
             "series": series, "axis": side,
             "rotation": g["rot"],
             "legend_key": 1 if si in legend else 0,
-            "pdf_x": s["cx"], "pdf_y": s["cy"]})
+            "pdf_x": s["cx"], "pdf_y": s["cy"],
+            "x_order": x_order(g["x"]["map"], xc, x)})
+        rows[-1].update(label_tick_ranges(g, xc, s["cx"] if g["rot"] else s["cy"]))
         if opts.errbars:
             rows[-1].update(error_bar_values(g, s, x, y, (bars or {}).get(si)))
+    # graph by graph, in increasing x (a stable sort: rows with the same x
+    # keep their drawing order)
+    rows.sort(key=lambda r: (r["graph"], r["x_order"]))
     return rows
+
+
+def label_tick_ranges(g, xc, yc):
+    """x_coord_low ... y_coord_high: where a value read against an axis
+    whose ticks are its label centres (no tick marks) may really lie - the
+    page position give or take the axis's uncertainty, mapped through it;
+    "" for an axis with tick marks."""
+    out = {}
+    for axis, c in (("x", xc), ("y", yc)):
+        a = g[axis]
+        unc = a.get("tick_unc")
+        lo = hi = ""
+        if unc is not None:
+            ends = [map_value(a["map"], c - unc), map_value(a["map"], c + unc)]
+            if all(isinstance(v, float) for v in ends):
+                lo, hi = min(ends), max(ends)
+        out[axis + "_coord_low"], out[axis + "_coord_high"] = lo, hi
+    return out
+
+
+def x_order(m, c, x):
+    """Sort key of a row's x value: numbers in increasing order (not-a-number
+    last), the categories of a category axis in their order along it."""
+    if m["kind"] == "nominal":
+        return (1, nominal_rank(m, c))
+    if isinstance(x, float) and math.isnan(x):
+        return (2, 0.0)
+    return (0, x)
 
 
 def error_bar_values(g, s, x, y, bar):

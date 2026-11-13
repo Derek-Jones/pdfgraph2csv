@@ -1,0 +1,7 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,(a) GCC,4,Coverage trend of Fuzz4All against state-of-the-art fuzzers in a 24-hour fuzzing campaign.,Matplotlib v3.7.1,matplotlib,78,0,24,50,200
+1,2,(b) G++,4,Coverage trend of Fuzz4All against state-of-the-art fuzzers in a 24-hour fuzzing campaign.,Matplotlib v3.7.1,matplotlib,52,0,24,100,220
+1,3,(c) CVC5,4,Coverage trend of Fuzz4All against state-of-the-art fuzzers in a 24-hour fuzzing campaign.,Matplotlib v3.7.1,matplotlib,52,0,24,40,55
+1,4,(d) Go,4,Coverage trend of Fuzz4All against state-of-the-art fuzzers in a 24-hour fuzzing campaign.,Matplotlib v3.7.1,matplotlib,52,0,24,10,40
+1,5,(e) javac,4,Coverage trend of Fuzz4All against state-of-the-art fuzzers in a 24-hour fuzzing campaign.,Matplotlib v3.7.1,matplotlib,52,2,24,7,16
+1,6,(f) Qiskit,4,Coverage trend of Fuzz4All against state-of-the-art fuzzers in a 24-hour fuzzing campaign.,Matplotlib v3.7.1,matplotlib,52,0,24,5,35

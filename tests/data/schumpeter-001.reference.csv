@@ -50,6 +50,9 @@ page,graph,symbol,x_coord,y_coord,color,color_hex
 1,1,filled-circle,9.00071,0.241208,darkturquoise,#00bfc4
 1,1,filled-circle,10.0008,0.213235,darkturquoise,#00bfc4
 1,1,filled-circle,11.001,0.210525,darkturquoise,#00bfc4
+1,1,filled-circle,11.5078,0.469838,salmon,#f8766d
+1,1,filled-square,11.509,0.46983,white,#ffffff
+1,1,filled-square,11.509,0.46983,darkgray,#999999
 1,1,filled-circle,12.0011,0.269074,darkturquoise,#00bfc4
 1,1,filled-circle,13.0012,0.298791,darkturquoise,#00bfc4
 1,1,filled-circle,14.0002,0.274805,darkturquoise,#00bfc4
@@ -63,6 +66,9 @@ page,graph,symbol,x_coord,y_coord,color,color_hex
 1,1,filled-circle,22,0.277834,darkturquoise,#00bfc4
 1,1,filled-circle,23.0001,0.246627,darkturquoise,#00bfc4
 1,1,filled-circle,24.0003,0.261232,darkturquoise,#00bfc4
+1,1,filled-circle,24.2435,0.469838,darkturquoise,#00bfc4
+1,1,filled-square,24.2446,0.46983,white,#ffffff
+1,1,filled-square,24.2446,0.46983,darkgray,#999999
 1,1,filled-circle,25.0004,0.309204,darkturquoise,#00bfc4
 1,1,filled-circle,26.0005,0.266569,darkturquoise,#00bfc4
 1,1,filled-circle,27.0006,0.251736,darkturquoise,#00bfc4
@@ -108,9 +114,3 @@ page,graph,symbol,x_coord,y_coord,color,color_hex
 1,1,filled-circle,67.0009,0.216861,darkturquoise,#00bfc4
 1,1,filled-circle,68.001,0.377348,darkturquoise,#00bfc4
 1,1,filled-circle,69.0012,0.413041,darkturquoise,#00bfc4
-1,1,filled-square,11.509,0.46983,white,#ffffff
-1,1,filled-circle,11.5078,0.469838,salmon,#f8766d
-1,1,filled-square,11.509,0.46983,darkgray,#999999
-1,1,filled-square,24.2446,0.46983,white,#ffffff
-1,1,filled-circle,24.2435,0.469838,darkturquoise,#00bfc4
-1,1,filled-square,24.2446,0.46983,darkgray,#999999

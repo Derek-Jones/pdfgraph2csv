@@ -1,5 +1,4 @@
 page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
-1,1,filled-square,,1,33.59229,141261.14,darkslateblue,#304f9b
 1,1,filled-circle,,0,0.972881,287.146,darkslateblue,#304f9b
 1,1,filled-circle,,0,0.972881,3032.4,darkslateblue,#304f9b
 1,1,filled-circle,,0,0.972881,3945.11,darkslateblue,#304f9b
@@ -496,3 +495,4 @@ page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
 1,1,filled-circle,,0,27.00896,15527.25,darkslateblue,#304f9b
 1,1,filled-circle,,0,27.00896,17966.68,darkslateblue,#304f9b
 1,1,filled-circle,,0,27.00896,21320.52,darkslateblue,#304f9b
+1,1,filled-square,,1,33.59229,141261.14,darkslateblue,#304f9b

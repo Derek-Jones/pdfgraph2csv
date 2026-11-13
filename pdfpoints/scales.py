@@ -120,6 +120,18 @@ _NOMINAL = {}                       # id(mapping) -> (mapping, positions, ticks)
 def _nearest_tick(m, c):
     """The label of the tick nearest c (the first such tick on a tie), by
     binary search over the distinct tick positions."""
+    ticks, best = _nearest(m, c)
+    return ticks[best][1]
+
+
+def nominal_rank(m, c):
+    """Where the category nearest c comes along a category axis (0 for the
+    first position), for putting categories in axis order."""
+    return _nearest(m, c)[1]
+
+
+def _nearest(m, c):
+    """(distinct ticks in position order, index of the one nearest c)."""
     entry = _NOMINAL.get(id(m))
     if entry is None or entry[0] is not m:
         first = {}
@@ -131,7 +143,7 @@ def _nearest_tick(m, c):
     i = bisect.bisect_left(pos, c)
     cands = [j for j in (i - 1, i) if 0 <= j < len(pos)]
     best = min(cands, key=lambda j: (abs(pos[j] - c), ticks[j][0]))
-    return ticks[best][1]
+    return ticks, best
 
 
 def nominal_map(labelled):

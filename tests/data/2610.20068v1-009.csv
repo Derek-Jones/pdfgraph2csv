@@ -1,0 +1,165 @@
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
+1,1,open-square,QW35,0,-0.296386,wcwidth,dimgray,#595959
+1,1,open-triangle,GEMA,0,-0.214707,simpy,dimgray,#595959
+1,1,open-square,QW35,0,-0.154768,flask,dimgray,#595959
+1,1,open-triangle,GEMA,0,-0.140695,sqlparse,dimgray,#595959
+1,1,open-triangle,GEMA,0,-0.13334,requests,dimgray,#595959
+1,1,open-triangle,GEMA,0,-0.126997,babel,dimgray,#595959
+1,1,open-square,QW35,0,-0.100044,voluptuous,dimgray,#595959
+1,1,filled-circle,FULL higher,1,-0.0966603,tinydb,steelblue,#4e8098
+1,1,open-circle,FULL lower,0,-0.0905307,flask,peru,#e07b54
+1,1,open-triangle,GEMA,0,-0.0700825,chardet,dimgray,#595959
+1,1,open-circle,FULL lower,0,-0.0697393,sqlparse,peru,#e07b54
+1,1,open-circle,FULL lower,0,-0.066699,requests,peru,#e07b54
+1,1,open-circle,FULL lower,0,-0.0656693,simpy,peru,#e07b54
+1,1,open-circle,FULL lower,0,-0.0428673,babel,peru,#e07b54
+1,1,open-circle,FULL lower,0,-0.0386502,wcwidth,peru,#e07b54
+1,1,open-triangle,GEMA,0,-0.0282708,flask,dimgray,#595959
+1,1,open-triangle,GEMA,0,-0.024871,graphene,dimgray,#595959
+1,1,open-circle,FULL lower,0,-0.0152108,chardet,peru,#e07b54
+1,1,open-triangle,GEMA,0,-0.00908125,pexpect,dimgray,#595959
+1,1,open-square,QW35,0,-9.51754e-06,requests,dimgray,#595959
+1,1,open-square,QW35,0,0.00793438,jinja,dimgray,#595959
+1,1,filled-circle,FULL higher,0,0.0100429,pexpect,steelblue,#4e8098
+1,1,open-triangle,GEMA,0,0.0276961,virtualenv,dimgray,#595959
+1,1,open-square,QW35,0,0.0296085,click,dimgray,#595959
+1,1,open-square,QW35,0,0.0318641,pexpect,dimgray,#595959
+1,1,open-square,QW35,0,0.03971,chardet,dimgray,#595959
+1,1,filled-circle,FULL higher,0,0.0457905,virtualenv,steelblue,#4e8098
+1,1,filled-circle,FULL higher,0,0.0480462,click,steelblue,#4e8098
+1,1,open-square,QW35,0,0.0507922,virtualenv,dimgray,#595959
+1,1,open-triangle,GEMA,0,0.0508412,marshmallow,dimgray,#595959
+1,1,open-triangle,GEMA,0,0.0547641,bitstring,dimgray,#595959
+1,1,open-square,QW35,0,0.0554997,babel,dimgray,#595959
+1,1,open-square,QW35,0,0.0610898,sqlparse,dimgray,#595959
+1,1,open-triangle,GEMA,0,0.0665002,click,dimgray,#595959
+1,1,filled-circle,FULL higher,0,0.0770267,graphene,steelblue,#4e8098
+1,1,open-triangle,GEMA,0,0.0793804,imapclient,dimgray,#595959
+1,1,open-square,QW35,0,0.0833524,simpy,dimgray,#595959
+1,1,filled-circle,FULL higher,0,0.0888935,voluptuous,steelblue,#4e8098
+1,1,open-triangle,GEMA,0,0.0952355,attrs,dimgray,#595959
+1,1,filled-circle,FULL higher,0,0.0980143,jinja,steelblue,#4e8098
+1,1,open-square,QW35,0,0.118953,moviepy,dimgray,#595959
+1,1,open-square,QW35,0,0.119051,python−progressbar,dimgray,#595959
+1,1,filled-circle,FULL higher,0,0.12469,python−progressbar,steelblue,#4e8098
+1,1,open-triangle,GEMA,0,0.130346,python−progressbar,dimgray,#595959
+1,1,filled-circle,FULL higher,0,0.132977,bitstring,steelblue,#4e8098
+1,1,filled-circle,FULL higher,0,0.134939,attrs,steelblue,#4e8098
+1,1,filled-circle,FULL higher,0,0.148571,marshmallow,steelblue,#4e8098
+1,1,open-triangle,GEMA,0,0.166665,python−rsa,dimgray,#595959
+1,1,open-square,QW35,0,0.167989,loguru,dimgray,#595959
+1,1,open-square,QW35,0,0.17456,attrs,dimgray,#595959
+1,1,open-square,QW35,0,0.178875,graphene,dimgray,#595959
+1,1,open-triangle,GEMA,0,0.179382,portalocker,dimgray,#595959
+1,1,open-triangle,GEMA,1,0.184024,tinydb,dimgray,#595959
+1,1,filled-circle,FULL higher,0,0.184465,moviepy,steelblue,#4e8098
+1,1,open-triangle,GEMA,0,0.188078,jinja,dimgray,#595959
+1,1,open-square,QW35,0,0.211141,bitstring,dimgray,#595959
+1,1,filled-circle,FULL higher,0,0.21428,imapclient,steelblue,#4e8098
+1,1,open-triangle,GEMA,0,0.219036,wcwidth,dimgray,#595959
+1,1,filled-circle,FULL higher,0,0.22242,loguru,steelblue,#4e8098
+1,1,open-square,QW35,0,0.246251,marshmallow,dimgray,#595959
+1,1,open-triangle,GEMA,0,0.249929,moviepy,dimgray,#595959
+1,1,filled-circle,FULL higher,0,0.250027,python−rsa,steelblue,#4e8098
+1,1,open-triangle,GEMA,0,0.2667,tinydb,dimgray,#595959
+1,1,open-triangle,GEMA,0,0.276768,loguru,dimgray,#595959
+1,1,open-triangle,GEMA,0,0.277782,voluptuous,dimgray,#595959
+1,1,open-triangle,GEMA,0,0.279384,pyjwt,dimgray,#595959
+1,1,open-square,QW35,0,0.2794,pyjwt,dimgray,#595959
+1,1,filled-circle,FULL higher,0,0.2794,pyjwt,steelblue,#4e8098
+1,1,filled-circle,FULL higher,0,0.288423,portalocker,steelblue,#4e8098
+1,1,open-square,QW35,0,0.33334,python−rsa,dimgray,#595959
+1,1,open-square,QW35,0,0.349228,imapclient,dimgray,#595959
+1,1,filled-circle,FULL higher,0,0.359525,tinydb,steelblue,#4e8098
+1,1,open-square,QW35,0,0.39748,portalocker,dimgray,#595959
+1,1,cross,No change,1,0.409297,tinydb,darkgray,#999999
+1,1,open-square,QW35,0,0.4524,tinydb,dimgray,#595959
+1,2,open-triangle,GEMA,0,-51.7228,more−itertools,dimgray,#595959
+1,2,open-square,QW35,1,-51.0021,tinydb,dimgray,#595959
+1,2,open-square,QW35,0,-33.9783,requests,dimgray,#595959
+1,2,open-triangle,GEMA,0,-33.0616,marshmallow,dimgray,#595959
+1,2,open-circle,FULL lower,0,-21.8735,marshmallow,peru,#e07b54
+1,2,open-circle,FULL lower,0,-18.764,requests,peru,#e07b54
+1,2,open-square,QW35,0,-18.1696,parsel,dimgray,#595959
+1,2,open-square,QW35,0,-13.7667,flask,dimgray,#595959
+1,2,open-square,QW35,0,-12.4863,cookiecutter,dimgray,#595959
+1,2,open-square,QW35,0,-10.7225,wcwidth,dimgray,#595959
+1,2,open-square,QW35,0,-10.6833,marshmallow,dimgray,#595959
+1,2,open-circle,FULL lower,0,-10.213,more−itertools,peru,#e07b54
+1,2,open-square,QW35,0,-9.25921,portalocker,dimgray,#595959
+1,2,open-circle,FULL lower,0,-9.25921,portalocker,peru,#e07b54
+1,2,open-triangle,GEMA,0,-9.25703,portalocker,dimgray,#595959
+1,2,open-triangle,GEMA,0,-8.88685,click,dimgray,#595959
+1,2,open-square,QW35,0,-7.6914,voluptuous,dimgray,#595959
+1,2,open-triangle,GEMA,0,-6.46982,chardet,dimgray,#595959
+1,2,open-circle,FULL lower,0,-6.26731,click,peru,#e07b54
+1,2,open-triangle,GEMA,0,-5.92109,sqlparse,dimgray,#595959
+1,2,open-triangle,GEMA,0,-5.45074,cachetools,dimgray,#595959
+1,2,open-square,QW35,0,-4.63418,pexpect,dimgray,#595959
+1,2,open-triangle,GEMA,0,-4.53619,pexpect,dimgray,#595959
+1,2,open-square,QW35,0,-3.75882,python−progressbar,dimgray,#595959
+1,2,open-circle,FULL lower,1,-3.69349,tinydb,peru,#e07b54
+1,2,open-square,QW35,0,-3.6543,click,dimgray,#595959
+1,2,open-triangle,GEMA,0,-3.55196,requests,dimgray,#595959
+1,2,open-square,QW35,0,-3.22315,virtualenv,dimgray,#595959
+1,2,open-triangle,GEMA,0,-3.12516,imapclient,dimgray,#595959
+1,2,open-circle,FULL lower,0,-2.94225,pexpect,peru,#e07b54
+1,2,open-square,QW35,0,-2.38699,graphene,dimgray,#595959
+1,2,open-circle,FULL lower,0,-1.98851,cookiecutter,peru,#e07b54
+1,2,open-triangle,GEMA,0,-1.92318,bitstring,dimgray,#595959
+1,2,open-triangle,GEMA,0,-1.83172,pyjwt,dimgray,#595959
+1,2,open-square,QW35,0,-1.61615,python−rsa,dimgray,#595959
+1,2,open-square,QW35,0,-1.39405,deprecated,dimgray,#595959
+1,2,open-triangle,GEMA,0,-1.34832,moviepy,dimgray,#595959
+1,2,open-circle,FULL lower,0,-1.16541,python−progressbar,peru,#e07b54
+1,2,open-square,QW35,0,-0.414166,loguru,dimgray,#595959
+1,2,open-triangle,GEMA,0,-0.220368,jinja,dimgray,#595959
+1,2,open-circle,FULL lower,0,-0.185528,pyjwt,peru,#e07b54
+1,2,cross,No change,0,-0.00261679,moviepy,darkgray,#999999
+1,2,open-square,QW35,0,0.00391574,attrs,dimgray,#595959
+1,2,filled-circle,FULL higher,0,0.108436,cachetools,steelblue,#4e8098
+1,2,filled-circle,FULL higher,0,0.637571,jinja,steelblue,#4e8098
+1,2,filled-circle,FULL higher,0,0.800884,voluptuous,steelblue,#4e8098
+1,2,filled-circle,FULL higher,0,1.30389,imapclient,steelblue,#4e8098
+1,2,open-square,QW35,0,1.34962,moviepy,dimgray,#595959
+1,2,filled-circle,FULL higher,0,1.38228,parsel,steelblue,#4e8098
+1,2,filled-circle,FULL higher,0,1.41494,flask,steelblue,#4e8098
+1,2,open-triangle,GEMA,0,1.42583,python−progressbar,dimgray,#595959
+1,2,open-square,QW35,0,1.4672,pyjwt,dimgray,#595959
+1,2,open-square,QW35,0,1.49333,jinja,dimgray,#595959
+1,2,filled-circle,FULL higher,0,1.93101,loguru,steelblue,#4e8098
+1,2,filled-circle,FULL higher,0,2.08779,virtualenv,steelblue,#4e8098
+1,2,filled-circle,FULL higher,0,2.42095,python−rsa,steelblue,#4e8098
+1,2,filled-circle,FULL higher,0,2.96968,bitstring,steelblue,#4e8098
+1,2,filled-circle,FULL higher,0,3.01541,graphene,steelblue,#4e8098
+1,2,open-triangle,GEMA,0,4.16514,tinydb,dimgray,#595959
+1,2,open-triangle,GEMA,0,4.26966,loguru,dimgray,#595959
+1,2,filled-circle,FULL higher,0,4.91638,sqlparse,steelblue,#4e8098
+1,2,open-square,QW35,0,5.66108,cachetools,dimgray,#595959
+1,2,open-square,QW35,0,5.72641,imapclient,dimgray,#595959
+1,2,filled-circle,FULL higher,0,5.95505,wcwidth,steelblue,#4e8098
+1,2,open-square,QW35,0,6.24901,babel,dimgray,#595959
+1,2,open-triangle,GEMA,0,6.45152,python−rsa,dimgray,#595959
+1,2,open-square,QW35,0,6.92839,simpy,dimgray,#595959
+1,2,open-square,QW35,0,7.85601,bitstring,dimgray,#595959
+1,2,open-triangle,GEMA,0,8.41999,graphene,dimgray,#595959
+1,2,open-triangle,GEMA,0,8.50273,cookiecutter,dimgray,#595959
+1,2,open-triangle,GEMA,0,9.29535,voluptuous,dimgray,#595959
+1,2,filled-circle,FULL higher,0,9.30623,deprecated,steelblue,#4e8098
+1,2,open-triangle,GEMA,0,10.2143,virtualenv,dimgray,#595959
+1,2,filled-circle,FULL higher,0,10.2992,tinydb,steelblue,#4e8098
+1,2,open-square,QW35,0,11.2791,more−itertools,dimgray,#595959
+1,2,filled-circle,FULL higher,0,15.3227,babel,steelblue,#4e8098
+1,2,open-square,QW35,0,16.4267,tinydb,dimgray,#595959
+1,2,filled-circle,FULL higher,0,19.902,chardet,steelblue,#4e8098
+1,2,open-triangle,GEMA,0,20,deprecated,dimgray,#595959
+1,2,open-square,QW35,0,20.3854,sqlparse,dimgray,#595959
+1,2,open-triangle,GEMA,0,20.9189,parsel,dimgray,#595959
+1,2,open-triangle,GEMA,0,21.9293,babel,dimgray,#595959
+1,2,open-triangle,GEMA,0,22.6217,wcwidth,dimgray,#595959
+1,2,open-triangle,GEMA,0,23.8934,flask,dimgray,#595959
+1,2,filled-circle,FULL higher,0,24.011,attrs,steelblue,#4e8098
+1,2,filled-circle,FULL higher,0,24.2592,simpy,steelblue,#4e8098
+1,2,open-triangle,GEMA,0,41.5835,simpy,dimgray,#595959
+1,2,open-square,QW35,0,46.2803,chardet,dimgray,#595959
+1,2,open-triangle,GEMA,0,48.0245,attrs,dimgray,#595959

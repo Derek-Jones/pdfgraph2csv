@@ -66,8 +66,9 @@ and write the data coordinates of every point as CSV.
 **Guiding principles** (they came from the user's instructions and from
 experience):
 
-* Every detected data point is reported, in drawing order, duplicates
-  included. Points whose values lie beyond the visible axis range (clipped
+* Every detected data point is reported, duplicates included, graph by
+  graph and in increasing order of x within a graph (the user asked for
+  this order). Points whose values lie beyond the visible axis range (clipped
   out of view) are still reported.
 * No output at all when there are no points (no CSV header, no output file).
 * One bad page or one bad stream must not lose the rest of the file.
@@ -163,8 +164,11 @@ Columns, in this order:
 ```
 page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
 ```
-plus `x_low,x_high,y_low,y_high` with `--errbars` (before `rotation`), plus
-`rotation` with `--rotation`, plus `pdf_x,pdf_y` with `--internal`.
+plus `axis` when a graph has two scales, plus
+`x_coord_low,x_coord_high,y_coord_low,y_coord_high` when an axis takes its
+tick positions from its label centres, plus `x_low,x_high,y_low,y_high`
+with `--errbars` (before `rotation`), plus `rotation` with `--rotation`,
+plus `pdf_x,pdf_y` with `--internal`.
 
 * `page` — 1-based page number.
 * `graph` — graph number, counted through the whole document in reading
@@ -183,9 +187,21 @@ plus `x_low,x_high,y_low,y_high` with `--errbars` (before `rotation`), plus
 * `axis` — only when some graph of the document has a scale on both sides
   (section 10.1): `left` / `right` (`bottom` / `top` for two x scales), the
   scale the point's value was read against; empty for graphs with one.
+* `x_coord_low`, `x_coord_high`, `y_coord_low`, `y_coord_high` — only when
+  some axis of the output has no tick marks and its label centres stand in
+  for them (the user asked for these): the range the value may really lie
+  in, as an error bar.  The page position is moved by the axis's
+  uncertainty each way and mapped through the axis (asymmetric on a log
+  axis).  The uncertainty is 0.1 of the labels' font size (programs centre
+  a label on its cap height, its em box or its ink) plus the largest
+  distance of a label centre from the fitted scale.  Empty for an axis
+  with tick marks or grid lines, and for category axes.
 * The graph title is **not** a column (the user asked for it to be
   removed).
-* Rows are in drawing order within a page. CSV uses `\n` line endings.
+* Rows are grouped by graph (in graph-number order within a page) and
+  sorted by increasing x within each graph; a category axis gives the
+  order of its categories along the axis, and rows with the same x keep
+  their drawing order (stable sort). CSV uses `\n` line endings.
 * No points: write nothing (no header) and do not create the `-o` file.
 
 ### 4.2 Meta CSV (`-meta FILE`)
@@ -353,6 +369,24 @@ killed). Write a **streaming tokenizer** that yields one
   else the base encoding; ligatures spelt out (fi, fl, ffi, ...). Standard-14
   fonts used without /Widths (and aliases such as Arial, TimesNewRoman) are
   measured with the Adobe metrics.
+* **Glyph names that are no character names**: Type 3 copies of TrueType
+  fonts (matplotlib 3.3) name each glyph after its glyph number,
+  "uni00000013", which the Adobe Glyph List reads as U+0000 U+0013. A name
+  (or a base-encoding entry) that gives control characters is ignored, and
+  the code keeps its standard meaning (printable ASCII 32-126: code 48 is
+  "0").
+* **Fonts without a map to Unicode**: for a two-byte (CID) font whose code
+  neither ToUnicode nor pdfminer explains, read the embedded font program
+  (FontFile2, FontFile3/OpenType, bare CFF; the descendant's for Type 0):
+  code → glyph through /CIDToGIDMap (identity when absent) → character from
+  the program's Unicode cmap tables (reversed, smallest code point) or its
+  glyph names through the Adobe Glyph List ("zero", "uni0036"; a suffix
+  such as ".numr" dropped). A Type 0 font that was taken for a one-byte
+  font (no /Subtype) shows its strings as byte pairs 00 xx: when all the
+  high bytes are zero and the font program is a CID one, read them as
+  two-byte codes, with widths from the descendant's /W and /DW. Control
+  characters left over are dropped, never output: an unreadable label is
+  no label.
 * **Form XObjects**: run with their own matrix and resources, **inheriting
   the caller's graphics state** (pdfminer starts them afresh, which loses
   colours). Guard against a form drawing itself (track stream ids) and limit
@@ -378,6 +412,9 @@ made the index try to create 6×10^15 cells (an apparent infinite loop).
   mathtext spaces: matplotlib's log-axis labels "3×10^1" come as "3", "×",
   "10" and a raised "1"). A small raised number directly after
   "10" is a superscript exponent: "10" + "3" → "10^3".
+  Small capitals ("FULL" set as "F" + smaller "ULL"): an all-capital piece
+  of 0.6-0.85 of the size touching (< 0.15 em) a capital joins it; the
+  item keeps the bigger size.
 * Each merged item gets `bbox`, `center`, `angle`, `rotated`, `value`.
 * `parse_number`: plain numbers, `1,000`, `$5`, `25%`, `10^3`, `2x10^3`,
   `2×10^3`, Unicode minus (U+2212), '95-style years, dates (decimal year),
@@ -385,7 +422,12 @@ made the index try to create 6×10^15 cells (an apparent infinite loop).
   `kB`, `MB`, `GB`, `TB`, `PB` = 10^3n; the value is in bytes) and binary
   units (`KiB`, `MiB`, `GiB`, `TiB` = 1024^n), thousands and millions
   (`10k`, `10K`, `2M`: ggplot2's label_number(scale_cut)), factors (`1.5x`,
-  `1.5×` = 1.5). Not other letters ("5G", "3D" stay words).
+  `1.5×` = 1.5), and durations - a number and a unit of time, the value
+  in seconds (`ns`, `µs`, `ms`, `s`/`sec`/`second`, `min`/`minute`,
+  `h`/`hr`/`hour`, `d`/`day`, `w`/`wk`/`week`, `mo`/`month` = 365.25/12
+  days, `y`/`yr`/`year` = 365.25 days, plurals too, lower case; a bare `m`
+  is not taken): a log time axis labelled 1 s, 15 s, 1 min ... 64 h (the
+  user asked for these). Not other letters ("5G", "3D" stay words).
   Return None for values a float cannot hold or exponents above 300 (body
   text "2^2000 ≈ 10^602" once raised OverflowError) and for non-finite
   values.
@@ -417,6 +459,14 @@ Some PDF writers convert every character into a filled path. Then:
   an exponent's minus sign drawn as a separate thin dash makes it 10^-n.
   Such dashes must **not** be taken for tick marks (record them as minus
   paths and exclude them from tick detection).
+* **Labels run into a nearby word**: big glyphs reach far (a sideways
+  axis title in 8 pt letters joins a y label "0.50" 3.5 pt away; a y label
+  and an x label touching at the corner, "10^-4" and "10^-4"). A word of up
+  to 40 glyphs that reads as no number is regrouped with a tighter reach
+  (0.25 of the bigger glyph) and its pieces of 2-12 glyphs read; the split
+  is kept only if a piece reads as a number (words of letters stay whole:
+  category labels), and a single glyph never becomes a label this way (a
+  round marker fragment reads as "0").
 * Words that cannot be read are kept as "blobs" (text items with
   `text=None` and their glyph centres): usable as category labels (numbered
   #1, #2, ...) and as legend labels with an unknown name.
@@ -456,7 +506,11 @@ Some PDF writers convert every character into a filled path. Then:
   max(0.05, min(0.1·L, 1)) pt); a group needs ≥ 2 distinct positions.
   A group whose length exceeds a quarter of its span is a set of **grid
   lines**: used only when an axis has no real ticks (plots without tick
-  marks), and then only grid lines that start on the axis line. When no
+  marks), and then only grid lines that start on the axis line. A group of
+  long segments is a row of grid lines when they are longer than a quarter
+  of the group's span or than three times their median spacing (one row
+  of grid lines may run through several side-by-side panels, making the
+  span large). When no
   axis line is found at either end of the grid lines (ggplot2's
   theme_minimal draws only major and minor grid lines: no ticks, no axis
   lines), or the line across them is not at their ends (the lowest minor
@@ -498,6 +552,21 @@ Some PDF writers convert every character into a filled path. Then:
   sitting at the corners. Try it with its two ends plus the ticks touching
   it as tick positions; it needs ≥ 3 fitting numeric labels, and when it
   fails it is not recorded as a bare axis (section 10).
+* **Labels as ticks**: an axis line with no ticks at all (Excel's category
+  axis of a line chart: labels 1, 101, ... 1001; ggplot2 with axis.ticks
+  blank: 0.00 ... 1.00, or only 4, 8, 12 on a 1..15 axis). Tried for that
+  frame side, and then for every line of 30 pt or more that carries no
+  axis, or only one fitted with two labels (the frame's side lines taken
+  for two "ticks"): a row of at least three numbers beside it, not labels
+  of another axis, within its span, at most 2 label sizes away, on one
+  side, one baseline (x) or one edge (y), evenly spaced (within 5%) with
+  values in equal steps, gives the tick positions: the label centres. A
+  horizontal label is centred by its advance width: for a label drawn as
+  outlines (only the ink box known) the advance box is estimated from
+  Helvetica / Arial digit metrics ("1" has its ink well right of its
+  middle; uncorrected, 4 / 8 / 12 put every point 0.03 too high). Label
+  positions are less exact than ticks: vertical centring differs between
+  programs.
 * A long frame line shared by a column of lattice panels is split at the
   perpendicular panel borders that cross it away from any tick.
 
@@ -556,6 +625,9 @@ Some PDF writers convert every character into a filled path. Then:
   At least 3 categories, except two readable words, one in each gap
   between three ticks on an axis line (an Excel bar chart of "Yes" and
   "No").
+* Category labels beside grid lines (no axis line: ggplot2's
+  theme_minimal) lie outside the grid lines' span; their distance is
+  measured from the nearer end of the grid lines.
 * A category label's position along the axis: the centre of upright
   (90°) text and of horizontal text; the end nearest the axis for slanted
   text.
@@ -575,6 +647,14 @@ Some PDF writers convert every character into a filled path. Then:
   x.hi, y.hi). Only the first gap (the axis line to the end of the other
   axis) must be within 8%; the second may be loose (an axis set off from
   the end of the other), up to half the length of the graph's own axis.
+* **Crossing axes**: axes may cross inside the plot, with their ticks and
+  labels in its body (spines through the origin; Excel's log axes crossing
+  at 1). An x and a y axis line, both with lines, that found no corner
+  pair when each runs across the other between 5% and 95% of its length
+  and their lengths are within a factor of 3; the pair crossing nearest
+  the middles wins. Plot box = (x.lo, y.lo, x.hi, y.hi) as for a corner.
+  Other lines round the plot (grid lines at the ends of an axis, a frame
+  round the chart) carry no labels and are not axes.
 * **Shared axes**: graphs stacked one above the other often carry the x
   labels under the lowest graph only (side-by-side graphs: the y labels
   left of the first). A graph whose axis line has ticks but no labels then
@@ -584,7 +664,13 @@ Some PDF writers convert every character into a filled path. Then:
   the labelled axis, and has the same number of ticks at the same places
   (within max(0.5 pt, 0.5% of the axis length)). Rows of only two "ticks"
   are the frame's side lines and are ignored. A graph with no ticks of its
-  own needs a dark axis line at that end spanning the labelled axis. The
+  own needs a dark axis line at that end spanning the labelled axis (a line
+  of any shade when the labelled axis has no ticks either: ggplot2 facets
+  in grey frames). "That end" is the end facing the labelled axis (a left
+  axis serves the panels to its right through their left sides). An axis
+  beyond the end of another, with its labels in the gap between them, is
+  the axis of the plot on the far side and pairs with neither as a corner
+  nor as a shared axis. The
   unlabelled tick rows (`bare axes`) and the merged dark lines are kept in
   the page state for this test. Without the test, a graph whose own x axis
   could not be read borrowed the x axis of whatever graph stood below it
@@ -714,7 +800,18 @@ files with known true values slightly worse.
 * **Highlight boxes**: an open square or circle drawn round a smaller marker
   of another colour is not a data point. Index candidates **by colour** so
   that stacks of thousands of same-colour markers are never compared.
+  Boxes are a style of their own: drop them only when every marker of that
+  style (shape, colour, size) surrounds another marker. Means drawn over
+  the per-generator markers of the same row coincide with them only now
+  and then, and stay.
 * Symbols whose path is a hiding box (section 8.1) are dropped.
+* **Outline rings**: a marker's outline drawn as a filled ring right after
+  its filled body (stroke converted to an outline) comes out as an open
+  circle round a filled one - same colour and centre, 1-2× its size,
+  painted within two steps after it: the ring is dropped.
+* **Dots hidden in a line**: a filled circle at most 1.3 × the width of a
+  line of its colour that passes within a quarter of the line width of its
+  centre cannot be seen (points at the vertices of a model curve): dropped.
 * Glyph outlines that are text are never markers.
 
 ### 11.5 Flattened markers
@@ -723,6 +820,22 @@ A converter may flatten overlapping semi-transparent markers into many
 clipped fragments. Rebuild circles by fitting circles to the fragments' arcs
 (circumcircle of three points on each arc), merge centres closer than 8% of
 the radius, and count stacked points from the colour of overlapping layers.
+
+* Arcs of subpaths that run far beyond their circle (more than 5 radii: the
+  round joins of a thick line drawn as an outline) are no marker evidence.
+* Whole markers on the same page (a graph that was not flattened) stay: a
+  centre where a found circle sits whose arcs all come from that circle's
+  own paths is not rebuilt, and those circles are kept. Fragment symbols
+  are dropped only near a rebuilt centre.
+* One ladder of shades per hue (several series in different colours; the
+  rebuilt circle takes the colour of one marker of its hue alone). Its
+  first rung is the shade with the most arcs (the darkest aside); lighter
+  shades are other things (an error bar's own colour where it meets a
+  marker). A shade counts as a stack only if it is what n layers of the
+  marker colour give (one layer of alpha a over white: 1 - a(1 - m); n
+  layers: 1 - (1 - m)(1 - (1 - a)^n), the darkest shade taken as m): a
+  semi-transparent error bar across a marker darkens a strip of it to a
+  shade no stack of markers gives, and that strip is not a stack.
 Warn: "markers were flattened into fragments; N circles rebuilt from their
 outlines". Cap grid cells per fragment box (degenerate boxes).
 
@@ -809,7 +922,12 @@ its own value for the other side.
   size). Use binary search over labels and over line samples sorted by
   height (boxplots have hundreds of short horizontal lines; comparing every
   marker with every line was quadratic).
-* Subscripts/superscripts continuing the label are appended.
+* Subscripts/superscripts continuing the label are appended, and so are
+  following words set as separate pieces (same size and baseline, gap ≤
+  0.4 em, not a number, no marker in between - the legend's frame box is
+  no marker): "FULL" + "higher", "λ" + "=0.01".
+* A key drawn several times at one place (ggplot2 draws the glyph of each
+  point layer in the key box) is reported once.
 * Line samples include short horizontal strokes converted to thin filled
   rectangles (Inkscape/cairo convert every stroke).
 * A single key whose label cannot be read (outlined) is accepted when a
@@ -845,13 +963,21 @@ its own value for the other side.
   of a caption above, not a running header or footer (the topmost /
   bottommost line of the page's text, running from the left margin to the
   right one with a wide gap: "Paper title ...   Conference '25, ..."; side-
-  by-side graph titles do not reach both margins). Prefer the biggest font,
-  then the closest. Add
+  by-side graph titles do not reach both margins), not the axis title of
+  another graph (text within that graph's width, at most 2.5 text sizes
+  below its x tick labels: "Hours" under the panel above), not outside
+  the box drawn round the chart (Excel's chart area: the smallest
+  rectangle holding the plot box with at least 2 pt to spare, at most 1.6×
+  its width and 2× its height; body text above it is no title). Prefer the
+  biggest font, then the closest. Add
   continuation lines below and lines just above, words of the same line
   drawn as separate texts, and sub/superscripts.
 * Failing that, a sub-caption below the plot ("(a) ...", "(b). ...",
   "Fig. 3 ..."); but not the graph's own figure caption (a title starting
   with "Fig."/"Figure" and the caption's number), which is in `caption`.
+  Not a panel label standing at the top left corner of the graph below it
+  (within 2 text sizes above it, ending at most 2 sizes right of its left
+  edge): "(c)" above panel (c) is not the title of the panel above.
 
 ### 14.2 Figure number and caption
 
@@ -873,8 +999,12 @@ its own value for the other side.
   column, one line spacing further down — the first step sets the spacing
   (captions may be double spaced), later steps must match it within 20%; a
   line ending well short of the column's right edge ends the paragraph;
-  stop at another caption head; at most 40 lines. Join a word hyphenated at a
-  line end.
+  stop at another caption head; at most 40 lines. A next line must start
+  where the caption (or the line before) starts, end at the caption's right
+  edge (justified text, also with a hanging indent under the text after
+  "Figure 3.3:"), or be centred under it: the first line of the right-hand
+  column below a short centred caption is none of these. Join a word
+  hyphenated at a line end.
 * Output the number and the text without the label.
 
 ## 15. The program that drew a graph
@@ -1146,6 +1276,52 @@ start.
     crossing-stroke grid of problem 30 had cells sized by the median
     stroke (0.002 pt), so each long stroke scanned some 10^8 cells. With
     length classes the page takes 18 s.
+33. **Control characters as coordinates**: the axis labels of matplotlib
+    3.3.3 graphs in 2305.15675v1, in Type 3 copies of Arial without ToUnicode
+    whose /Differences name glyphs by glyph number ("uni00000019" for code
+    54, "6"), came out as NUL 0x19 ..., and were then used as category
+    names for both axes. The codes themselves are ASCII. (A first fix,
+    written without the PDF, read the embedded program of CID fonts and
+    dropped control characters: it removed the labels, and with them the
+    graphs of four pages.)
+34. **Grid lines through three panels**: matplotlib panels with grid lines
+    for ticks, three in a row with the same height: their vertical grid
+    lines made one group spanning all three, 83 pt lines against a 461 pt
+    span, so not "grid lines" but ticks too long for any axis line - no
+    graph at all. Then the lower panels took the upper panels' axis title
+    "Hours" as their title, and the centred one-line caption took on the
+    first line of the right-hand column below it. A caption continues only
+    with a line that starts where it (or the line before) starts, ends at
+    its right edge, or is centred under it.
+35. **Two panels sharing project names**: ggplot2 panels without ticks or
+    axis lines, a light grey block over the positive half of each panel.
+    The project names were measured from the implicit axis line and
+    sometimes fell inside the grid span; the mean markers (open circles,
+    larger) that happened to surround a triangle or square of the same row
+    were taken for highlight boxes (pexpect, portalocker lost their means);
+    "FULL higher" came as "F", "ULL" and "higher" and was named "F"; the
+    open-symbol keys appeared twice, one per point layer.
+36. **Axes crossing in the middle**: three Excel scatter plots with log
+    axes (0.1, 1, 10) crossing at 1; the axis lines meet halfway along each
+    other, not at a corner, so no graph was found ("No vector graphics
+    found").
+37. **Labels without ticks**: an Excel line chart of 1061 loops, the x axis
+    labelled 1, 101, ... 1001 with no tick marks, the y axis a log scale
+    whose only "ticks" are the axis line at 1 and a grid line at 10. Only
+    the y axis was found; then the body text above the chart's box became
+    its title.
+38. **No ticks anywhere**: ggplot2 panels with axis.ticks blank - five
+    graphs, labels at the four corners and between, no tick marks. Nothing
+    was found. Then: the y label "0.50" ran into the sideways axis title
+    (a 14-glyph word, unread); the markers, flattened with semi-transparent
+    error bars into pieces of blended colours, were counted as stacks of
+    up to four (all colours of all three series on one ladder; the strip
+    under each error bar read as a second layer), and the whole markers of
+    the two lower graphs were counted four times as the darkest shade; each
+    lower marker was found twice (body and outline ring) and the model
+    curves' vertex dots counted as points; the facets without labels took
+    the scale of the panel to their right; "(c)" became the title of the
+    facet above it.
 
 ## 19. Regression testing
 
@@ -1240,6 +1416,16 @@ expected files in a copy.
 | mpl-twin-axes | matplotlib twinx: the scale of each series from the axis titles, from legend labels "(left axis)" / "(right axis)", and from tick label colours (no legend) |
 | 2205.01842-004 | seaborn darkgrid: no ticks or axis lines, white grid lines on grey; thin diamonds; the caption is not the title |
 | mpl-background-grid | darkgrid with thin diamonds; a plot area tiled with grey blocks whose white gaps are the only tick positions; known values (tolerance 1e-6) |
+| 2308.04748-008 | six matplotlib panels on light blue, grid lines through three panels in a row; sub-captions as titles; a centred caption above two-column text |
+| mpl-crossing-axes | spines through the origin (four quadrants); log axes crossing at 1 with grid lines at the y ends and a frame round the figure; known values (tolerance 1e-6) |
+| 3276496-020 | three Excel scatter plots, log axes 0.1 ... 10 crossing at 1 in the middle of the plot, grid lines at the y ends, frames |
+| mpl-label-ticks | x labels without ticks (1, 101, ... 1001), log y with grid lines at 1 and 10 only, body text above the chart box |
+| 3276496-014 | Excel line chart: category x axis without ticks (1 ... 1001), log y axis from two grid lines; body text above the chart box |
+| mpl-no-ticks | no tick marks: label centres as positions (0.00 ... 1.00; 4, 8, 12), a facet sharing its left neighbour's y axis, dots hidden in a line |
+| cheyette2024limited-008 | five ggplot2 panels without ticks; facets sharing a y axis in grey frames; flattened markers with transparent error bars; whole markers with outline rings; model-curve dots |
+| 2610.20068v1-009 | two ggplot2 panels sharing project-name categories, a grey block over the positive side, grid lines only; means over per-generator markers; small-capital two-word legend labels; keys drawn once per layer |
+| 2305.15675v1-p7-13 | pages 7 and 13 of 2305.15675v1: Type 3 Arial whose glyph names spell glyph numbers; four histograms, a grouped bar chart with category labels |
+| mpl-font-type42, mpl-font-no-unicode, mpl-font-no-subtype | the same matplotlib graph with TrueType text, then with the text's codes made glyph numbers and every map to Unicode removed (no ToUnicode, no cmap table), once with the Type 0 font's /Subtype removed too: all three must give the same CSV |
 | 61676858-74 | R curves of 441 000 one-segment strokes beside long axes (once ran for hours); 9 999 tiny circles per graph |
 | 3759548.3763370-007 | ggplot2 theme_minimal (major and minor grid lines only): two log-log scatter plots (one labelled 10kB ... 1MB) and a bar chart of speedups from 1x (labels 1x ... 2.5x, bars below 1x, 57 upright category labels); running header |
 | 2001.10488v4-56 | 69 MB stream (counts only) |

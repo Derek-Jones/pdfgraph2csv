@@ -88,6 +88,10 @@ def find_legend(symbols, texts, hlines=()):
         if best:
             t = best[1]
             label = t["text"].strip()
+            # (markers: not the legend's frame box)
+            near_keys = [u for u in symbols if u["size"] < 2 * t["size"]
+                         and abs(u["cy"] - t["center"][1]) < 2 * t["size"]
+                         and t["bbox"][2] < u["cx"] < t["bbox"][2] + 20 * t["size"]]
             # subscripts / superscripts that continue the label: f + 16
             end = t["bbox"][2]
             for o in by_left:
@@ -97,6 +101,16 @@ def find_legend(symbols, texts, hlines=()):
                         -0.1 * t["size"] <= o["bbox"][0] - end < 0.3 * t["size"] and \
                         abs(o["center"][1] - t["center"][1]) < 0.7 * t["size"]:
                     label += o["text"].strip()
+                    end = o["bbox"][2]
+                elif o is not t and abs(o["size"] - t["size"]) <= 0.05 * t["size"] and \
+                        0 < o["bbox"][0] - end <= 0.4 * t["size"] and \
+                        abs(o["p0"][1] - t["p0"][1]) < 0.1 * t["size"] and \
+                        not o["rotated"] and o["value"] is None and \
+                        not any(end < u["cx"] < o["bbox"][0] and
+                                abs(u["cy"] - t["center"][1]) < t["size"] for u in near_keys):
+                    # the next word of the label, set as a separate piece
+                    # ("FULL" in small capitals, then "higher")
+                    label += " " + o["text"].strip()
                     end = o["bbox"][2]
             entries[i] = (label, t)
     keys = {i: e[0] for i, e in entries.items()}
@@ -240,7 +254,28 @@ def find_page_legend(symbols, texts, blobs, graphs, paths):
     """Legend keys of the page: {symbol index: series name}.  Combines
     keys with text labels (also in turned graphs), colour swatches labelled
     1, 2, 3 ... and keys whose label is drawn as unreadable outlines (their
-    name is left blank)."""
+    name is left blank).  A marker clipped out of view (an outlier far
+    beyond a plot's range, which may land on text elsewhere on the page)
+    is no legend key."""
+    shown = [i for i, s in enumerate(symbols) if not clipped_out(s)]
+    if len(shown) < len(symbols):
+        keys = _page_legend([symbols[i] for i in shown], texts, blobs, graphs, paths)
+        return {shown[i]: name for i, name in keys.items()}
+    return _page_legend(symbols, texts, blobs, graphs, paths)
+
+
+def clipped_out(s):
+    """Whether a symbol lies wholly outside the clipping box it was drawn
+    with (so is not seen)."""
+    c = s.get("clip")
+    if not c:
+        return False
+    r = s.get("size", 0) / 2
+    return (s["cx"] + r < c[0] or s["cx"] - r > c[2] or
+            s["cy"] + r < c[1] or s["cy"] - r > c[3])
+
+
+def _page_legend(symbols, texts, blobs, graphs, paths):
     hlines = legend_line_samples(paths)
     legend = find_legend(symbols, texts, hlines)
     for i, label in numbered_legend(symbols, texts).items():
@@ -310,6 +345,7 @@ class SeriesNamer:
         self.by_marker = {}       # (graph no, marker signature) -> label / None
         self.by_colour = {}       # (graph no, colour) -> label / None (swatches)
         self.figure = []          # (rgb, signature, label) of keys outside all graphs
+        self.by_outline = {}      # (graph no, shape, outline colour) -> label (white keys)
         self._figure_cache = {}
         for i, label in legend.items():
             s = symbols[i]
@@ -322,12 +358,30 @@ class SeriesNamer:
                 self.by_colour[ck] = label if self.by_colour.get(ck, label) == label else None
             if s["rgb"] and all(rect_distance(g["rect"], s["cx"], s["cy"]) > 0 for g in graphs):
                 self.figure.append((s["rgb"], symbol_signature(s), label))
+        # a key filled white with a coloured outline (on a white legend box)
+        # looks like an open marker of the outline's colour: it also names
+        # the markers of its shape in that colour, open or filled, and those
+        # outlined in it - unless a key of their own does
+        for i, label in legend.items():
+            s = symbols[i]
+            out = s.get("outline_rgb")
+            if not (s["filled"] and out and s["rgb"] and min(s["rgb"]) > 0.97 and min(out) <= 0.97):
+                continue
+            g = min(graphs, key=lambda g: rect_distance(g["rect"], s["cx"], s["cy"]))
+            for filled in (False, True):
+                self.by_marker.setdefault((g["no"], symbol_signature(dict(s, filled=filled, rgb=out))), label)
+            ok = (g["no"], s["shape"], color_name(out)[1])
+            self.by_outline[ok] = label if self.by_outline.get(ok, label) == label else None
 
     def name(self, si, s, g):
         """Series name of symbol number `si` (`s`) in graph `g`."""
         named = self.line_names.get(id(s)) or self.by_marker.get((g["no"], symbol_signature(s)))
         if named:
             return named
+        if s.get("outline_rgb") and si not in self.legend:
+            named = self.by_outline.get((g["no"], s["shape"], color_name(s["outline_rgb"])[1]))
+            if named:
+                return named
         if si in self.legend:
             return self.legend[si]
         return self.by_colour.get((g["no"], color_name(s["rgb"])[1])) or self._figure_series(s)

@@ -26,12 +26,41 @@ _SUFFIX = {"b": 1.0, "kb": 1e3, "mb": 1e6, "gb": 1e9, "tb": 1e12, "pb": 1e15,
 _SUFFIX_RE = re.compile(r"([+-]?(?:\d+\.?\d*|\.\d+))(B|[kKMGTP]B|[KMGT]iB|k|K|M|x|\u00d7)")
 
 
+# durations: a number and a unit of time, the value in seconds (a log time
+# axis labelled 1 s, 15 s, 1 min, ... 64 h).  A bare "m" (minutes, months
+# or metres) is not taken; units are lower case ("2D" is no duration)
+_DAY = 86400.0
+_DURATION = {"ns": 1e-9, "\u00b5s": 1e-6, "\u03bcs": 1e-6, "us": 1e-6, "ms": 1e-3,
+             "s": 1.0, "sec": 1.0, "secs": 1.0, "second": 1.0, "seconds": 1.0,
+             "min": 60.0, "mins": 60.0, "minute": 60.0, "minutes": 60.0,
+             "h": 3600.0, "hr": 3600.0, "hrs": 3600.0, "hour": 3600.0, "hours": 3600.0,
+             "d": _DAY, "day": _DAY, "days": _DAY,
+             "w": 7 * _DAY, "wk": 7 * _DAY, "wks": 7 * _DAY, "week": 7 * _DAY, "weeks": 7 * _DAY,
+             "mo": 365.25 / 12 * _DAY, "mos": 365.25 / 12 * _DAY, "month": 365.25 / 12 * _DAY,
+             "months": 365.25 / 12 * _DAY,
+             "y": 365.25 * _DAY, "yr": 365.25 * _DAY, "yrs": 365.25 * _DAY,
+             "year": 365.25 * _DAY, "years": 365.25 * _DAY}
+_DURATION_RE = re.compile(r"((?:\d+\.?\d*|\.\d+))\s*(%s)" % "|".join(
+    sorted((re.escape(u) for u in _DURATION), key=len, reverse=True)))
+
+
+def parse_duration(s):
+    """'1 s', '15 min', '64 h', '2 days', '1.5yr' -> seconds; None if `s` is
+    not a duration."""
+    m = _DURATION_RE.fullmatch(s.strip().replace("\u00a0", " "))
+    return float(m.group(1)) * _DURATION[m.group(2)] if m else None
+
+
 def parse_number(s):
     """Numeric value of a label: plain numbers, 1,000 / $5 / 25%, 10^3 and
     2x10^3, unicode minus signs, sizes and scaled numbers (10kB, 1MB, 2KiB,
-    10k, 1.5x: see _SUFFIX), '95-style years and dates (as decimal years,
-    see parse_date); None if not a number, or not one a float can hold
-    (such as 10^602 in body text)."""
+    10k, 1.5x: see _SUFFIX), durations (in seconds, see parse_duration),
+    '95-style years and dates (as decimal years, see parse_date); None if
+    not a number, or not one a float can hold (such as 10^602 in body
+    text)."""
+    d = parse_duration(s)
+    if d is not None:
+        return d
     t = (s.strip().replace("\u2212", "-").replace("\u2013", "-")
          .replace("\u2014", "-").replace("\u00a0", "").replace(" ", ""))
     t = t.replace(",", "").replace("$", "").replace("%", "")
@@ -128,6 +157,19 @@ def merge_texts(texts):
             if (abs(t["size"] - o["size"]) < 0.05 * max(t["size"], 1e-6) and
                     d < gap * max(t["size"], 1e-6) and t["text"].strip() and
                     o["text"].strip()):
+                o = dict(o)
+                o["text"] += t["text"]
+                o["p1"] = t["p1"]
+                if "glyphs" in o and "glyphs" in t:
+                    o["glyphs"] = o["glyphs"] + t["glyphs"]
+                out[-1] = o
+                continue
+            # small capitals: "F" then a smaller "ULL" on the same baseline,
+            # touching it (LaTeX \textsc: the word keeps the larger size)
+            ts, os_ = t["text"].strip(), o["text"].strip()
+            if (0.6 * o["size"] <= t["size"] <= 0.85 * o["size"] and ts.isalpha() and
+                    ts.isupper() and os_[-1:].isalpha() and os_[-1:].isupper() and
+                    d < 0.15 * o["size"] and not t["text"][:1].isspace()):
                 o = dict(o)
                 o["text"] += t["text"]
                 o["p1"] = t["p1"]

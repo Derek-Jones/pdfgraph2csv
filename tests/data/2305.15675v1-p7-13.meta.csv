@@ -1,0 +1,7 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,,2,Impact of specialization threshold on class distribution,Matplotlib v3.3.3,,0,0,100,95% Threshold,50% Threshold
+1,2,,3,Distribution of dependent agreement percentage for packages in each class,Matplotlib v3.3.3,,5,60,100,0,40000
+1,3,,3,Distribution of dependent agreement percentage for packages in each class,Matplotlib v3.3.3,,5,60,100,0,20000
+1,4,,3,Distribution of dependent agreement percentage for packages in each class,Matplotlib v3.3.3,,5,60,100,0,4000
+1,5,,3,Distribution of dependent agreement percentage for packages in each class,Matplotlib v3.3.3,,5,40,50,0,10000
+2,6,,5,Performance evaluation results,Matplotlib v3.3.3,,12,ROC AUC,Recall,0,0.8

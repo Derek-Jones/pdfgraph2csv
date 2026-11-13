@@ -69,10 +69,20 @@ def _find_title(rect, texts, symbols):
     w, h = x1 - x0, y1 - y0
     best = None
     headers = _running_headers(texts)
+    frame = PAGE.chart_frames.get(tuple(rect))
     for t in texts:
         txt = t["text"].strip()
         if not txt or is_number(t) or t["rotated"] or id(t) in headers:
             continue
+        if frame and not (frame[0] - 1 <= t["bbox"][0] and t["bbox"][2] <= frame[2] + 1 and
+                          frame[1] - 1 <= t["bbox"][1] and t["bbox"][3] <= frame[3] + 1):
+            continue                  # outside the box drawn round the chart
+        cx = (t["bbox"][0] + t["bbox"][2]) / 2
+        if any(zx0 <= cx <= zx1 and zx1 - zx0 > 0 and
+               -0.2 * t["size"] <= zb - t["bbox"][3] <= 2.5 * t["size"] and
+               not (zx0 == x0 and zx1 == x1)
+               for zx0, zx1, zb in PAGE.xlabel_zones):
+            continue                  # the axis title of the graph above ("Hours")
         if t["size"] < 0.85 * PAGE.label_size:
             continue            # sub/superscripts and small print are no titles
         if any(o["size"] > 1.15 * t["size"] and not o["rotated"] and
@@ -165,6 +175,10 @@ def _find_title(rect, texts, symbols):
             continue
         gap = y0 - t["bbox"][3]
         if 0 <= gap <= 0.8 * h and abs(t["center"][0] - (x0 + x1) / 2) <= 0.25 * w:
+            if any(r != tuple(rect) and 0 <= t["bbox"][1] - r[3] < min(gap, 2 * t["size"]) and
+                   r[0] - 6 * t["size"] <= t["bbox"][0] and t["bbox"][2] <= r[0] + 2 * t["size"]
+                   for r in map(tuple, PAGE.graph_rects)):
+                continue        # the panel label at the top left corner of the graph below
             if best is None or gap < best[0]:
                 best = (gap, txt, t["size"], t)
     if not best:
@@ -302,9 +316,19 @@ def find_figure_caption(rect, lines, graph_rects):
                 continue
             dy = prev["y"] - ln["y"]
             ok = 0.8 * spacing < dy < 1.2 * spacing if spacing else 0.5 * s < dy < 2.6 * s
+            # the next line starts where the caption starts, ends where it
+            # ends (justified, also with a hanging indent under the text
+            # after "Figure 3.3:"), or is centred under it (a centred
+            # caption): not a line of the right-hand column below a short
+            # centred caption
+            starts = abs(ln["bbox"][0] - first["bbox"][0]) <= 2 * s or \
+                abs(ln["bbox"][0] - prev["bbox"][0]) <= 2 * s and prev is not first or \
+                abs(ln["bbox"][2] - first["bbox"][2]) <= 2 * s
+            centred = abs((ln["bbox"][0] + ln["bbox"][2]) / 2 -
+                          (first["bbox"][0] + first["bbox"][2]) / 2) <= 2 * s
             if ok and ln["bbox"][0] < first["bbox"][2] and \
                     ln["bbox"][2] > first["bbox"][0] and \
-                    ln["bbox"][0] >= first["bbox"][0] - 2 * s:
+                    ln["bbox"][0] >= first["bbox"][0] - 2 * s and (starts or centred):
                 if nxt is None or dy < nxt[0]:
                     nxt = (dy, ln)
         if nxt is None or _FIGURE_RE.match(nxt[1]["text"]):

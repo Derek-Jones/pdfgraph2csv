@@ -8,7 +8,9 @@
 #
 #   * the CSV it writes against an expected CSV in tests/data: the same
 #     number of rows in the same order, text columns (page, graph, symbol,
-#     colour, ...) identical, numeric columns equal within a tolerance;
+#     colour, ...) identical, numeric columns equal within a tolerance
+#     (rows are in increasing x within a graph, so rows a few lines apart
+#     whose values all agree within the tolerance may be in either order);
 #   * or, for outputs too big to keep, the number of points per
 #     "graph symbol";
 #   * or, for a case without expected output, that nothing at all is
@@ -41,8 +43,10 @@
 # prints the digit templates embedded in pdfpoints/outlined_text.py (needs
 # Pillow and the Liberation and DejaVu fonts).
 #
-# The Python interpreter is taken from $PYTHON (default python3).  Needs
-# only bash (3.2 or later) and the standard tools awk, grep, sort, diff, cmp.
+# The Python interpreter is taken from $PYTHON (default python3).  To test
+# another build of the program, set $PDFGRAPH2CSV to its path; it is run
+# instead of pdfgraph2csv.py.  Needs only bash (3.2 or later) and the
+# standard tools awk, grep, sort, diff, cmp.
 # Exit status is 0 when every case passes, 1 otherwise.
 #
 # A case is one call of t:
@@ -164,6 +168,16 @@ compare_csv() {
       for (i = 1; i <= en; i++) E[erows, ecol[i]] = f[i]
       for (i = en + 1; i <= necol; i++) E[erows, ecol[i]] = "<none>" }
     function report(msg) { nd++; if (nd <= max) print msg }
+    function same(r, s,    k, c, j, av, ev, d) {     # actual row r = expected row s?
+        for (k = 1; k <= nc; k++) {
+            c = C[k]; j = ahdr[c]
+            av = (j <= alen[r]) ? A[r, j] : "<none>"
+            ev = ((s, c) in E) ? E[s, c] : "<none>"
+            if (isnum(av) && isnum(ev)) { d = av - ev; if (d < 0) d = -d; if (d > tol) return 0 }
+            else if (av != ev) return 0
+        }
+        return 1
+    }
     END {
         tol += 0
         if (cols != "") nc = split(cols, C, ",")
@@ -176,6 +190,14 @@ compare_csv() {
         if (arows != erows) report("row count: got " arows ", expected " erows)
         rows = arows < erows ? arows : erows
         for (r = 1; r <= rows; r++) {
+            # a row may match an expected row a few lines away when every
+            # value agrees within the tolerance: rows come in increasing x,
+            # and rows whose x agree within the tolerance in either order
+            if (!used[r] && same(r, r)) { used[r] = 1; continue }
+            found = 0
+            for (s = r - 5; s <= r + 5 && !found; s++)
+                if (s >= 1 && s <= erows && s != r && !used[s] && same(r, s)) { used[s] = 1; found = 1 }
+            if (found) continue
             for (k = 1; k <= nc; k++) {
                 c = C[k]; j = ahdr[c]
                 av = (j <= alen[r]) ? A[r, j] : "<none>"
@@ -211,7 +233,11 @@ run_program() {
     local out= status want text
     local cmd
     rm -rf "$TMP/o" "$TMP/m" "$TMP/result" "$TMP/meta_result" "$TMP/why"
-    cmd=("$PYTHON" "$PROGRAM" "$DATA/$c_pdf" ${c_args[@]+"${c_args[@]}"})
+    if [ -n "$PDFGRAPH2CSV" ]; then
+        cmd=("$PDFGRAPH2CSV" "$DATA/$c_pdf" ${c_args[@]+"${c_args[@]}"})
+    else
+        cmd=("$PYTHON" "$PROGRAM" "$DATA/$c_pdf" ${c_args[@]+"${c_args[@]}"})
+    fi
     if [ -n "$c_out" ]; then
         mkdir "$TMP/o"
         out=$TMP/o/$c_out
@@ -497,10 +523,108 @@ t 'R curves drawn as 441 000 one-segment strokes of 0.01 pt beside long axes (th
   --expect 61676858-74.csv \
   --meta 61676858-74.meta.csv
 
+t 'TrueType (Type 42) text: the reference for the two damaged copies below' \
+  --pdf mpl-font-type42.pdf \
+  --expect mpl-font-type42.csv
+
+t 'font without any map to Unicode (no ToUnicode, no cmap; glyph numbers as codes): read from glyph names' \
+  --pdf mpl-font-no-unicode.pdf \
+  --expect mpl-font-type42.csv
+
+t 'the same, Type 0 font without /Subtype: strings read as byte pairs (once gave control characters as coordinates)' \
+  --pdf mpl-font-no-subtype.pdf \
+  --expect mpl-font-type42.csv
+
+t 'Type 3 copies of Arial (matplotlib 3.3.3 output, pages 7 and 13 of 2305.15675v1) whose glyph names spell glyph numbers (uni00000013 for code 48, "0"): read by code, not as control characters' \
+  --pdf 2305.15675v1-p7-13.pdf \
+  --expect 2305.15675v1-p7-13.csv \
+  --meta 2305.15675v1-p7-13.meta.csv
+
+t 'six matplotlib panels on light blue backgrounds, grid lines for ticks running through three panels in a row; panel titles below ("(a) GCC"), not the x-axis title of the panel above; a centred one-line caption above two-column text' \
+  --pdf 2308.04748-008.pdf \
+  --expect 2308.04748-008.csv \
+  --meta 2308.04748-008.meta.csv
+
+t 'two ggplot2 panels side by side sharing project-name categories, a light grey block for the positive side (a background, not ticks), grid lines only; means drawn over the per-generator markers (open circles not highlight boxes); legend labels in small capitals with two words ("FULL higher"); keys drawn once per layer' \
+  --pdf 2610.20068v1-009.pdf \
+  --expect 2610.20068v1-009.csv \
+  --meta 2610.20068v1-009.meta.csv
+
+t 'MSR23_Anisha-003: two R box plots inside Form XObjects (PDFTron): text in Type 0 fonts with an embedded one-byte Identity CMap, y labels written vertically (0e+00 ... 1e+05); every outlier circle is output, those clipped far above the plot included' \
+  --pdf MSR23_Anisha-003.pdf \
+  --expect MSR23_Anisha-003.csv
+
+t 'MSR23_Anisha-003: all 22463 + 11288 ZapfDingbats outliers, two legend boxes per graph, no circle hidden off the plot taken for a legend key' \
+  --pdf MSR23_Anisha-003.pdf \
+  --counts '1 open-circle=22463|1 filled-rectangle=2|2 open-circle=11288|2 filled-rectangle=2'
+
+t 'matplotlib axes crossing inside the plot, tick labels in its body: spines through the origin (four quadrants), log axes crossing at 1 with grid lines at the y ends and a frame round the figure; known values (tolerance 1e-6)' \
+  --pdf mpl-crossing-axes.pdf \
+  --expect mpl-crossing-axes.csv \
+  --tol 0.000001
+
+t 'three Excel scatter plots with log axes (0.1, 1, 10) crossing at 1 in the middle of the plot, grid lines at 0.1 and 10, a frame round each chart' \
+  --pdf 3276496-020.pdf \
+  --expect 3276496-020.csv \
+  --meta 3276496-020.meta.csv
+
+t 'no tick marks: the x labels 1, 101, ... 1001 alone mark their positions; log y axis with grid lines at 1 and 10 only; a box round the chart with body text above it (no title); known values within the precision of label positions' \
+  --pdf mpl-label-ticks.pdf \
+  --expect mpl-label-ticks.csv
+
+t 'Excel line chart: category x axis without ticks labelled 1, 101, ... 1001 (1061 loops); log y axis from two grid lines (1 and 10); markers every 20 points; body text above the chart box is no title' \
+  --pdf 3276496-014.pdf \
+  --expect 3276496-014.csv \
+  --meta 3276496-014.meta.csv
+
+t 'no tick marks on any axis: label centres give the positions (0.00 ... 1.00; 4, 8, 12 on a 1..15 axis); a facet without labels shares the y axis of its left neighbour, not of the panel to its right whose labels stand between them; dots hidden in a line as wide as they are dropped; known values (y within 0.001: the labels are the only scale)' \
+  --pdf mpl-no-ticks.pdf \
+  --expect mpl-no-ticks.csv
+
+t 'five ggplot2 panels without tick marks (labels at the positions, 0.00 ... 1.00, 4 / 8 / 12); three facets sharing one y axis inside grey frames; markers flattened with semi-transparent error bars into pieces of blended colours (one marker each, not stacks); y label "0.50" set close to the sideways axis title; outline rings and dots hidden in model curves dropped; panel label "(c)" is no title' \
+  --pdf cheyette2024limited-008.pdf \
+  --expect cheyette2024limited-008.csv \
+  --meta cheyette2024limited-008.meta.csv \
+  --stderr 'circles rebuilt from their outlines'
+
 t 'Excel error bars (--errbars): halves from the marker centre, slightly slanted, dense stacks, log-log' \
   --pdf Rescaling_reliability_bounds_new_opprof-002.pdf \
   --expect Rescaling_reliability_bounds_new_opprof-002.errbars.csv \
   -- --errbars
+
+t 'MollickMooresLawIEEE-009: two Excel scatter plots (x 1978-1996 and 1965-2000), filled diamonds with corners on a coarse grid, outlines stroked as separate edges, a fitted curve of filled slivers through some diamonds, a wrong y label (0.4 for 0.2), ticks crossing at the axes corner' \
+  --pdf MollickMooresLawIEEE-009.pdf \
+  --expect MollickMooresLawIEEE-009.csv
+
+t 'MollickMooresLawIEEE-009: every diamond (47 and 13, duplicates included), no + or x from crossing outline edges or corner ticks' \
+  --pdf MollickMooresLawIEEE-009.pdf \
+  --counts '1 filled-diamond=47|2 filled-diamond=13'
+
+t 'LogicProbPragSyllogistic_Reasoning-013: three ggplot2 facets traced from a bitmap (31 000 staircase slivers of error bars and dotted lines, all labels drawn as outlines); x axes 0 and 1 under each facet, y axis 0 and 1 on the left only; panel borders as filled outlines; points drawn as a coloured disc and a black ring' \
+  --pdf LogicProbPragSyllogistic_Reasoning-013.pdf \
+  --expect LogicProbPragSyllogistic_Reasoning-013.csv
+
+t '2610.30307v1-011: log y axis of durations labelled 1 s, 15 s, 1 min ... 64 h (values in seconds), vertical error bars not given (points read the same), a blue dot highlighted by a white circle with a blue outline (one point, its own series); a category y axis of model names with horizontal error bars' \
+  --pdf 2610.30307v1-011.pdf \
+  --expect 2610.30307v1-011.csv
+
+t '2610.30307v1-011: with --errbars, the bars in seconds and in index units' \
+  --pdf 2610.30307v1-011.pdf \
+  --expect 2610.30307v1-011.errbars.csv \
+  -- --errbars
+
+t '2017_End-of-Moores-Law-002: log y axis labelled 1E-21 ... 1E-03 (programming notation) without tick marks, the label centres standing in for them, with x_coord_low ... y_coord_high giving the range of each value; legend keys filled white with coloured outlines name open and outlined markers' \
+  --pdf 2017_End-of-Moores-Law-002.pdf \
+  --expect 2017_End-of-Moores-Law-002.csv
+
+t 'mpl-no-ticks: x_coord_low ... y_coord_high where label centres stand in for ticks (checked once to hold the known values)' \
+  --pdf mpl-no-ticks.pdf \
+  --expect mpl-no-ticks.ranges.csv \
+  --cols x_coord_low,x_coord_high,y_coord_low,y_coord_high
+
+t 'LogicProbPragSyllogistic_Reasoning-013: 576 points per facet (no slivers read as "1" or as markers, no disc taken for the dot of an i), five legend keys' \
+  --pdf LogicProbPragSyllogistic_Reasoning-013.pdf \
+  --counts '1 filled-circle=576|2 filled-circle=576|3 filled-circle=581'
 
 t 'matplotlib: multi-page with page selection' \
   --pdf mpl-multipage-markers.pdf \

@@ -1,0 +1,4 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,(a) GCC,6,Speedup vs. change in l2_rw_rate due to unroll-and-jam,,Excel,144,0.1,10,0.1,10
+1,2,(b) ICC,6,Speedup vs. change in l2_rw_rate due to unroll-and-jam,,Excel,145,0.1,10,0.1,10
+1,3,(c) Clang,6,Speedup vs. change in l2_rw_rate due to unroll-and-jam,,Excel,146,0.1,10,0.1,10

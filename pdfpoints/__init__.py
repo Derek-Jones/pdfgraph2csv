@@ -74,8 +74,9 @@ How it works
     of identical outlines on a page have even length, a run of L outlines
     is L/2 data points.  The centre of each symbol is mapped
     through the axes of the graph it is in.  Every symbol is reported,
-    duplicates included, in drawing order.  Multi-page files are handled
-    page by page; graphs are numbered through the whole document.
+    duplicates included, graph by graph in increasing order of x (a
+    category axis: its categories in axis order).  Multi-page files are
+    handled page by page; graphs are numbered through the whole document.
 
 Background grids
 ----------------
