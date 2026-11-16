@@ -1,0 +1,84 @@
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
+1,1,filled-triangle,2005 ITRS (18%),0,1998.189285,1.0754,black,#000000
+1,1,filled-diamond,Intel Actual,0,1999.021982,0.888896,lightsteelblue,#a5c6c9
+1,1,filled-square,AMD Actual,0,1999.021982,0.691387,darkslateblue,#2c2c87
+1,1,filled-triangle,IBM Actual,0,1999.021982,0.1977762,gainsboro,#e2e2e2
+1,1,filled-diamond,Intel Actual,0,2000.023364,1.973866,lightsteelblue,#a5c6c9
+1,1,filled-triangle,IBM Actual,0,2001.024745,1.283336,gainsboro,#e2e2e2
+1,1,filled-diamond,Intel Actual,0,2002.026127,2.959497,lightsteelblue,#a5c6c9
+1,1,filled-diamond,Intel Actual,0,2003.027508,3.156591,lightsteelblue,#a5c6c9
+1,1,filled-square,AMD Actual,0,2004.02889,2.368077,darkslateblue,#2c2c87
+1,1,filled-triangle,IBM Actual,0,2004.02889,1.283336,gainsboro,#e2e2e2
+1,1,filled-diamond,Intel Actual,0,2006.031653,2.624291,lightsteelblue,#a5c6c9
+1,1,filled-square,AMD Actual,0,2006.031653,2.565463,darkslateblue,#2c2c87
+1,1,filled-diamond,Intel Actual,0,2007.033034,2.565463,lightsteelblue,#a5c6c9
+1,1,filled-triangle,IBM Actual,0,2007.033034,4.93018,gainsboro,#e2e2e2
+1,1,cross,2005 ITRS (18%),0,2007.033034,9.15128,black,#000000
+1,1,cross,2007 ITRS (8%),0,2007.033034,4.63436,silver,#bccecf
+1,1,filled-diamond,Intel Actual,0,2008.034416,3.285125,lightsteelblue,#a5c6c9
+1,1,cross,2005 ITRS (18%),0,2008.034416,10.81168,black,#000000
+1,1,cross,2007 ITRS (8%),0,2008.034416,4.99227,silver,#bccecf
+1,1,filled-diamond,Intel Actual,0,2009.035797,3.255007,lightsteelblue,#a5c6c9
+1,1,filled-triangle,IBM Actual,0,2009.035797,3.501424,gainsboro,#e2e2e2
+1,1,cross,2005 ITRS (18%),0,2009.035797,12.18693,black,#000000
+1,1,cross,2007 ITRS (8%),0,2009.035797,5.37782,silver,#bccecf
+1,1,filled-diamond,Intel Actual,0,2010.037179,3.285125,lightsteelblue,#a5c6c9
+1,1,filled-triangle,IBM Actual,0,2010.037179,5.1273,gainsboro,#e2e2e2
+1,1,cross,2005 ITRS (18%),0,2010.037179,14.85403,black,#000000
+1,1,cross,2007 ITRS (8%),0,2010.037179,5.79178,silver,#bccecf
+1,1,filled-circle,2011 ITRS (4%),0,2010.037179,3.550554,midnightblue,#27277a
+1,1,filled-square,2005 ITRS (18%),0,2010.353101,286.8867,black,#000000
+1,1,filled-square,2005 ITRS (18%),0,2010.353101,257.9621,black,#000000
+1,1,filled-square,2005 ITRS (18%),0,2010.445485,238.2271,black,#000000
+1,1,filled-square,2005 ITRS (18%),0,2010.816673,214.2085,black,#000000
+1,1,cross,2005 ITRS (18%),0,2011.03856,17.39234,black,#000000
+1,1,cross,2007 ITRS (8%),0,2011.03856,6.23908,silver,#bccecf
+1,1,filled-circle,2011 ITRS (4%),0,2011.03856,3.692513,midnightblue,#27277a
+1,1,filled-polygon,,0,2011.095888,264.9077,yellow,#ffff00
+1,1,filled-square,2005 ITRS (18%),0,2011.466663,302.5434,black,#000000
+1,1,filled-square,2005 ITRS (18%),0,2011.744642,294.6459,black,#000000
+1,1,filled-triangle,,0,2011.808156,264.5013,orangered,#ff3300
+1,1,filled-square,2005 ITRS (18%),0,2011.837851,272.0402,black,#000000
+1,1,cross,2005 ITRS (18%),0,2012.039942,19.76269,black,#000000
+1,1,cross,2007 ITRS (8%),0,2012.039942,6.72092,silver,#bccecf
+1,1,filled-circle,2011 ITRS (4%),0,2012.039942,3.840147,midnightblue,#27277a
+1,1,cross,2005 ITRS (18%),0,2013.041323,22.62644,black,#000000
+1,1,cross,2007 ITRS (8%),0,2013.041323,7.23826,silver,#bccecf
+1,1,filled-circle,2011 ITRS (4%),0,2013.041323,3.993685,midnightblue,#27277a
+1,1,cross,2005 ITRS (18%),0,2014.042705,27.919,black,#000000
+1,1,cross,2007 ITRS (8%),0,2014.042705,7.79727,silver,#bccecf
+1,1,filled-circle,2011 ITRS (4%),0,2014.042705,4.153361,midnightblue,#27277a
+1,1,cross,2005 ITRS (18%),0,2015.044086,32.88348,black,#000000
+1,1,cross,2007 ITRS (8%),0,2015.044086,8.39945,silver,#bccecf
+1,1,filled-circle,2011 ITRS (4%),0,2015.044086,4.31942,midnightblue,#27277a
+1,1,cross,2005 ITRS (18%),0,2016.045468,39.06144,black,#000000
+1,1,cross,2007 ITRS (8%),0,2016.045468,9.04599,silver,#bccecf
+1,1,filled-circle,2011 ITRS (4%),0,2016.045468,4.49212,midnightblue,#27277a
+1,1,cross,2005 ITRS (18%),0,2017.046849,44.8169,black,#000000
+1,1,cross,2007 ITRS (8%),0,2017.046849,9.74461,silver,#bccecf
+1,1,filled-circle,2011 ITRS (4%),0,2017.046849,4.67173,midnightblue,#27277a
+1,1,cross,2005 ITRS (18%),0,2018.048231,52.3516,black,#000000
+1,1,cross,2007 ITRS (8%),0,2018.048231,10.49718,silver,#bccecf
+1,1,filled-circle,2011 ITRS (4%),0,2018.048231,4.85851,midnightblue,#27277a
+1,1,cross,2005 ITRS (18%),0,2019.049612,61.428,black,#000000
+1,1,cross,2007 ITRS (8%),0,2019.049612,11.3052,silver,#bccecf
+1,1,filled-circle,2011 ITRS (4%),0,2019.049612,5.05277,midnightblue,#27277a
+1,1,cross,2005 ITRS (18%),0,2020.050994,71.9251,black,#000000
+1,1,cross,2007 ITRS (8%),0,2020.050994,12.17829,silver,#bccecf
+1,1,filled-circle,2011 ITRS (4%),0,2020.050994,5.25479,midnightblue,#27277a
+1,1,cross,2005 ITRS (18%),0,2021.052375,84.216,black,#000000
+1,1,cross,2007 ITRS (8%),0,2021.052375,13.11882,silver,#bccecf
+1,1,filled-circle,2011 ITRS (4%),0,2021.052375,5.46489,midnightblue,#27277a
+1,1,cross,2005 ITRS (18%),0,2022.053757,98.6071,black,#000000
+1,1,cross,2007 ITRS (8%),0,2022.053757,14.12864,silver,#bccecf
+1,1,filled-circle,2011 ITRS (4%),0,2022.053757,5.68204,midnightblue,#27277a
+1,1,filled-polygon,,0,2026.128984,948.308,yellow,#ffff00
+1,1,filled-polygon,,0,2026.128984,45.8716,yellow,#ffff00
+1,1,filled-polygon,,0,2026.128984,466.93,yellow,#ffff00
+1,1,filled-polygon,,0,2026.128984,23.40087,yellow,#ffff00
+1,1,filled-diamond,Intel Actual,1,2027.366275,7.94317,lightsteelblue,#a5c6c9
+1,1,filled-square,AMD Actual,1,2027.366275,5.37973,darkslateblue,#2c2c87
+1,1,filled-triangle,IBM Actual,1,2027.366275,3.579601,gainsboro,#e2e2e2
+1,1,cross,2005 ITRS (18%),1,2027.366275,2.381819,black,#000000
+1,1,cross,2007 ITRS (8%),1,2027.366275,1.584831,silver,#bccecf
+1,1,filled-circle,2011 ITRS (4%),1,2027.366275,1.07337,midnightblue,#27277a

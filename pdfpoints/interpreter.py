@@ -478,9 +478,12 @@ class ContentInterpreter(PDFPageInterpreter):
             sub.form_name = literal_name(xobjid) if not isinstance(xobjid, str) else xobjid
             sub.render_contents(res, [xobj], ctm=mmul(matrix, self.ctm))
         elif subtype == "Image":
-            pts = [mapply(self.ctm, u, v) for u, v in ((0, 0), (1, 0), (0, 1), (1, 1))]
-            xs, ys = [p[0] for p in pts], [p[1] for p in pts]
-            self.page.images.append(((min(xs), min(ys), max(xs), max(ys)), self.page.order))
+            # an image with a soft mask, a mask or drawn as a stencil (a
+            # translucent watermark over the page) hides nothing for sure
+            if not (xobj.get("SMask") or xobj.get("Mask") or resolve1(xobj.get("ImageMask"))):
+                pts = [mapply(self.ctm, u, v) for u, v in ((0, 0), (1, 0), (0, 1), (1, 1))]
+                xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+                self.page.images.append(((min(xs), min(ys), max(xs), max(ys)), self.page.order))
             self.page.order += 1
 
 

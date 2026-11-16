@@ -6,6 +6,7 @@ analysed (graph boxes, typical label size, ...) that several steps need.
 class Settings:
     """Options that change how markers are read (set from the command line)."""
     glyph_centre = "marker"       # "marker" or "bbox", see DINGBAT_ANCHOR
+    max_words = 20                # --max-words: running text allowed in a graph
 
 
 class PageState:

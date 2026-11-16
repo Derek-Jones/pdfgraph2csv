@@ -162,6 +162,8 @@ with labels at the corners become axes in `axes._frame_side_axes`; a
 frame side, or any other line without ticks, may take its label centres
 as tick positions (`axes._label_ticks_axis`: Excel's category axes,
 ggplot2 without ticks, log axes labelled 1E-21 ... 1E-03;
+`axes._category_label_ticks_axis` for category labels, readable or not,
+whose pieces are joined into words and two-line labels;
 `axes._advance_centre` for outlined labels).  Such an axis records its
 uncertainty (`axes.label_tick_uncertainty`), which `rows.label_tick_ranges`
 turns into the columns `x_coord_low` ... `y_coord_high`.
@@ -173,6 +175,20 @@ markers on the same page are kept.  `symbols.drop_outline_rings` and
 `symbols.drop_hidden_dots` remove outline rings (also a black border
 round a coloured disc) and dots hidden in lines;
 `outlined_text._split_unread` frees labels run into nearby words.
+Marks in text: `pipeline.drop_symbols_in_prose` drops markers set in a
+line of running text outside every graph (a caption's sample markers,
+"···" in a formula, a full stop drawn as a shape).  Circles drawn as
+many-sided polygons are circles (`symbols._classify_subpath`), and discs
+filled as fans of thin triangles are rebuilt by
+`fragments.rebuild_strip_discs`.
+Images with a soft mask, a mask or drawn as a stencil (a translucent
+watermark over the page) are not covers: they hide no text or outlines.
+Tables: `pipeline.drop_tables` rejects a graph with category axes both ways
+whose cells hold text (at least half of them).  It also rejects a graph whose box
+holds more words of running text than `--max-words` (default 20;
+`pipeline.prose_inside`: lines of three words or more; text in bordered
+or filled boxes, `pipeline.text_boxes`, is not counted, and
+`pipeline.drop_box_dashes` drops their dashes drawn as squares).
 Figures traced from a bitmap (thousands of staircase slivers):
 `outlined_text._crowded_words` refuses numbers overlapped by three or
 more other shapes, `_letter_dots` only takes a dot about as wide as its

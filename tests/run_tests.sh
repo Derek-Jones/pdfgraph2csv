@@ -604,6 +604,27 @@ t 'LogicProbPragSyllogistic_Reasoning-013: three ggplot2 facets traced from a bi
   --pdf LogicProbPragSyllogistic_Reasoning-013.pdf \
   --expect LogicProbPragSyllogistic_Reasoning-013.csv
 
+t '120875-008: R line chart without tick marks under a translucent watermark image (it hides no labels): the y label centres (50 ... 200, drawn as outlines) stand in for ticks, with y_coord_low/y_coord_high; three categories (outlined, unreadable, one on two lines) numbered #1 ... #3 at their centres; the ranges hold the paper table means 60, 43, 39, 146' \
+  --pdf 120875-008.pdf \
+  --expect 120875-008.csv
+
+t 'ITRS_2011ExecSum-028: Excel chart with notes in bordered boxes (three yellow, two blue) inside and beside the plot: the boxed text is not counted as running text; DRAM, Flash and MPU 17 points each' \
+  --pdf ITRS_2011ExecSum-028.pdf \
+  --expect ITRS_2011ExecSum-028.csv
+
+t 'ITRS_2011ExecSum-031: log-scale frequency chart crowded with notes in yellow boxes with dashed borders: the boxed text is not counted (the graph is kept), and the dashes of the borders, drawn as small squares, are no points' \
+  --pdf ITRS_2011ExecSum-031.pdf \
+  --expect ITRS_2011ExecSum-031.csv
+
+t 'prob-book-057: two binomial probability functions on a page of text: open circles drawn as stroked 20-gons, filled circles as fans of thin triangles; the sample markers in the caption, the dots of "X1 + ... + Xn" and a full stop drawn as a shape are no points; the values are Binomial(20, 1/2) and Binomial(20, 1/5) to 0.0005' \
+  --pdf prob-book-057.pdf \
+  --expect prob-book-057.csv
+
+t '2206.11102v2-018: beeswarm plot, categories journal / conference / workshop on y (points spread around each line to be seen), circles squashed into ellipses by unequal x and y scaling, --integer x (participant counts drawn with jitter); the paper gives the workshop median 26 and mean 33.1, and the shares of student-only samples (19/41, 25/45, 7/9)' \
+  --pdf 2206.11102v2-018.pdf \
+  --expect 2206.11102v2-018.csv \
+  -- --integer x
+
 t '2610.30307v1-011: log y axis of durations labelled 1 s, 15 s, 1 min ... 64 h (values in seconds), vertical error bars not given (points read the same), a blue dot highlighted by a white circle with a blue outline (one point, its own series); a category y axis of model names with horizontal error bars' \
   --pdf 2610.30307v1-011.pdf \
   --expect 2610.30307v1-011.csv
@@ -788,6 +809,14 @@ t 'not-a-pdf: rejected with an error' \
 
 t 'no-graph: no graph with numbered axes' \
   --pdf no-graph.pdf \
+  --stderr 'No vector graphics found'
+
+t '3297663.3310314-005: four ruled tables (column headings, row names, shaded cells, a number in each cell) are no graphs' \
+  --pdf 3297663.3310314-005.pdf \
+  --stderr 'No vector graphics found'
+
+t 'prob-book-038: a page of mathematics (shaded definition boxes ruled above and below, bracket glyphs drawn as outlines, numbers in the prose) is no graph' \
+  --pdf prob-book-038.pdf \
   --stderr 'No vector graphics found'
 
 t 'many-shapes: no graph with numbered axes' \

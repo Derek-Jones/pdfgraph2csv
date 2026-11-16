@@ -1,0 +1,96 @@
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
+1,1,filled-circle,only students,0,5,workshop,lightslategray,#728dc4
+1,1,filled-circle,only students,0,5,conference,lightslategray,#728dc4
+1,1,filled-circle,only professionals,0,7,conference,cadetblue,#6db393
+1,1,filled-circle,other,0,8,workshop,rosybrown,#b38c79
+1,1,filled-circle,only students,0,8,conference,lightslategray,#728dc4
+1,1,filled-circle,only students,0,8,conference,lightslategray,#728dc4
+1,1,filled-circle,only students & professionals,0,10,journal,indianred,#d66863
+1,1,filled-circle,only students,0,10,conference,lightslategray,#728dc4
+1,1,filled-circle,only students,0,10,conference,lightslategray,#728dc4
+1,1,filled-circle,only students,0,12,conference,lightslategray,#728dc4
+1,1,filled-circle,only students,0,12,conference,lightslategray,#728dc4
+1,1,filled-circle,other,0,13,conference,rosybrown,#b38c79
+1,1,filled-circle,only students & professionals,0,13,conference,indianred,#d66863
+1,1,filled-circle,only students,0,13,journal,lightslategray,#728dc4
+1,1,filled-circle,only professionals,0,15,conference,cadetblue,#6db393
+1,1,filled-circle,only students & professionals,0,15,conference,indianred,#d66863
+1,1,filled-circle,only students,0,16,workshop,lightslategray,#728dc4
+1,1,filled-circle,only students & professionals,0,16,journal,indianred,#d66863
+1,1,filled-circle,only students,0,17,conference,lightslategray,#728dc4
+1,1,filled-circle,only students,0,17,journal,lightslategray,#728dc4
+1,1,filled-circle,other,0,18,conference,rosybrown,#b38c79
+1,1,filled-circle,only students,0,18,conference,lightslategray,#728dc4
+1,1,filled-circle,other,0,19,journal,rosybrown,#b38c79
+1,1,filled-circle,only students & professionals,0,20,conference,indianred,#d66863
+1,1,filled-circle,only students,0,20,conference,lightslategray,#728dc4
+1,1,filled-circle,only professionals,0,21,journal,cadetblue,#6db393
+1,1,filled-circle,only students,0,22,conference,lightslategray,#728dc4
+1,1,filled-circle,only students & professionals,0,22,conference,indianred,#d66863
+1,1,filled-circle,only students,0,22,workshop,lightslategray,#728dc4
+1,1,filled-circle,other,0,23,journal,rosybrown,#b38c79
+1,1,filled-circle,only students,0,23,conference,lightslategray,#728dc4
+1,1,filled-circle,only students & professionals,0,24,journal,indianred,#d66863
+1,1,filled-circle,only students & professionals,0,24,conference,indianred,#d66863
+1,1,filled-circle,only students,0,26,conference,lightslategray,#728dc4
+1,1,filled-circle,only students,0,26,workshop,lightslategray,#728dc4
+1,1,filled-circle,only students,0,26,journal,lightslategray,#728dc4
+1,1,filled-circle,other,0,26,conference,rosybrown,#b38c79
+1,1,filled-circle,only students,0,27,journal,lightslategray,#728dc4
+1,1,filled-circle,only professionals,0,29,conference,cadetblue,#6db393
+1,1,filled-circle,other,0,29,conference,rosybrown,#b38c79
+1,1,filled-circle,other,0,30,journal,rosybrown,#b38c79
+1,1,filled-circle,only students,0,30,journal,lightslategray,#728dc4
+1,1,filled-circle,only students & professionals,0,31,conference,indianred,#d66863
+1,1,filled-circle,only students,0,32,conference,lightslategray,#728dc4
+1,1,filled-circle,other,0,32,workshop,rosybrown,#b38c79
+1,1,filled-circle,only students,0,33,journal,lightslategray,#728dc4
+1,1,filled-circle,only students,0,33,journal,lightslategray,#728dc4
+1,1,filled-circle,other,0,34,conference,rosybrown,#b38c79
+1,1,filled-circle,only students & professionals,0,36,journal,indianred,#d66863
+1,1,filled-circle,only students,0,36,journal,lightslategray,#728dc4
+1,1,filled-circle,only students & professionals,0,36,journal,indianred,#d66863
+1,1,filled-circle,only students & professionals,0,38,conference,indianred,#d66863
+1,1,filled-circle,only students,0,38,workshop,lightslategray,#728dc4
+1,1,filled-circle,only professionals,0,38,journal,cadetblue,#6db393
+1,1,filled-circle,only students & professionals,0,39,journal,indianred,#d66863
+1,1,filled-circle,other,0,41,journal,rosybrown,#b38c79
+1,1,filled-circle,only students,0,42,conference,lightslategray,#728dc4
+1,1,filled-circle,only students & professionals,0,45,conference,indianred,#d66863
+1,1,filled-circle,only students,0,55,conference,lightslategray,#728dc4
+1,1,filled-circle,only students,0,58,conference,lightslategray,#728dc4
+1,1,filled-circle,only students & professionals,0,61,journal,indianred,#d66863
+1,1,filled-circle,only students,0,65,conference,lightslategray,#728dc4
+1,1,filled-circle,only professionals,0,72,journal,cadetblue,#6db393
+1,1,filled-circle,only students,0,74,workshop,lightslategray,#728dc4
+1,1,filled-circle,only students,0,77,workshop,lightslategray,#728dc4
+1,1,filled-circle,only students,0,79,conference,lightslategray,#728dc4
+1,1,filled-circle,only professionals,0,79,journal,cadetblue,#6db393
+1,1,filled-circle,only students,0,81,journal,lightslategray,#728dc4
+1,1,filled-circle,only students,0,82,journal,lightslategray,#728dc4
+1,1,filled-circle,only students,0,84,journal,lightslategray,#728dc4
+1,1,filled-circle,only students,0,86,journal,lightslategray,#728dc4
+1,1,filled-circle,only students,0,88,journal,lightslategray,#728dc4
+1,1,filled-circle,only students & professionals,0,88,conference,indianred,#d66863
+1,1,filled-circle,only students,0,89,journal,lightslategray,#728dc4
+1,1,filled-circle,only students & professionals,0,91,journal,indianred,#d66863
+1,1,filled-circle,only professionals,0,97,journal,cadetblue,#6db393
+1,1,filled-circle,only students,0,104,journal,lightslategray,#728dc4
+1,1,filled-circle,only students,0,114,conference,lightslategray,#728dc4
+1,1,filled-circle,only students,0,117,conference,lightslategray,#728dc4
+1,1,filled-circle,only students,0,117,journal,lightslategray,#728dc4
+1,1,filled-circle,only students,0,120,journal,lightslategray,#728dc4
+1,1,filled-circle,only students & professionals,0,128,journal,indianred,#d66863
+1,1,filled-circle,only students,0,128,conference,lightslategray,#728dc4
+1,1,filled-circle,only students,0,148,journal,lightslategray,#728dc4
+1,1,filled-circle,only students & professionals,0,158,journal,indianred,#d66863
+1,1,filled-circle,only students & professionals,0,162,conference,indianred,#d66863
+1,1,filled-circle,only students & professionals,0,168,journal,indianred,#d66863
+1,1,filled-circle,only students,0,178,conference,lightslategray,#728dc4
+1,1,filled-circle,other,0,206,conference,rosybrown,#b38c79
+1,1,filled-circle,only students,0,211,conference,lightslategray,#728dc4
+1,1,filled-circle,only professionals,0,220,journal,cadetblue,#6db393
+1,1,filled-circle,only students,0,231,conference,lightslategray,#728dc4
+1,1,filled-circle,only students,0,274,journal,lightslategray,#728dc4
+1,1,filled-circle,only students & professionals,0,275,conference,indianred,#d66863
+1,1,filled-circle,only students & professionals,0,277,journal,indianred,#d66863

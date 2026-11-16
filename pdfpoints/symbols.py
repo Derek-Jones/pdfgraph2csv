@@ -297,7 +297,9 @@ def _classify_subpath(sp):
             if all(abs(math.hypot(q[0] - cx0, q[1] - cy0) - r) < 0.06 * r for q in flat):
                 shape, centre, size = "circle", (cx0, cy0), max(fw, fh)
     elif curves >= 3 and lines <= 1:        # a circle: 4, 8, ... Bezier arcs
-        shape = "circle" if aspect > 0.85 else None
+        # (squashed up to 0.7: a figure placed with unequal x and y scales
+        # turns its circles into ellipses)
+        shape = "circle" if aspect > 0.7 else None
     elif curves >= 6 and lines <= 3 and aspect > 0.85:
         # an outline ring drawn as one contour: outer circle, a short line
         # inwards, inner circle back (an open circle with its stroke
@@ -354,6 +356,13 @@ def _classify_subpath(sp):
                         sides.add("t")
                 if sides == {"l", "r", "t", "b"}:
                     shape = "diamond" if aspect > 0.85 else "thin-diamond"
+        elif n >= 13 and aspect > 0.85:
+            # a circle drawn as a polygon of many short sides (a 20-gon)
+            cx0, cy0 = (x0 + x1) / 2, (y0 + y1) / 2
+            rs = [math.hypot(v[0] - cx0, v[1] - cy0) for v in uniq]
+            r = sum(rs) / n
+            if r > 0 and all(abs(q - r) <= 0.12 * r for q in rs):
+                shape = "circle"
         elif 5 <= n <= 12 and aspect > 0.7 and _rotationally_symmetric(uniq, size):
             shape = "polygon"
             # the centre of symmetry (for a pentagon or a star it is not the

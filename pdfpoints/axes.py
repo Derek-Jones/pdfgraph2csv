@@ -285,6 +285,9 @@ def find_axes(paths, texts, debug=False):
             if _label_ticks_axis(orient, (lo, hi, pos), numeric, trial, debug) and \
                     trial[-1]["map"].get("n", 0) > max([b["map"].get("n", 0) for b in there] or [0]):
                 axes[:] = trial
+            elif not there:
+                # category labels (words, or outlines that cannot be read)
+                _category_label_ticks_axis(orient, (lo, hi, pos), axes, debug)
     for a in axes:
         a["inside"] = _interior_side(a, hs_lines if a["orient"] == "y" else vs_lines)
     return axes
@@ -410,7 +413,8 @@ def _frame_side_axes(axes, hs_lines, vs_lines, hs_open, vs_open, numeric, debug)
                      "pos": tp}
                 g["span"] = g["pos"][-1] - g["pos"][0]
                 if not axes_from_group(g, orient, (lo, hi, pos), numeric, axes, debug):
-                    _label_ticks_axis(orient, (lo, hi, pos), numeric, axes, debug)
+                    if not _label_ticks_axis(orient, (lo, hi, pos), numeric, axes, debug):
+                        _category_label_ticks_axis(orient, (lo, hi, pos), axes, debug)
 
 
 # Helvetica / Arial digit metrics (1/1000 em): advance, ink left, ink right.
@@ -491,6 +495,71 @@ def _label_ticks_axis(orient, line, numeric, axes, debug):
     g = {"lo": pos - L, "hi": pos + L, "len": L, "grid": False, "frame_ends": True,
          "label_ticks": True, "pos": cs, "span": cs[-1] - cs[0]}
     return axes_from_group(g, orient, line, [t for _, t, _ in row], axes, debug)
+
+
+def _category_label_ticks_axis(orient, line, axes, debug):
+    """An axis line without tick marks whose category labels mark the
+    positions: a row of at least three labels (words, or outlined words that
+    cannot be read) beside the line, within its span, evenly spaced; the
+    centres of the labels (a label of two lines counts once) are the
+    category positions."""
+    lo, hi, pos = line
+    tol = max(1.0, 0.01 * (hi - lo))
+    taken = {id(tx) for a in axes for _, tx in a.get("labels", ())}
+    k = 0 if orient == "x" else 1
+    near = []
+    for t in PAGE.nominal_labels:
+        if id(t) in taken or t.get("value") is not None:
+            continue
+        b, size = t["bbox"], t.get("size") or 1.0
+        lo2, hi2 = (b[1], b[3]) if orient == "x" else (b[0], b[2])
+        gap = max(lo2 - pos, pos - hi2)
+        c = 0.5 * (b[k] + b[k + 2])
+        if lo - tol <= c <= hi + tol and 0 <= gap <= 4 * size:
+            near.append((c, gap, size, t))
+    if len(near) < 3:
+        return False
+    # pieces of one word (an outlined word read glyph by glyph) joined:
+    # beside each other on one line, less than 0.6 of a font size apart
+    near.sort(key=lambda r: r[3]["bbox"][k])
+    words = []
+    for c, gap, size, t in near:
+        b = t["bbox"]
+        for w in words:
+            wb = w["bbox"]
+            if orient == "x":
+                same = abs(b[1] - wb[1]) <= 0.4 * size and b[0] - wb[2] <= 0.6 * size and wb[0] - b[2] <= 0.6 * size
+            else:
+                same = abs(b[0] - wb[0]) <= 0.4 * size and b[1] - wb[3] <= 0.6 * size and wb[1] - b[3] <= 0.6 * size
+            if same:
+                w["bbox"] = (min(wb[0], b[0]), min(wb[1], b[1]), max(wb[2], b[2]), max(wb[3], b[3]))
+                w["gap"] = min(w["gap"], gap)
+                w["items"].append(t)
+                break
+        else:
+            words.append({"bbox": tuple(b), "gap": gap, "size": size, "items": [t]})
+    near = [(0.5 * (w["bbox"][k] + w["bbox"][k + 2]), w["gap"], w["size"], w["items"][0]) for w in words]
+    # one category per position (the lines of a two-line label share it)
+    near.sort(key=lambda r: r[0])
+    cats = []
+    for c, gap, size, t in near:
+        if cats and abs(c - cats[-1][0]) <= 0.3 * size:
+            if gap < cats[-1][1]:
+                cats[-1] = (c, gap, size, t)
+            continue
+        cats.append((c, gap, size, t))
+    if len(cats) < 3 or min(r[1] for r in cats) > 2 * cats[0][2]:
+        return False
+    cs = [r[0] for r in cats]
+    gaps = [q - p for p, q in zip(cs, cs[1:])]
+    med = sorted(gaps)[len(gaps) // 2]
+    if med <= 0 or any(abs(d - med) > 0.05 * med for d in gaps):
+        return False
+    size = sorted(r[2] for r in cats)[len(cats) // 2]
+    L = 0.25 * size
+    g = {"lo": pos - L, "hi": pos + L, "len": L, "grid": False, "extended": True,
+         "label_ticks": True, "pos": cs, "span": cs[-1] - cs[0]}
+    return axes_from_group(g, orient, line, [], axes, debug)
 
 
 def _far_from_all(x, sorted_vals, d):
@@ -633,8 +702,10 @@ def axes_from_group(g, orient, line, numeric, axes, debug):
 def label_tick_uncertainty(m, labels):
     """How far (page points) the true positions may be from an axis whose
     ticks are its label centres: programs centre a label on its cap height,
-    its em box or its ink (up to about 0.1 of the font size apart), and the
-    centres stray from the fitted scale by the largest residual.  None for
+    its em box or its ink - up to 0.2 of the font size apart (an R plot's
+    labels sit 0.15 em above their ticks: the error bars against the
+    paper's confidence intervals show it) - and the centres stray from the
+    fitted scale by the largest residual.  None for
     category and broken axes."""
     if m is None or m["kind"] not in ("linear", "log") or not labels or m["a"] == 0:
         return None
@@ -646,7 +717,7 @@ def label_tick_uncertainty(m, labels):
             v = math.log10(v)
         dev = max(dev, abs((v - m["b"]) / m["a"] - c))
     sizes = sorted(t.get("size") or 1.0 for _, t in labels)
-    return 0.1 * sizes[len(sizes) // 2] + dev
+    return 0.2 * sizes[len(sizes) // 2] + dev
 
 
 def drop_duplicate_axes(axes):

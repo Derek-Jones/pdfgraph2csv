@@ -3,6 +3,7 @@
 
 import argparse
 import csv
+import math
 import sys
 
 from . import __doc__ as package_doc
@@ -42,6 +43,16 @@ def main():
     ap.add_argument("--digits", type=int, default=None, metavar="N",
                     help="significant digits of the numbers written (default: as many "
                          "as the precision of the PDF's coordinates justifies, at least 6)")
+    ap.add_argument("--max-words", type=int, default=20, metavar="N",
+                    help="the most words of running text (lines of three or more words; "
+                         "words of three letters or more) a graph's plot area may hold "
+                         "before it is taken for a page of text, a table or a figure of "
+                         "prose rather than a graph (default 20)")
+    ap.add_argument("--integer", action="append", choices=("x", "y"), default=[],
+                    metavar="AXIS",
+                    help="round the values of that axis (x or y; may be given twice) to "
+                         "whole numbers: data that can only be integers, such as counts, "
+                         "drawn with a little jitter")
     ap.add_argument("--internal", action="store_true",
                     help="also output the symbol centres in PDF page coordinates")
     ap.add_argument("--password", default="",
@@ -53,6 +64,9 @@ def main():
     num = "%%.%dg" % args.digits if args.digits else "%g"
     pages = {int(p) for p in args.pages.split(",")} if args.pages else None
     SETTINGS.glyph_centre = args.glyph_centre
+    if args.max_words < 0:
+        ap.error("--max-words must be 0 or more")
+    SETTINGS.max_words = args.max_words
     info = {}
     try:
         rows = extract(args.pdf, pages, args.inside_only, args.max_symbol_frac, args.debug,
@@ -62,6 +76,8 @@ def main():
         sys.exit("error: %s" % e)
     for wmsg in info.get("warnings", []):
         print("warning: %s" % wmsg, file=sys.stderr)
+    for axis in set(args.integer):
+        round_values(rows, axis + "_coord")
     if args.meta and info.get("meta"):
         write_meta(args.meta, info["meta"], num)
     cols = ["page", "graph", "symbol", "series", "legend_key",
@@ -96,6 +112,15 @@ def main():
         sys.exit(0)
     if args.output:
         out.close()
+
+
+def round_values(rows, col):
+    """--integer: a column's numeric values rounded to whole numbers (category
+    labels are left alone)."""
+    for r in rows:
+        v = r.get(col)
+        if isinstance(v, float) and math.isfinite(v):
+            r[col] = int(round(v))
 
 
 def cell(row, col, num, digits):

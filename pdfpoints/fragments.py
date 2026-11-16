@@ -280,3 +280,63 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
     warnings.append("markers were flattened into fragments; %d circles rebuilt from their "
                     "outlines (%d distinct positions)" % (sum(m), len(cents)))
     return out
+
+
+def rebuild_strip_discs(paths, symbols):
+    """Discs filled as a fan of thin triangles (a 20-gon cut into vertical
+    strips, seen in a probability textbook's plots): a run of small filled
+    triangles of one colour, painted one after another and touching, whose
+    box is about square and whose area is about that of the disc in it
+    (pi/4 of the box; a square of two triangles fills its box) is one filled
+    circle.  The pieces give no other symbols."""
+    runs, cur = [], []
+    for p in paths:
+        piece = None
+        if p["fill"] and not p["stroke"] and len(p["subpaths"]) == 1:
+            sp = p["subpaths"][0]
+            if sp["segs"] and all(s[0] == "l" for s in sp["segs"]):
+                v = [sp["start"]] + [s[1] for s in sp["segs"]]
+                b = bbox_of(v)
+                if 3 <= len(v) <= 5 and max(b[2] - b[0], b[3] - b[1]) <= 8:
+                    piece = (p, v, b)
+        if piece and cur and cur[-1][0]["idx"] == piece[0]["idx"] - 1 and \
+                cur[-1][0]["fill_rgb"] == piece[0]["fill_rgb"] and _touch(_union(cur), piece[2]):
+            cur.append(piece)
+            continue
+        if len(cur) >= 6:
+            runs.append(cur)
+        cur = [piece] if piece else []
+    if len(cur) >= 6:
+        runs.append(cur)
+    discs, used = [], set()
+    for run in runs:
+        x0, y0, x1, y1 = _union(run)
+        w, h = x1 - x0, y1 - y0
+        if min(w, h) <= 0 or min(w, h) < 0.85 * max(w, h):
+            continue
+        area = sum(abs(_shoelace(v)) for _, v, _ in run)
+        if not 0.6 * w * h <= area <= 0.92 * w * h:
+            continue
+        first = run[0][0]
+        discs.append({"shape": "circle", "cx": (x0 + x1) / 2, "cy": (y0 + y1) / 2,
+                      "size": max(w, h), "filled": True, "rgb": first["fill_rgb"],
+                      "idx": first["idx"]})
+        used.update(p["idx"] for p, _, _ in run)
+    if not discs:
+        return symbols
+    out = [s for s in symbols if s.get("idx") not in used] + discs
+    out.sort(key=lambda s: s["idx"])
+    return out
+
+
+def _union(pieces):
+    bs = [b for _, _, b in pieces]
+    return (min(b[0] for b in bs), min(b[1] for b in bs), max(b[2] for b in bs), max(b[3] for b in bs))
+
+
+def _touch(a, b, tol=0.05):
+    return a[0] - tol <= b[2] and b[0] - tol <= a[2] and a[1] - tol <= b[3] and b[1] - tol <= a[3]
+
+
+def _shoelace(v):
+    return sum(v[i][0] * v[(i + 1) % len(v)][1] - v[(i + 1) % len(v)][0] * v[i][1] for i in range(len(v))) / 2

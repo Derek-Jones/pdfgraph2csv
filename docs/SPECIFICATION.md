@@ -44,6 +44,19 @@ tick marks) drawn with vector graphics, find the data points drawn in it
 (marker symbols, or bar tops / line vertices when there are no markers),
 and write the data coordinates of every point as CSV.
 
+**What a graph is** (the user's specification): a graph often contains
+two axis lines (which may be implicitly formed by block fill within the
+interior of the graph), some form of tick mark or tick lines and
+associated label values, and small symbols representing data points
+(there may be small text labels associated with some points).  A graph
+may contain text describing some characteristics of the data points,
+which may be enclosed by a border; such text is not counted against the
+words allowed inside a graph.  It holds
+little running text: a "graph" whose plot area holds more than
+`--max-words` (default 20) words of running text is a page of text, and
+one whose two category axes enclose text in at least half of their cells
+is a table (section 10).
+
 **In scope**
 
 * Scatter plots, line plots with markers, bar charts, histograms, line
@@ -131,6 +144,8 @@ python3 pdfgraph2csv.py FILE.pdf [options]
 | `--digits N` | fixed number of significant digits (1..17) for numbers; default: as many as the PDF's precision justifies (section 16). |
 | `--internal` | add `pdf_x`, `pdf_y` columns (marker centre in page coordinates). |
 | `--errbars` | add `x_low,x_high,y_low,y_high` columns: the ends of each point's error bars (section 12.1). |
+| `--max-words N` | the most words of running text a graph's plot area may hold (default 20; section 10). Added at the user's request. |
+| `--integer AXIS` | round the values of axis `x` or `y` (may be given twice) to whole numbers: data that can only be integers (counts) drawn with a little jitter. Category labels are left alone. Added at the user's request. |
 | `--password PW` | user or owner password of an encrypted file. |
 | `--debug` | print axis candidates, graph boxes, titles, legends to stderr. |
 
@@ -192,9 +207,11 @@ plus `pdf_x,pdf_y` with `--internal`.
   for them (the user asked for these): the range the value may really lie
   in, as an error bar.  The page position is moved by the axis's
   uncertainty each way and mapped through the axis (asymmetric on a log
-  axis).  The uncertainty is 0.1 of the labels' font size (programs centre
-  a label on its cap height, its em box or its ink) plus the largest
-  distance of a label centre from the fitted scale.  Empty for an axis
+  axis).  The uncertainty is 0.2 of the labels' font size (programs centre
+  a label on its cap height, its em box or its ink; an R plot's labels sit
+  0.15 em above their ticks, measured on 120875-008 against the paper's
+  confidence intervals) plus the largest distance of a label centre from
+  the fitted scale.  Empty for an axis
   with tick marks or grid lines, and for category axes.
 * The graph title is **not** a column (the user asked for it to be
   removed).
@@ -639,6 +656,20 @@ Some PDF writers convert every character into a filled path. Then:
   overflows becomes inf.
 
 ## 10. Graphs
+
+* **Not graphs**: a "graph" is dropped when its plot area holds more words
+  of running text than `--max-words` (default 20): the text items on one
+  baseline are joined into lines, and the words of three letters or more
+  in lines of at least three words are counted, the graph's own axis
+  labels apart (names beside points, legend entries and notes are
+  shorter).  Text enclosed by a border or a filled box (a note describing
+  the data; the box smaller than half the plot) is not counted (the user
+  asked for this).  Real graphs in the test files hold at most 6 such
+  words; a page of mathematics, its boxes' rules taken for axes, holds 56
+  and 107.  The dashes of such a box's border drawn as small squares are
+  no points.
+  A graph with a category axis each way whose cells (rows by columns)
+  hold text in at least half of them is a ruled table and is dropped too.
 
 * Pair x and y axes whose lines meet at a corner: for each x axis the y
   axis closest to forming a corner, and vice versa, within 8% of the longer
