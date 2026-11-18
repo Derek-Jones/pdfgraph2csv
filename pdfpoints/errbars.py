@@ -17,6 +17,10 @@ and pieces wholly outside the plot box (tick marks) are not bars; neither is
 a chain that does not reach beyond the marker (the stroke of a '+').  When
 several markers touch one chain, it belongs to the marker at which a piece
 of it starts or ends (Excel's halves), else to the one nearest its middle.
+
+The vertices of lines without markers (symbol 'line') have no size to
+measure a bar against, so their vertical bars must be capped: a short
+horizontal stroke centred on each end (_vertex_bars).
 """
 
 import math
@@ -66,6 +70,8 @@ def _segments(paths):
 
 
 def _index(segs):
+    """Segments filed by their position across (buckets of _BUCKET pt): a
+    page may hold tens of thousands of strokes and markers."""
     idx = {}
     for lo, hi, pos in segs:
         idx.setdefault(int(math.floor(pos / _BUCKET)), []).append((lo, hi, pos))
@@ -103,7 +109,7 @@ def find_error_bars(symbols, graphs, paths, graph_of):
     index = {k: _index(v) for k, v in segs.items()}
     claims = {}                    # (direction, chain) -> [(score, symbol index, ends)]
     for si, s in enumerate(symbols):
-        if s["shape"] in ("bar", "line"):
+        if s["shape"] in ("bar", "line", "stem") or s["shape"].startswith("box-"):
             continue
         g = graph_of(s)
         if g is None:
@@ -111,9 +117,10 @@ def find_error_bars(symbols, graphs, paths, graph_of):
         x0, y0, x1, y1 = g["rect"]
         size = max(s["size"], 0.5)
         tol = max(0.15 * size, 0.3)
-        for k, centre, along, span, (lo_lim, hi_lim) in (
-                ("v", s["cx"], s["cy"], y1 - y0, (x0, x1)),
-                ("h", s["cy"], s["cx"], x1 - x0, (y0, y1))):
+        # k: the bar's direction; centre: the marker's position across the
+        # bar, along: its position along it; span: the plot's extent that way
+        for k, centre, along, span in (("v", s["cx"], s["cy"], y1 - y0),
+                                       ("h", s["cy"], s["cx"], x1 - x0)):
             pieces = []
             for b in range(int(math.floor((centre - tol) / _BUCKET)),
                            int(math.floor((centre + tol) / _BUCKET)) + 1):
@@ -146,9 +153,109 @@ def find_error_bars(symbols, graphs, paths, graph_of):
                 key = (k, round(centre / tol), round(lo, 2), round(hi, 2))
                 claims.setdefault(key, []).append((score, si, (low, high)))
     out = {}
+    taken = set()                  # (x, low, high) of the markers' vertical bars
     for (k, *_), cands in claims.items():
         score, si, ends = min(cands)
         bars = out.setdefault(si, {"v": None, "h": None})
         if bars[k] is None:
             bars[k] = ends
+            if k == "v":
+                taken.add((symbols[si]["cx"],) + ends)
+    for si, ends in _vertex_bars(symbols, graph_of, index, taken).items():
+        out.setdefault(si, {"v": None, "h": None})["v"] = ends
+    return out
+
+
+# a cap is at most this fraction of the plot's width long
+_CAP_FRAC = 0.06
+_TOL = 0.3                         # pt
+
+
+def _cap(index, x, y, width):
+    """Length of the short horizontal stroke centred on (x, y) - an error
+    bar's cap - or None."""
+    best = None
+    for b in range(int(math.floor((y - _TOL) / _BUCKET)), int(math.floor((y + _TOL) / _BUCKET)) + 1):
+        for lo, hi, pos in index["h"].get(b, ()):
+            n = hi - lo
+            if (abs(pos - y) <= _TOL and abs((lo + hi) / 2 - x) <= max(_TOL, 0.1 * n)
+                    and 0.5 <= n <= _CAP_FRAC * width):
+                best = n if best is None else max(best, n)
+    return best
+
+
+def _capped_runs(pieces, cx, cy, index, width, height):
+    """(lo, hi) of the capped error bars through a vertex at (cx, cy) made
+    of `pieces` (vertical (lo, hi) at its x).  Pieces that continue each
+    other end to end are chained as for markers, but a bar is any run of
+    consecutive pieces of a chain with a cap at both ends, the longest
+    first: a drop line from the axis that ends where a bar's lower cap is
+    continues the bar end to end (mpl-line-errorbars), and the chain as a
+    whole has no cap at its foot."""
+    pieces = sorted(set(pieces))
+    chains = []                            # [[(lo, hi), ...]] end to end
+    for p in pieces:
+        for c in chains:
+            if abs(p[0] - c[-1][1]) <= _TOL and p[1] > c[-1][1]:
+                c.append(p)
+                break
+        else:
+            chains.append([p])
+    out = []
+    for c in chains:
+        runs = sorted(((c[i][0], c[j][1]) for i in range(len(c)) for j in range(i, len(c))),
+                      key=lambda r: r[0] - r[1])
+        for lo, hi in runs:
+            if not (lo - _TOL <= cy <= hi + _TOL) or hi - lo < 0.5 or hi - lo >= 0.9 * height:
+                continue
+            c_lo, c_hi = _cap(index, cx, lo, width), _cap(index, cx, hi, width)
+            if c_lo is None or c_hi is None or max(c_lo, c_hi) > 2 * min(c_lo, c_hi):
+                continue
+            out.append((lo, hi))
+            break
+    return out
+
+
+def _vertex_bars(symbols, graph_of, index, taken):
+    """{symbol index: (low, high)}: vertical error bars at the vertices of
+    line charts, which have no marker to measure a bar against.  The bars
+    of 2204.07073-010's polarisation lines (graphs 2 and 3) are a vertical
+    stroke through each vertex with a short horizontal cap centred on each
+    end.  Without a marker, a vertical stroke at a vertex could also be a
+    step of a step chart or a drop line, so the caps are required: a run
+    of vertical pieces end to end (_capped_runs) within 0.3 pt of the
+    vertex's x, reaching it and longer than 0.5 pt, shorter than 90% of the
+    plot's height, with a horizontal stroke centred on each end, 0.5 pt to
+    6% of the plot's width long, the two caps no more than twice each
+    other's length.  A bar already given to a marker at that x is not
+    taken again; of several vertices on one bar (lines crossing at an x)
+    it goes to the one nearest its middle.  A side that ends at the vertex
+    has no bar on that side."""
+    claims = {}                    # chain -> [(distance to middle, symbol index, ends)]
+    for si, s in enumerate(symbols):
+        if s["shape"] != "line":
+            continue
+        g = graph_of(s)
+        if g is None:
+            continue
+        x0, y0, x1, y1 = g["rect"]
+        cx, cy = s["cx"], s["cy"]
+        pieces = []
+        for b in range(int(math.floor((cx - _TOL) / _BUCKET)), int(math.floor((cx + _TOL) / _BUCKET)) + 1):
+            for lo, hi, pos in index["v"].get(b, ()):
+                if abs(pos - cx) <= _TOL and hi >= y0 - 0.5 and lo <= y1 + 0.5:
+                    pieces.append((lo, hi))
+        for lo, hi in _capped_runs(pieces, cx, cy, index, x1 - x0, y1 - y0):
+            if any(abs(tx - cx) <= _TOL and abs((tl if tl is not None else cy) - lo) <= _TOL
+                   and abs((th if th is not None else cy) - hi) <= _TOL for tx, tl, th in taken):
+                continue                          # a marker's bar
+            ends = (lo if lo < cy - _TOL else None, hi if hi > cy + _TOL else None)
+            if ends == (None, None):
+                continue
+            key = (round(cx / _TOL), round(lo, 2), round(hi, 2))
+            claims.setdefault(key, []).append((abs((lo + hi) / 2 - cy), si, ends))
+    out = {}
+    for cands in claims.values():
+        _, si, ends = min(cands)
+        out.setdefault(si, ends)
     return out

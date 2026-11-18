@@ -1,5 +1,8 @@
 """What is hidden: text and glyph outlines painted over by a later opaque
-rectangle or image (labels "edited" by covering them with a white box).
+rectangle or image.  Authors "edit" labels by covering them with a white
+box and writing new text on top (Excel graphs whose values beyond an axis
+break were changed this way); reading the covered text as well would give
+two labels at one tick, or labels the reader never sees.
 """
 
 import math
@@ -9,7 +12,9 @@ from .geometry import rect_of
 
 
 def cover_rects(paths, images):
-    """Opaque rectangles and images: [(bbox, drawing step)]."""
+    """Opaque rectangles and images: [(bbox, drawing step)].  Images drawn
+    with a mask (a translucent watermark) are not in `images`: they hide
+    nothing.  Boxes under 0.5 pt across are rules, not covers."""
     covers = [(b, i) for b, i in images]
     for p in paths:
         if p["fill"] and p.get("opaque", True):
@@ -21,7 +26,8 @@ def cover_rects(paths, images):
 
 
 class CoverIndex:
-    """Which covers (painted after drawing step `idx`) hold a point."""
+    """Which covers (painted after drawing step `idx`) hold a point: a grid
+    of 20 pt cells, since a page may hold thousands of glyphs and boxes."""
     MAX_CELLS = 10000                 # bigger covers are checked one by one
 
     def __init__(self, covers, cell=20.0):
@@ -42,11 +48,11 @@ class CoverIndex:
                 if i > idx and b[0] <= x <= b[2] and b[1] <= y <= b[3]]
 
 
-def drop_hidden_glyphs(texts, paths, images):
-    """Remove glyphs painted over by a later opaque rectangle or image.
-    Labels are sometimes 'edited' by covering them with a white box and
-    writing new text on top (e.g. the values beyond an axis break)."""
-    covers = cover_rects(paths, images)
+def drop_hidden_glyphs(texts, covers):
+    """Remove glyphs painted over by a later cover (see cover_rects).  The
+    covers that hide text are noted in PAGE.hiding_paths: they are boxes,
+    not square markers.  A text partly hidden keeps its visible runs of
+    glyphs, split into words."""
     if not covers:
         return texts
     last = max(i for _, i in covers)

@@ -1,0 +1,12 @@
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex,x_low,x_high,y_low,y_high
+1,1,line,,0,1.0000006505377,2,steelblue,#1f77b4,,,1.5,2.5
+1,1,line,,0,1.0000006505377,6,forestgreen,#2ca02c,,,5,6.5
+1,1,line,,0,2.0000007155914,3.5,steelblue,#1f77b4,,,3.25,4.5
+1,1,line,,0,2.0000007155914,7.5,forestgreen,#2ca02c,,,7,8
+1,1,line,,0,3.0000007643818,3,steelblue,#1f77b4,,,,
+1,1,line,,0,3.0000007643818,6.5,forestgreen,#2ca02c,,,6.25,7.25
+1,1,line,,0,4.0000008131721,5,steelblue,#1f77b4,,,4.25,5.5
+1,1,line,,0,4.0000008131721,8,forestgreen,#2ca02c,,,7.5,9
+1,2,line,,0,1.0000001084231,1,black,#000000,,,,
+1,2,line,,0,1.9999997289428,3,black,#000000,,,,
+1,2,line,,0,2.9999993494624,2,black,#000000,,,,

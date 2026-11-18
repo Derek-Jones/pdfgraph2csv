@@ -1,0 +1,4 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,,,6,"Evolution of the minimum, median, and maximum values of key DRAM timing parameters (shown in log scale) grouped by DRAM chip storage capacity.",Matplotlib v3.6.3,matplotlib,0,1000,5.12e+08,10,100
+1,1,,7,Evolution of key DRAM current consumption values (shown in log scale) across years (top) and chip capacities (bottom) separated by DRAM standard.,Matplotlib v3.6.3,matplotlib,334,1980,2020,100,100
+1,2,,7,Evolution of key DRAM current consumption values (shown in log scale) across years (top) and chip capacities (bottom) separated by DRAM standard.,Matplotlib v3.6.3,matplotlib,334,0.01,10000,100,100

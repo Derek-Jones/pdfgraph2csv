@@ -1,0 +1,18 @@
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex,label
+1,1,filled-circle,Student,0,4.000054379,4.0000221342,lightsteelblue,#bebada,3316
+1,1,filled-polygon,C++ Librarian,0,5.000045316,8.000003279,skyblue,#8dd3c7,8697
+1,1,filled-circle,Student,0,6.000126884,5.0000073781,lightsteelblue,#bebada,9112
+1,1,filled-circle,Student,0,7.00008761,3.000008198,lightsteelblue,#bebada,3787
+1,1,filled-circle,Student,0,7.00008761,5.9999926219,lightsteelblue,#bebada,4281
+1,1,filled-polygon,C++ Librarian,0,9.000129905,8.000003279,skyblue,#8dd3c7,1867
+1,1,filled-circle,Student,0,15.000075526,7.999991802,lightsteelblue,#bebada,4168
+1,1,filled-polygon,C++ Librarian,0,16.000036252,8.000003279,skyblue,#8dd3c7,7640
+1,1,filled-polygon,C++ Librarian,0,20,8.000003279,skyblue,#8dd3c7,1157
+1,1,filled-square,C++ App. Dev.,0,27.000102715,7.9999717174,lemonchiffon,#ffffb3,6061
+1,1,filled-square,C++ App. Dev.,1,27.0800603,3.5531573866,lemonchiffon,#ffffb3,
+1,1,filled-circle,Student,1,27.080114678,4.0778357455,lightsteelblue,#bebada,
+1,1,filled-polygon,C++ Librarian,1,27.080144888,3.0327977979,skyblue,#8dd3c7,
+1,1,filled-square,C++ App. Dev.,0,29.000084589,7.9999717174,lemonchiffon,#ffffb3,8888
+1,1,filled-polygon,C++ Librarian,0,32.99997281,7.0000180351,skyblue,#8dd3c7,4642
+1,1,filled-square,C++ App. Dev.,0,33.999827801,7.9999717174,lemonchiffon,#ffffb3,1879
+1,1,filled-square,C++ App. Dev.,0,38.999993957,6.0000012296,lemonchiffon,#ffffb3,4304

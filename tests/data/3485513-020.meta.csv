@@ -1,0 +1,4 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,±1.9%,20,"WebAssembly Fig. 21. WebAssembly normalized execution time on each of the Fig. 22. Average of exec time, Coremark. 30 PolyBenchC benchmarks, normalized to copy-and-patch.",,,7,Copy+Patch,WAVM (LLVM),0,1.5
+1,2,Fig. 21. WebAssembly normalized execution time on each of the Fig. 22. Average of,20,"WebAssembly Fig. 21. WebAssembly normalized execution time on each of the Fig. 22. Average of exec time, Coremark. 30 PolyBenchC benchmarks, normalized to copy-and-patch.",,,187,2mm,trmm,0,3
+1,3,Fig. 22. Average of,20,"WebAssembly Fig. 21. WebAssembly normalized execution time on each of the Fig. 22. Average of exec time, Coremark. 30 PolyBenchC benchmarks, normalized to copy-and-patch.",,,6,Chrome V8 Liftoff,WAVM (LLVM),0,1.5

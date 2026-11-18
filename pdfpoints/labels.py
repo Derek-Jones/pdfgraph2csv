@@ -4,13 +4,41 @@ category labels, labels shared by neighbouring axes and axis multipliers
 such as "x10^-9".
 """
 
+import math
 import bisect
 import re
 import sys
 
 from .context import PAGE
+from .geometry import median
 from .scales import fit_axis, nominal_map
-from .text import SHORT_YEAR_RE, parse_number
+from .text import SHORT_YEAR_RE, duration_parts, parse_number
+
+
+def duration_axis(pairs):
+    """Labels that are all durations ('1 min', '1 hour', '1 day') are read
+    in the smallest unit among them (the user's rule: an axis labelled in
+    minutes, hours and days gives values in minutes; one labelled 1 s ...
+    64 h gives seconds).  Returns (the pairs in that unit, the same counted
+    in working time - a day of 8 hours, a week of 40 - or None when no label
+    is in days or longer); None if the labels are not all durations.
+
+    Charts of the length of tasks place '1 day' at 8 hours and '1 week' at
+    40 on a log axis; the caller keeps the reading that fits the ticks."""
+    items = getattr(pairs, "items", None)
+    if not items or len(items) != len(pairs):
+        return None
+    parts = [duration_parts(tx["text"]) for tx in items]
+    if any(p is None for p in parts):
+        return None
+    unit = min(u for _, u, _ in parts)
+    calendar = LabelPairs([(c, n * u / unit) for (c, _), (n, u, _) in zip(pairs, parts)],
+                          pairs.angles, items)
+    if all(u == w for _, u, w in parts):
+        return calendar, None
+    work = LabelPairs([(c, n * w / unit) for (c, _), (n, _, w) in zip(pairs, parts)],
+                      pairs.angles, items)
+    return calendar, work
 
 
 def compose_month_axis(pairs, numeric, orient, apos):
@@ -38,10 +66,13 @@ def compose_month_axis(pairs, numeric, orient, apos):
     years = [t for t in numeric if t.get("month") is None and t["value"] is not None
              and float(t["value"]).is_integer() and 1000 <= t["value"] <= 2999
              and abs(t["center"][1 - k] - apos) > far * 0.8]
+    # a year is written under its run of months (centred on it, or under
+    # its first month), a little beyond the month names
+    step = ticks[1] - ticks[0] if len(ticks) > 1 else 10
     run_year = []
     for run in runs:
-        lo = min(ticks[i] for i in run) - 0.6 * (ticks[1] - ticks[0] if len(ticks) > 1 else 10)
-        hi = max(ticks[i] for i in run) + 0.6 * (ticks[1] - ticks[0] if len(ticks) > 1 else 10)
+        lo = min(ticks[i] for i in run) - 0.6 * step
+        hi = max(ticks[i] for i in run) + 0.6 * step
         ys = [t for t in years if lo <= t["center"][k] <= hi]
         run_year.append(int(min(ys, key=lambda t: abs(t["center"][1 - k] - apos))["value"]) if ys else None)
     if not any(y is not None for y in run_year):
@@ -98,6 +129,13 @@ def _label_anchor(tx, orient, axis_pos):
     if orient == "x" and tx["rotated"] or orient == "y" and abs(ang - 90) < 75 and tx["rotated"]:
         p0, p1 = tx["p0"], tx["p1"]
         end = p0 if abs(p0[1 - i] - axis_pos) < abs(p1[1 - i] - axis_pos) else p1
+        # the middle of the text's end, not its baseline end: 0.35 em up
+        # (3485513-020's labels slanted 60 degrees point 0.9 pt nearer
+        # their columns of points)
+        up = tx.get("up")
+        if up and (up[0] or up[1]):
+            n = math.hypot(up[0], up[1])
+            return end[i] + up[i] / n * 0.35 * (tx.get("size") or 0.0)
         return end[i]
     return tx["center"][i]
 
@@ -159,10 +197,8 @@ def nominal_axis(g, orient, line, debug):
         nearest = {}
         for d, i, j, gp, s in cands:
             nearest[i] = min(nearest.get(i, gp), gp)
-        gaps = sorted(nearest.values())
-        mg = gaps[len(gaps) // 2]
-        sizes = sorted(s for d, i, j, gp, s in cands if abs(gp - nearest[i]) < 1e-9)
-        ms = sizes[len(sizes) // 2]
+        mg = median(nearest.values())
+        ms = median(s for d, i, j, gp, s in cands if abs(gp - nearest[i]) < 1e-9)
         cands = [c for c in cands if abs(c[3] - mg) <= 0.6 * ms and abs(c[4] - ms) <= 0.25 * ms]
         cands.sort()
         used_t, used_l, pairs = set(), set(), []
@@ -344,17 +380,24 @@ def assign_labels(ticks, orient, outer, sign, numeric):
         used_x.add(j)
         trip.append((ticks[i], numeric[j]["value"], numeric[j]))
     trip.sort(key=lambda t: t[0])
-    return LabelPairs([(t, v) for t, v, _ in trip], [tx.get("angle", 0.0) for _, _, tx in trip],
-                      [tx for _, _, tx in trip])
+    return LabelPairs.of([((t, v), tx) for t, v, tx in trip])
 
 
 class LabelPairs(list):
     """List of (tick position, label value) that also remembers the reading
-    direction (degrees) and the text items of the labels used."""
+    direction (degrees) and the text items of the labels used: the reading
+    direction tells whether a graph is turned, and the items are needed to
+    find month/year rows and to give each label to one axis only."""
     def __init__(self, pairs, angles, items=()):
         list.__init__(self, pairs)
         self.angles = angles
         self.items = list(items)
+
+    @classmethod
+    def of(cls, labelled):
+        """From [((tick, value), text item)]."""
+        return cls([tv for tv, _ in labelled], [tx.get("angle", 0.0) for _, tx in labelled],
+                   [tx for _, tx in labelled])
 
 
 def snapped_angle(angles):
@@ -375,7 +418,10 @@ def resolve_shared_labels(axes):
     """A tick label belongs to one axis only.  Mirrored tick rows (ticks on
     all four sides of a box) and neighbouring panels can reach the same
     labels; each label goes to the axis line nearest to it, and axes left
-    with too few labels are dropped."""
+    with too few labels are dropped.  Labels that one axis reads as a
+    numeric scale go to it rather than to a nearer axis that takes them for
+    categories (a grid line of a plot beside the y labels of an inset in
+    it)."""
     def dist(a, tx):
         b = tx["bbox"]
         lo, hi = (b[0], b[2]) if a["orient"] == "y" else (b[1], b[3])
@@ -386,10 +432,12 @@ def resolve_shared_labels(axes):
         return d
     owner = {}
     for ai, a in enumerate(axes):
+        cat = 1 if a["map"] and a["map"]["kind"] == "nominal" else 0
         for _, tx in a.get("labels", ()):
-            d = dist(a, tx)
+            d = (cat, dist(a, tx))
             k = id(tx)
-            if k not in owner or d < owner[k][0] - 1e-6:
+            if k not in owner or d[0] < owner[k][0][0] or \
+                    d[0] == owner[k][0][0] and d[1] < owner[k][0][1] - 1e-6:
                 owner[k] = (d, ai)
     out = []
     for ai, a in enumerate(axes):
@@ -401,8 +449,7 @@ def resolve_shared_labels(axes):
         if len(kept) == len(labels):
             out.append(a)
             continue
-        pairs = LabelPairs([tv for tv, _ in kept], [tx.get("angle", 0.0) for _, tx in kept],
-                           [tx for _, tx in kept])
+        pairs = LabelPairs.of(kept)
         if a["map"]["kind"] == "nominal":
             m = nominal_map(kept) if len(kept) >= 3 else None
         else:
@@ -422,16 +469,10 @@ def apply_axis_multipliers(axes, texts):
     """Scale factors written once at the end of an axis, e.g. 'x10^-9' above
     the top of a y axis or at the right end of an x axis.  (The 'x' itself
     is often a symbol glyph or a drawing, so only '10^n' may remain.)"""
-    used = set()
-    for a in axes:
-        for _, tx in a.get("labels", ()):
-            used.add(id(tx))
+    used = {id(tx) for a in axes for _, tx in a.get("labels", ())}
     for a in axes:
         labels = a.get("labels") or []
-        if a["map"]["kind"] == "nominal":
-            continue
-        if not labels or a["map"]["kind"] == "log" and all(
-                _MULT_RE.match(tx["text"].strip()) for _, tx in labels):
+        if a["map"]["kind"] == "nominal" or not labels:
             continue
         if any(_MULT_RE.match(tx["text"].strip()) for _, tx in labels):
             continue                 # labels are powers of ten themselves

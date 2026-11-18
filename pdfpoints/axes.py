@@ -8,13 +8,14 @@ a dict with its orientation, extent, position and value mapping.
 
 import bisect
 import math
+import re
 import sys
 
 from .context import PAGE
 from .geometry import (
-    axis_aligned, merge_collinear, straight_segments, thin_rect_line)
+    axis_aligned, median, merge_collinear, straight_segments, thin_rect_line, vertices)
 from .labels import (
-    LabelPairs, assign_labels, compose_month_axis,
+    LabelPairs, _label_anchor, assign_labels, compose_month_axis, duration_axis,
     fix_short_year_centuries, nominal_axis, snapped_angle,
     split_labels_at_ticks)
 from .scales import fit_axis, nominal_map, piecewise_axis
@@ -61,9 +62,9 @@ def tick_groups(segs):
         # stand in for ticks on plots that have none (used only as fallback)
         # (against the run of lines, or against their spacing: a row of grid
         # lines may run through several side-by-side panels)
-        gaps = sorted(b - a for a, b in zip(pos, pos[1:]))
+        gap = median(b - a for a, b in zip(pos, pos[1:]))
         res.append({"lo": g["lo"], "hi": g["hi"], "pos": pos, "len": L, "span": span,
-                    "grid": L > 0.25 * span or L > 3 * gaps[len(gaps) // 2]})
+                    "grid": L > 0.25 * span or L > 3 * gap})
     res.sort(key=lambda g: g["grid"])          # real ticks first
     return res
 
@@ -118,34 +119,40 @@ def outlined_stroke_lines(subpaths, min_len=20.0, max_width=2.0):
     return out
 
 
-def find_axes(paths, texts, debug=False):
-    """Return a list of axis dicts (orientation 'x' or 'y')."""
-    hs_open, vs_open, hs_all, vs_all = [], [], [], []
-    hs_dark, vs_dark = [], []          # dark lines: frames and panel borders
+def _page_segments(paths):
+    """The page's horizontal and vertical straight pieces, as three
+    {"h": [(lo, hi, pos)], "v": [...]} collections:
+      open: pieces of open strokes (and strokes converted to thin filled
+            rectangles), the candidates for tick marks and grid lines;
+      all:  every straight piece, of which axis lines are made;
+      dark: the dark ones, frames and panel borders.
+    The minus signs of outlined labels (PAGE.minus_paths) are no ticks."""
+    open_, all_, dark_ = {"h": [], "v": []}, {"h": [], "v": []}, {"h": [], "v": []}
+    # the colours of the open strokes at each position, for telling the
+    # line samples of a legend (one colour each) from tick marks
+    _TICK_COLOURS["h"].clear()
+    _TICK_COLOURS["v"].clear()
     for p in paths:
         if not p["stroke"]:
             if p["fill"] and p["idx"] not in PAGE.minus_paths:
-                # strokes converted to thin filled rectangles (but not the
-                # minus signs of outlined labels)
+                # strokes converted to thin filled rectangles
                 wide = []
                 for sp in p["subpaths"]:
                     ln = thin_rect_line(sp)
                     aa = axis_aligned(*ln) if ln else None
                     if aa:
-                        k, lo, hi, pos = aa
-                        (hs_all if k == "h" else vs_all).append((lo, hi, pos))
-                        (hs_open if k == "h" else vs_open).append((lo, hi, pos))
+                        all_[aa[0]].append(aa[1:])
+                        open_[aa[0]].append(aa[1:])
                     else:
                         wide.append(sp)
                 if wide:
                     dark = sum(p["fill_rgb"] or (0, 0, 0)) < 1.5
                     for k, lo, hi, pos in outlined_stroke_lines(wide):
-                        (hs_all if k == "h" else vs_all).append((lo, hi, pos))
+                        all_[k].append((lo, hi, pos))
                         if dark:
-                            (hs_dark if k == "h" else vs_dark).append((lo, hi, pos))
+                            dark_[k].append((lo, hi, pos))
             continue
-        rgb = p["stroke_rgb"] or (0, 0, 0)
-        dark = sum(rgb) < 1.5
+        dark = sum(p["stroke_rgb"] or (0, 0, 0)) < 1.5
         for sp in p["subpaths"]:
             if sp["closed"] and p["idx"] not in PAGE.minus_paths:
                 # a tick drawn as a tiny outlined (and maybe filled)
@@ -153,23 +160,77 @@ def find_axes(paths, texts, debug=False):
                 ln = thin_rect_line(sp)
                 aa = axis_aligned(*ln) if ln else None
                 if aa and aa[2] - aa[1] <= 12:
-                    k, lo, hi, pos = aa
-                    (hs_open if k == "h" else vs_open).append((lo, hi, pos))
+                    open_[aa[0]].append(aa[1:])
                     # its edges are no lines: the ends of a row of such
                     # ticks would join into a false axis line at their tips
-                    (hs_all if k == "h" else vs_all).append((lo, hi, pos))
+                    all_[aa[0]].append(aa[1:])
                     continue
             for a, b in straight_segments({"subpaths": [sp]}):
                 aa = axis_aligned(a, b)
                 if not aa:
                     continue
-                k, lo, hi, pos = aa
-                (hs_all if k == "h" else vs_all).append((lo, hi, pos))
+                all_[aa[0]].append(aa[1:])
                 if dark:
-                    (hs_dark if k == "h" else vs_dark).append((lo, hi, pos))
+                    dark_[aa[0]].append(aa[1:])
                 if not sp["closed"]:
-                    (hs_open if k == "h" else vs_open).append((lo, hi, pos))
+                    open_[aa[0]].append(aa[1:])
+                    rgb = p["stroke_rgb"]
+                    _TICK_COLOURS[aa[0]].setdefault(round(aa[3], 1), set()).add(
+                        tuple(round(c, 2) for c in rgb) if rgb else None)
+    return open_, all_, dark_
+
+
+_TICK_COLOURS = {"h": {}, "v": {}}       # orientation -> position -> colours
+
+
+def _legend_samples(g0, k):
+    """Whether a group of 'ticks' is the line samples of a legend (the
+    densities of 2204.07073-010's inset, one line per year): each in a
+    colour, three or more colours, none of them grey or black (tick marks
+    are drawn in the axis colour; a coloured axis has one colour)."""
+    cols = set()
+    for t in g0["pos"]:
+        cols |= _TICK_COLOURS[k].get(round(t, 1), set())
+    if len(cols) < 3 or None in cols:
+        return False
+    return all(max(c) - min(c) > 0.2 for c in cols)
+
+
+def _labels_in_use(axes):
+    """Ids of the text items that already label one of `axes`."""
+    return {id(tx) for a in axes for _, tx in a.get("labels", ())}
+
+
+def _axes_on(axes, orient, line, tol):
+    """The axes of `axes` lying along `line` (lo, hi, pos), within `tol`."""
+    lo, hi, pos = line
+    return [b for b in axes if b["orient"] == orient and abs(b["pos"] - pos) <= tol and
+            b["lo"] < hi and lo < b["hi"]]
+
+
+def _evenly_spaced(cs):
+    """Whether the sorted positions cs step evenly (within 5%)."""
+    gaps = [q - p for p, q in zip(cs, cs[1:])]
+    med = median(gaps)
+    return med > 0 and all(abs(d - med) <= 0.05 * med for d in gaps)
+
+
+def _label_tick_group(line, cs, size, **flags):
+    """A tick group for an axis without tick marks whose label centres `cs`
+    stand in for the ticks: notional ticks a quarter of the labels' size
+    long across the line (they decide how far away labels are looked for)."""
+    pos = line[2]
+    L = 0.25 * size
+    return dict({"lo": pos - L, "hi": pos + L, "len": L, "grid": False, "label_ticks": True,
+                 "pos": cs, "span": cs[-1] - cs[0]}, **flags)
+
+
+def find_axes(paths, texts, debug=False):
+    """Return a list of axis dicts (orientation 'x' or 'y')."""
+    open_, all_, dark_ = _page_segments(paths)
+    hs_open, vs_open, hs_all, vs_all = open_["h"], open_["v"], all_["h"], all_["v"]
     background_grid(paths, hs_all, vs_all, hs_open, vs_open)
+    hs_dark, vs_dark = dark_["h"], dark_["v"]
     hs_lines = merge_collinear(hs_all)
     vs_lines = merge_collinear(vs_all)
     hs_dark, vs_dark = merge_collinear(hs_dark), merge_collinear(vs_dark)
@@ -185,6 +246,11 @@ def find_axes(paths, texts, debug=False):
     # horizontal ticks -> y axis (lines are vertical), vertical ticks -> x axis
     for orient, ticksegs, lines in (("y", hs_open, vs_lines), ("x", vs_open, hs_lines)):
         for g0 in tick_groups(ticksegs):
+            if _legend_samples(g0, "h" if orient == "y" else "v"):
+                if debug:
+                    print("[debug] %s-axis candidate: ticks at %s are a legend's line samples (coloured)"
+                          % (orient, ["%.2f" % t for t in g0["pos"]]), file=sys.stderr)
+                continue
             L = g0["len"]
             tol = max(0.05, 0.3 * L)
             # a group of identical ticks may belong to several axes (side by
@@ -216,6 +282,23 @@ def find_axes(paths, texts, debug=False):
             rest = [t for t in g0["pos"] if t not in covered]
             if len(rest) >= 2:
                 chosen.append((rest, None))
+            # grid lines: a piece cut off by a line across them (no axis
+            # line: below) whose ticks all lie in another piece cut off by a
+            # line is no set of its own - the vertical edges of 3485513-020's
+            # bars cut its grid of 0 ... 1.5: the tallest bar's edge spans
+            # the whole grid, a lower one only 0, 0.5, which took the axis.
+            # (Side-by-side panels' pieces lie within the leftover set, which
+            # has no line, and stay.)
+            if g0["grid"]:
+                def crossing(line):
+                    if line is None:
+                        return True
+                    lo, hi, pos = line
+                    tol2 = max(0.5, 0.01 * (hi - lo))
+                    return not (abs(pos - g0["lo"]) <= tol2 or abs(pos - g0["hi"]) <= tol2)
+                chosen = [(sub, line) for sub, line in chosen
+                          if not (crossing(line) and any(set(sub) < set(o) and ol is not None
+                                                         for o, ol in chosen))]
             for sub, line in chosen:
                 if g0["grid"]:
                     if line is not None:
@@ -236,9 +319,7 @@ def find_axes(paths, texts, debug=False):
                         continue
                     lo, hi, pos = line
                     tol2 = max(0.5, 0.01 * (hi - lo))
-                    if any(a["orient"] == orient and a["has_line"] and
-                           abs(a["pos"] - pos) <= tol2 and a["lo"] < hi and lo < a["hi"]
-                           for a in axes):
+                    if any(a["has_line"] for a in _axes_on(axes, orient, line, tol2)):
                         continue           # this axis already has real ticks
                 g = dict(g0, pos=sub)
                 if axes_from_group(g, orient, line, numeric, axes, debug) or line is None:
@@ -273,9 +354,7 @@ def find_axes(paths, texts, debug=False):
         for lo, hi, pos in lines:
             if hi - lo < 30:
                 continue
-            tol = max(1.0, 0.01 * (hi - lo))
-            there = [b for b in axes if b["orient"] == orient and abs(b["pos"] - pos) <= tol and
-                     b["lo"] < hi and lo < b["hi"]]
+            there = _axes_on(axes, orient, (lo, hi, pos), max(1.0, 0.01 * (hi - lo)))
             # (an axis made of two "ticks" - the frame's side lines - and
             # two labels near them gives way to a longer row of labels)
             if any(b["map"]["kind"] == "nominal" or b["map"].get("n", 0) > 2 for b in there):
@@ -288,6 +367,7 @@ def find_axes(paths, texts, debug=False):
             elif not there:
                 # category labels (words, or outlines that cannot be read)
                 _category_label_ticks_axis(orient, (lo, hi, pos), axes, debug)
+    axes += _one_label_log_axes(axes, numeric, hs_open, vs_open, debug)
     for a in axes:
         a["inside"] = _interior_side(a, hs_lines if a["orient"] == "y" else vs_lines)
     return axes
@@ -299,9 +379,9 @@ def _light_rect(p, sp):
     rgb = p.get("fill_rgb")
     if not p["fill"] or rgb is None or min(rgb) < 0.75 or min(rgb) > 0.995:
         return None
-    pts = [sp["start"]] + [s[-1] for s in sp["segs"]]
     if any(s[0] != "l" for s in sp["segs"]) or not 3 <= len(sp["segs"]) <= 4:
         return None
+    pts = vertices(sp)
     xs = sorted(set(round(x, 2) for x, _ in pts))
     ys = sorted(set(round(y, 2) for _, y in pts))
     if len(xs) != 2 or len(ys) != 2:
@@ -332,7 +412,7 @@ def background_grid(paths, hs_all, vs_all, hs_open, vs_open):
         hs_all.extend([(x0, x1, y0), (x0, x1, y1)])
         vs_all.extend([(y0, y1, x0), (y0, y1, x1)])
 
-    for colour, rs in rects.items():
+    for rs in rects.values():
         big = [r for r in rs if r[2] - r[0] >= 40 and r[3] - r[1] >= 40]
         for r in big:
             x0, y0, x1, y1 = r
@@ -397,8 +477,7 @@ def _frame_side_axes(axes, hs_lines, vs_lines, hs_open, vs_open, numeric, debug)
                     continue
                 if not (abs(lo - a["pos"]) <= tol or abs(hi - a["pos"]) <= tol):
                     continue                  # does not start at the axis line
-                if any(b["orient"] == orient and abs(b["pos"] - pos) <= tol and
-                       b["lo"] < hi and lo < b["hi"] for b in axes):
+                if _axes_on(axes, orient, (lo, hi, pos), tol):
                     continue                  # already an axis
                 own = [(tlo, thi, tp) for tlo, thi, tp in ticks
                        if lo + tol < tp < hi - tol and thi - tlo < 0.1 * (hi - lo)
@@ -454,7 +533,7 @@ def _label_ticks_axis(orient, line, numeric, axes, debug):
     lo, hi, pos = line
     tol = max(1.0, 0.01 * (hi - lo))
     # labels that already serve an axis with ticks are not this line's
-    taken = {id(tx) for a in axes for _, tx in a.get("labels", ())}
+    taken = _labels_in_use(axes)
     row = []
     for t in numeric:
         if t.get("rotated") or t.get("month") is not None or id(t) in taken:
@@ -472,14 +551,12 @@ def _label_ticks_axis(orient, line, numeric, axes, debug):
     row = sorted((r for r in row if r[2] == side), key=lambda r: r[0])
     key = (lambda t: t["bbox"][1]) if orient == "x" else \
         (lambda t: t["bbox"][2] if side < 0 else t["bbox"][0])
-    ref = sorted(key(t) for _, t, _ in row)[len(row) // 2]
+    ref = median(key(t) for _, t, _ in row)
     row = [r for r in row if abs(key(r[1]) - ref) <= 0.3 * (r[1]["size"] or 1.0)]
     if len(row) < 3:
         return False
     cs = [c for c, _, _ in row]
-    gaps = [q - p for p, q in zip(cs, cs[1:])]
-    med = sorted(gaps)[len(gaps) // 2]
-    if med <= 0 or any(abs(d - med) > 0.05 * med for d in gaps):
+    if not _evenly_spaced(cs):
         return False
     vals = [t["value"] for _, t, _ in row]
     steps = [q - p for p, q in zip(vals, vals[1:])]
@@ -490,11 +567,34 @@ def _label_ticks_axis(orient, line, numeric, axes, debug):
         logs = [math.log10(q / p) for p, q in zip(vals, vals[1:])]
         if logs[0] == 0 or any(abs(d - logs[0]) > 1e-6 * abs(logs[0]) for d in logs):
             return False
-    size = sorted(t["size"] or 1.0 for _, t, _ in row)[len(row) // 2]
-    L = 0.25 * size
-    g = {"lo": pos - L, "hi": pos + L, "len": L, "grid": False, "frame_ends": True,
-         "label_ticks": True, "pos": cs, "span": cs[-1] - cs[0]}
+    g = _label_tick_group(line, cs, median(t["size"] or 1.0 for _, t, _ in row),
+                          frame_ends=True)
     return axes_from_group(g, orient, line, [t for _, t, _ in row], axes, debug)
+
+
+def _slanted(t, orient):
+    """A label turned at a slant to an x axis (not upright, not level)."""
+    if orient != "x" or not t.get("rotated"):
+        return False
+    ang = abs(t.get("angle", 0.0)) % 180
+    return 5 < ang < 175 and abs(ang - 90) > 15
+
+
+def _fitted_grid(cs):
+    """Evenly spaced positions fitted (least squares on their order) to
+    the sorted positions cs, or None when one is more than 15% of a step
+    off its place."""
+    n = len(cs)
+    mi = (n - 1) / 2.0
+    mc = sum(cs) / n
+    den = sum((i - mi) ** 2 for i in range(n))
+    step = sum((i - mi) * (c - mc) for i, c in enumerate(cs)) / den
+    if step <= 0:
+        return None
+    grid = [mc + (i - mi) * step for i in range(n)]
+    if any(abs(c - q) > 0.15 * step for c, q in zip(cs, grid)):
+        return None
+    return grid
 
 
 def _category_label_ticks_axis(orient, line, axes, debug):
@@ -505,27 +605,38 @@ def _category_label_ticks_axis(orient, line, axes, debug):
     category positions."""
     lo, hi, pos = line
     tol = max(1.0, 0.01 * (hi - lo))
-    taken = {id(tx) for a in axes for _, tx in a.get("labels", ())}
+    taken = _labels_in_use(axes)
     k = 0 if orient == "x" else 1
     near = []
     for t in PAGE.nominal_labels:
-        if id(t) in taken or t.get("value") is not None:
+        # (a name that reads as a quantity with a unit, "2mm", is a word
+        # among words: 3485513-020's benchmark names)
+        if id(t) in taken or (t.get("value") is not None and
+                              not re.search(r"[A-Za-z]", t.get("text") or "")):
             continue
         b, size = t["bbox"], t.get("size") or 1.0
         lo2, hi2 = (b[1], b[3]) if orient == "x" else (b[0], b[2])
         gap = max(lo2 - pos, pos - hi2)
-        c = 0.5 * (b[k] + b[k + 2])
-        if lo - tol <= c <= hi + tol and 0 <= gap <= 4 * size:
+        # a slanted label points at its category with its end nearest the
+        # line (3485513-020: names slanted 60 degrees under a line chart)
+        c = _label_anchor(t, orient, pos) if _slanted(t, orient) else 0.5 * (b[k] + b[k + 2])
+        # (a slanted label's end may stand a little past the line's end:
+        # 3485513-020's last name, 2.9 pt beyond it)
+        tl = max(tol, size) if _slanted(t, orient) else tol
+        if lo - tl <= c <= hi + tl and 0 <= gap <= 4 * size:
             near.append((c, gap, size, t))
     if len(near) < 3:
         return False
+    slanted = sum(1 for r in near if _slanted(r[3], orient)) > 0.5 * len(near)
+    if slanted:
+        near = [r for r in near if _slanted(r[3], orient)]
     # pieces of one word (an outlined word read glyph by glyph) joined:
     # beside each other on one line, less than 0.6 of a font size apart
     near.sort(key=lambda r: r[3]["bbox"][k])
     words = []
     for c, gap, size, t in near:
         b = t["bbox"]
-        for w in words:
+        for w in (() if slanted else words):      # (slanted labels' boxes overlap)
             wb = w["bbox"]
             if orient == "x":
                 same = abs(b[1] - wb[1]) <= 0.4 * size and b[0] - wb[2] <= 0.6 * size and wb[0] - b[2] <= 0.6 * size
@@ -537,8 +648,9 @@ def _category_label_ticks_axis(orient, line, axes, debug):
                 w["items"].append(t)
                 break
         else:
-            words.append({"bbox": tuple(b), "gap": gap, "size": size, "items": [t]})
-    near = [(0.5 * (w["bbox"][k] + w["bbox"][k + 2]), w["gap"], w["size"], w["items"][0]) for w in words]
+            words.append({"bbox": tuple(b), "gap": gap, "size": size, "items": [t], "c": c})
+    near = [(w["c"] if slanted else 0.5 * (w["bbox"][k] + w["bbox"][k + 2]), w["gap"], w["size"],
+             w["items"][0]) for w in words]
     # one category per position (the lines of a two-line label share it)
     near.sort(key=lambda r: r[0])
     cats = []
@@ -551,14 +663,16 @@ def _category_label_ticks_axis(orient, line, axes, debug):
     if len(cats) < 3 or min(r[1] for r in cats) > 2 * cats[0][2]:
         return False
     cs = [r[0] for r in cats]
-    gaps = [q - p for p, q in zip(cs, cs[1:])]
-    med = sorted(gaps)[len(gaps) // 2]
-    if med <= 0 or any(abs(d - med) > 0.05 * med for d in gaps):
+    if slanted:
+        # the ends of slanted words wander with their last letters (0.36 to
+        # 1.06 pt in 3485513-020): evenly spaced positions fitted to them,
+        # each end within 15% of a step of its place
+        cs = _fitted_grid(cs)
+        if cs is None:
+            return False
+    elif not _evenly_spaced(cs):
         return False
-    size = sorted(r[2] for r in cats)[len(cats) // 2]
-    L = 0.25 * size
-    g = {"lo": pos - L, "hi": pos + L, "len": L, "grid": False, "extended": True,
-         "label_ticks": True, "pos": cs, "span": cs[-1] - cs[0]}
+    g = _label_tick_group(line, cs, median(r[2] for r in cats), extended=True)
     return axes_from_group(g, orient, line, [], axes, debug)
 
 
@@ -579,7 +693,7 @@ def axes_from_group(g, orient, line, numeric, axes, debug):
         # they let more labels fit than the ticks alone.
         pos = g["pos"]
         gaps = [b - a for a, b in zip(pos, pos[1:])]
-        sp = sorted(gaps)[len(gaps) // 2]
+        sp = median(gaps)
         extra = [e for e, t in ((line[0], pos[0]), (line[1], pos[-1]))
                  if abs(abs(t - e) - sp) <= 0.03 * sp]
         if extra and all(abs(d - sp) <= 0.02 * sp for d in gaps):
@@ -613,13 +727,14 @@ def axes_from_group(g, orient, line, numeric, axes, debug):
         return False
     if line is not None:
         alo, ahi, apos = line
+        # the end of the ticks away from the axis line
+        far = g["lo"] if abs(apos - g["hi"]) < abs(apos - g["lo"]) else g["hi"]
         if g["lo"] + tol < apos < g["hi"] - tol:      # ticks cross the axis
             outers = [g["lo"], g["hi"]]
         else:
             # ticks normally point outwards with the labels beyond them, but
             # some programs (e.g. Excel) draw them inwards with the labels on
             # the other side of the axis line: try both, keep the better one
-            far = g["lo"] if abs(apos - g["hi"]) < abs(apos - g["lo"]) else g["hi"]
             # (grid lines standing in for ticks: labels beyond the axis line
             # first, then beyond the far ends of the grid lines)
             outers = [apos, far] if g.get("grid") else [far, apos]
@@ -631,7 +746,6 @@ def axes_from_group(g, orient, line, numeric, axes, debug):
         if apos is not None and abs(outer - apos) > 1e-9:
             sign = 1 if outer > apos else -1
         elif apos is not None:             # labels opposite the tick direction
-            far = g["lo"] if abs(apos - g["hi"]) < abs(apos - g["lo"]) else g["hi"]
             sign = -1 if far > apos else 1
         else:
             sign = 1 if outer == g["hi"] else -1
@@ -642,7 +756,15 @@ def axes_from_group(g, orient, line, numeric, axes, debug):
     pairs, outer = best
     pairs = fix_short_year_centuries(pairs)
     pairs = compose_month_axis(pairs, numeric, orient, apos if apos is not None else outer)
+    dur = duration_axis(pairs)
+    if dur is not None:
+        pairs, work = dur
     m = fit_axis(pairs, rescue=line is not None)
+    if dur is not None and work is not None and (m is None or m["n"] < len(pairs)):
+        # (a day of work, 8 hours, may be what the ticks are spaced by)
+        mw = fit_axis(work, rescue=line is not None)
+        if mw is not None and (m is None or mw["n"] > m["n"]):
+            m, pairs = mw, work
     if apos is not None and (m is None or m["n"] < len(pairs)):
         pw = piecewise_axis(pairs, orient, apos)
         if pw is not None:
@@ -687,15 +809,20 @@ def axes_from_group(g, orient, line, numeric, axes, debug):
             PAGE.bare_axes.append({"orient": orient, "pos": apos, "lo": alo, "hi": ahi,
                                    "tick_pos": list(g["pos"]), "tick_len": L})
         return False
-    axes.append({"orient": orient, "lo": alo, "hi": ahi,
-                 "pos": apos if apos is not None else outer,
-                 "has_line": line is not None, "map": m, "ticks": pairs,
-                 "labels": list(zip(pairs, pairs.items)),
-                 "tick_len": L, "tick_pos": list(g["pos"]), "label_ticks": bool(g.get("label_ticks")), "label_angle": snapped_angle(getattr(pairs, "angles", []))})
+    labels = list(zip(pairs, pairs.items))
+    axis = {"orient": orient, "lo": alo, "hi": ahi,
+            "pos": apos if apos is not None else outer,
+            "has_line": line is not None, "map": m, "ticks": pairs, "labels": labels,
+            "tick_len": L, "tick_pos": list(g["pos"]),
+            "label_ticks": bool(g.get("label_ticks")),
+            # (the labels' reading direction: a graph turned on the page)
+            "label_angle": snapped_angle(getattr(pairs, "angles", []))}
     if g.get("label_ticks"):
-        unc = label_tick_uncertainty(m, list(zip(pairs, pairs.items)))
+        # label centres as ticks: the error bound the user asked for
+        unc = label_tick_uncertainty(m, labels)
         if unc is not None:
-            axes[-1]["tick_unc"] = unc
+            axis["tick_unc"] = unc
+    axes.append(axis)
     return True
 
 
@@ -716,15 +843,24 @@ def label_tick_uncertainty(m, labels):
                 continue
             v = math.log10(v)
         dev = max(dev, abs((v - m["b"]) / m["a"] - c))
-    sizes = sorted(t.get("size") or 1.0 for _, t in labels)
-    return 0.2 * sizes[len(sizes) // 2] + dev
+    return 0.2 * median(t.get("size") or 1.0 for _, t in labels) + dev
 
 
 def drop_duplicate_axes(axes):
     """Major and minor ticks on one axis line can both end up matched to
     labels (the same ones, or stray numbers nearby).  Keep one axis per
     line: the one whose ticks match the most labels, then the one with the
-    longer ticks (the major ticks), then the better fit."""
+    longer ticks (the major ticks), then the better fit.  The tolerance is
+    half a tick; for two numeric axes that share no label it takes ticks
+    of at most 10 pt: grid lines standing in for ticks are long - 204 pt in
+    3485513-020, whose middle chart's y axis (labels 0 ... 3) was taken
+    for a duplicate of the left chart's (0.0 ... 1.5), 86 pt away.  (A
+    category axis of grid lines labelled with axis titles still gives way
+    to the real axis half a grid line away: 3276496-020.)"""
+    def shared(a, b):
+        return (a["map"]["kind"] == "nominal" or b["map"]["kind"] == "nominal" or
+                bool({id(t) for _, t in a.get("labels", ())} & {id(t) for _, t in b.get("labels", ())}))
+
     keep = []
     order = sorted(axes, key=lambda a: (a["map"]["kind"] == "nominal", -len(a["ticks"]),
                                         -a["tick_len"], a["map"]["resid"]))
@@ -732,10 +868,139 @@ def drop_duplicate_axes(axes):
         dup = False
         for b in keep:
             if (b["orient"] == a["orient"] and b["has_line"] == a["has_line"] and
-                    abs(b["pos"] - a["pos"]) <= max(0.5, 0.5 * max(a["tick_len"], b["tick_len"])) + 1e-9 and
+                    abs(b["pos"] - a["pos"]) <= max(0.5, 0.5 * (max(a["tick_len"], b["tick_len"]) if shared(a, b)
+                                                         else min(10.0, max(a["tick_len"], b["tick_len"])))) + 1e-9 and
                     b["lo"] < a["hi"] and a["lo"] < b["hi"]):
                 dup = True
                 break
         if not dup:
             keep.append(a)
     return [a for a in axes if any(a is k for k in keep)]
+
+
+def drop_scattered_tick_axes(axes):
+    """A linear axis whose tick marks are not evenly spaced is no axis, when
+    another, evenly spaced one covers the same stretch of the same line:
+    its "ticks" are strokes that happen to stand on the axis line at one
+    length.  The atoms of jordan-teh-026's stem plots stand on the x axis
+    like tick marks; stems of one length (0.126, 0.395 pt ...) made groups
+    of four to seven "ticks", two or three of them near labels, and these
+    axes took labels from the axis of the real ticks, which then fitted a
+    slightly wrong scale to the two labels it kept.  Evenly spaced: with
+    four ticks or more, at least half the gaps between neighbouring ticks
+    are one gap (within 1%, or 0.1 pt).  (The real axis keeps its gap
+    though stems of its tick length join it: 8 of its 13 gaps are 9.62 pt.)
+    Log and category axes are left alone."""
+    def scattered(a):
+        m = a.get("map") or {}
+        pos = sorted(a.get("tick_pos") or [])
+        if m.get("kind") != "linear" or len(pos) < 4:
+            return False
+        gaps = [b - c for c, b in zip(pos, pos[1:])]
+        best = max(sum(abs(h - g) <= max(0.1, 0.01 * g) for h in gaps) for g in gaps)
+        return best < 0.5 * len(gaps)
+
+    def same_stretch(a, b):
+        return (a is not b and a["orient"] == b["orient"] and abs(a["pos"] - b["pos"]) <= 0.5 and
+                abs(a["lo"] - b["lo"]) <= 0.5 and abs(a["hi"] - b["hi"]) <= 0.5)
+
+    drop = {id(a) for a in axes if scattered(a) and
+            any(same_stretch(a, b) and b.get("labels") and not scattered(b) for b in axes)}
+    return [a for a in axes if id(a) not in drop]
+
+
+def _one_label_log_axes(axes, numeric, hs_open, vs_open, debug=False):
+    """Log axes with a single label, scaled by their minor ticks.
+
+    2401.16279-023 (matplotlib): the y axes of the two lower right graphs
+    label one tick only, 10^2; below it stand unlabelled ticks whose gaps
+    (9.87, 7.01, 5.43, 4.44, 3.75 ... pt) shrink as those between log10(2),
+    log10(3) ... log10(9) do: the ticks of a log axis at 2x10^1 ... 9x10^1.
+    The decade's length follows from them, and with it where 10^1 would
+    stand.
+
+    For an axis line with tick marks but no scale, and exactly one numeric
+    label beside it, a power of ten 10^k at one of its ticks (within 0.4 of
+    the label's size): every other tick on the line must stand where some
+    m x 10^j (m = 1 ... 9) would on a log axis through 10^k with one
+    decade length D (within max(0.15 pt, 1% of D)).  D is taken from each
+    tick and value in turn and the D that places most ticks kept; it must
+    place at least four ticks and 80% of them, at four or more different
+    m (evenly spaced ticks place few at once), then it is refitted to
+    those ticks by least squares.  Values grow along the page's
+    coordinate (up, right)."""
+    out = []
+    for b in list(PAGE.bare_axes):
+        orient, X, lo, hi = b["orient"], b["pos"], b["lo"], b["hi"]
+        line = (lo, hi, X)
+        if any(a["map"] and a["map"]["kind"] != "nominal" for a in _axes_on(axes + out, orient, line, 1.0)):
+            continue
+        segs = hs_open if orient == "y" else vs_open
+        ticks = sorted({round(p, 3) for s_lo, s_hi, p in segs
+                        if (abs(s_lo - X) <= 0.5 or abs(s_hi - X) <= 0.5) and lo - 0.5 <= p <= hi + 0.5})
+        if len(ticks) < 5:
+            continue
+        ax = 1 if orient == "y" else 0         # coordinate along the axis
+        near = []
+        for t in numeric:
+            if t.get("rotated"):
+                continue
+            bb, s = t["bbox"], t["size"] or 1.0
+            c = t["center"][ax]
+            if not lo - 0.5 * s <= c <= hi + 0.5 * s:
+                continue
+            gap = (X - bb[2]) if orient == "y" else (X - bb[3])   # left of / below the line
+            if -0.5 <= gap <= 4 * s:
+                near.append(t)
+        if len(near) != 1:
+            continue
+        t = near[0]
+        m = re.fullmatch(r"\s*10\^([+-]?\d+)\s*", t["text"].replace("−", "-"))
+        if not m:
+            continue
+        k = int(m.group(1))
+        s = t["size"] or 1.0
+        p0 = min(ticks, key=lambda p: abs(p - t["center"][ax]))
+        if abs(p0 - t["center"][ax]) > 0.4 * s:
+            continue
+        minor = [p for p in ticks if abs(p - p0) > 0.05]
+        logs = sorted({j + math.log10(mm) for j in range(-4, 5) for mm in range(1, 10)} - {0.0})
+        best = None
+        for p in minor:
+            for L in logs:
+                D = (p - p0) / L
+                if D <= 1.0:
+                    continue
+                tol = max(0.15, 0.01 * D)
+                hits = []
+                for q in minor:
+                    r = (q - p0) / D
+                    Lq = min(logs, key=lambda u: abs(u - r))
+                    if abs(Lq - r) * D <= tol:
+                        hits.append((q, Lq))
+                mants = {round(10 ** (Lq - math.floor(Lq + 1e-9))) for _, Lq in hits}
+                key = (len(hits), len(mants))
+                if best is None or key > best[0]:
+                    best = (key, D, hits, mants)
+        if best is None:
+            continue
+        (n_hit, n_mant), D, hits, mants = best
+        if n_hit < 4 or n_hit < 0.8 * len(minor) or n_mant < 4:
+            if debug:
+                print("[debug] %s-axis at %.2f: one label %s, ticks fit no log pattern (%d of %d)"
+                      % (orient, X, t["text"], n_hit, len(minor)), file=sys.stderr)
+            continue
+        D = sum((q - p0) * Lq for q, Lq in hits) / sum(Lq * Lq for _, Lq in hits)
+        resid = max(abs((q - p0) / D - Lq) for q, Lq in hits)
+        a = 1.0 / D
+        mp = {"kind": "log", "a": a, "b": k - a * p0, "n": 1, "resid": resid,
+              "range": 9.0 * 10.0 ** k, "one_label": True}
+        pairs = LabelPairs([(p0, 10.0 ** k)], [0.0], [t])
+        if debug:
+            print("[debug] %s-axis at %.2f: one label %s at %.2f, %d minor ticks on a log scale, "
+                  "decade %.2f pt" % (orient, X, t["text"], p0, n_hit, D), file=sys.stderr)
+        out.append({"orient": orient, "lo": lo, "hi": hi, "pos": X, "has_line": True,
+                    "map": mp, "ticks": pairs, "labels": list(zip(pairs, pairs.items)),
+                    "tick_len": b["tick_len"], "tick_pos": list(ticks), "label_ticks": False,
+                    "label_angle": 0})
+    return out

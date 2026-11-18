@@ -69,6 +69,36 @@ with open(os.path.join(DATA, "mpl-errorbars.truth.csv"), "w") as f:
             xl, xh = _pair(x, xm, xp) if xerr else ("", "")
             yl, yh = _pair(scale * y, scale * ym, scale * yp)
             f.write(f"1,{g},{x!r},{scale * y!r},{xl},{xh},{yl},{yh}\n")
+
+# error bars on the vertices of lines without markers (--errbars): two
+# lines with capped bars (asymmetric, one zero, both lines at every x), and
+# uncapped drop lines to the second line's vertices, which are no bars;
+# right panel: a line whose bars have no caps (capsize=0), not reported;
+# the truth is written to mpl-line-errorbars.truth.csv
+plt.rcParams["pdf.compression"] = 6
+LEB = {  # line -> [(x, y, y-, y+)]
+    "a": [(1.0, 2.0, 0.5, 0.5), (2.0, 3.5, 0.25, 1.0), (3.0, 3.0, 0.0, 0.0), (4.0, 5.0, 0.75, 0.5)],
+    "b": [(1.0, 6.0, 1.0, 0.5), (2.0, 7.5, 0.5, 0.5), (3.0, 6.5, 0.25, 0.75), (4.0, 8.0, 0.5, 1.0)],
+}
+fig, axs = plt.subplots(1, 2, figsize=(8, 3.5))
+for name, color in (("a", "tab:blue"), ("b", "tab:green")):
+    pts = LEB[name]
+    axs[0].errorbar([p[0] for p in pts], [p[1] for p in pts],
+                    yerr=[[p[2] for p in pts], [p[3] for p in pts]],
+                    fmt="-", color=color, capsize=3)
+axs[0].vlines([p[0] for p in LEB["b"]], 0.5, [p[1] - p[2] for p in LEB["b"]],
+              color="gray", lw=0.5)
+axs[0].set_ylim(0, 10)
+axs[1].errorbar([1, 2, 3], [1, 3, 2], yerr=0.5, fmt="-", color="k", capsize=0)
+fig.savefig(os.path.join(DATA, "mpl-line-errorbars.pdf"))
+plt.close(fig)
+with open(os.path.join(DATA, "mpl-line-errorbars.truth.csv"), "w") as f:
+    f.write("page,graph,x_coord,y_coord,y_low,y_high\n")
+    for x, y, ym, yp in sorted(LEB["a"] + LEB["b"]):      # in x order, as written
+        yl, yh = _pair(y, ym, yp)
+        f.write(f"1,1,{x!r},{y!r},{yl},{yh}\n")
+    for x, y in ((1, 1), (2, 3), (3, 2)):
+        f.write(f"1,2,{float(x)!r},{float(y)!r},,\n")
 # shared axes: stacked panels with the x labels under the bottom one only,
 # side-by-side panels with the y labels left of the first one only, and
 # stacked panels whose top one has other (unlabelled) ticks: it must not

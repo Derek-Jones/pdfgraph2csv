@@ -11,10 +11,14 @@ import re
 
 from dateutil import parser as dateparser
 
-from .geometry import bbox_of, straight_segments
+from .geometry import straight_segments, subpath_bbox
 
 
 _NUMTXT_RE = re.compile(r"^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$")
+
+# a word of running text: three letters or more (shorter ones - "of",
+# "a", unit symbols, variable names - turn up in labels and legends too)
+WORD_RE = re.compile(r"[^\W\d_]{3,}")
 
 
 # a number followed by a unit or scale suffix: byte sizes (SI kB, MB, ...
@@ -44,6 +48,48 @@ _DURATION_RE = re.compile(r"((?:\d+\.?\d*|\.\d+))\s*(%s)" % "|".join(
     sorted((re.escape(u) for u in _DURATION), key=len, reverse=True)))
 
 
+# physical quantities with an SI prefix: power (300 mW, 1 W), frequency (500
+# MHz, 5 GHz), lengths (22 nm, 0.18 um), voltage, current, energy,
+# capacitance, resistance; the value is in the base unit, so that an axis
+# labelled 300 mW, 1 W is one scale.  A metre needs its prefix (a bare "m"
+# may be minutes, months or millions)
+_SI_PREFIX = {"": 1.0, "p": 1e-12, "n": 1e-9, "u": 1e-6, "\u00b5": 1e-6, "\u03bc": 1e-6,
+              "m": 1e-3, "k": 1e3, "K": 1e3, "M": 1e6, "G": 1e9, "T": 1e12}
+_SI_RE = re.compile(r"([+-]?(?:\d+\.?\d*|\.\d+))\s*([pnu\u00b5\u03bcmkKMGT]?)(W|Hz|V|A|J|F|\u03a9|Ohm)"
+                    r"|([+-]?(?:\d+\.?\d*|\.\d+))\s*([pnu\u00b5\u03bcmk])(m)")
+
+
+def parse_quantity(s):
+    """'300 mW' -> 0.3, '5 GHz' -> 5e9, '0.18 um' -> 1.8e-7; None if `s` is
+    not a quantity with a (prefixed) SI unit."""
+    m = _SI_RE.fullmatch(s.strip().replace("\u00a0", " "))
+    if not m:
+        return None
+    num, pre = (m.group(1), m.group(2)) if m.group(1) is not None else (m.group(4), m.group(5))
+    return float(num) * _SI_PREFIX[pre]
+
+
+# the same units counted in working time, as charts of task lengths count
+# them (METR's "1 day", "1 week", "1 month" of work): a day of 8 hours, a
+# week of 5 such days, a month of 167 hours and a year of 2000 hours
+_WORK = {"d": 8 * 3600.0, "w": 40 * 3600.0, "mo": 167 * 3600.0, "y": 2000 * 3600.0}
+_WORK_UNIT = {u: k for k, units in (("d", ("d", "day", "days")), ("w", ("w", "wk", "wks", "week", "weeks")),
+                                    ("mo", ("mo", "mos", "month", "months")),
+                                    ("y", ("y", "yr", "yrs", "year", "years")))
+              for u in units}
+
+
+def duration_parts(s):
+    """'15 min' -> (15.0, seconds in its unit, seconds in its unit counted
+    in working time); None if `s` is not a duration."""
+    m = _DURATION_RE.fullmatch(s.strip().replace("\u00a0", " "))
+    if not m:
+        return None
+    unit = m.group(2)
+    work = _WORK.get(_WORK_UNIT.get(unit), _DURATION[unit])
+    return float(m.group(1)), _DURATION[unit], work
+
+
 def parse_duration(s):
     """'1 s', '15 min', '64 h', '2 days', '1.5yr' -> seconds; None if `s` is
     not a duration."""
@@ -51,16 +97,55 @@ def parse_duration(s):
     return float(m.group(1)) * _DURATION[m.group(2)] if m else None
 
 
-def parse_number(s):
+_GROUPED = re.compile(r"[+-]?[1-9]\d{0,2}(,\d{3})+")
+
+
+def comma_kind(s):
+    """How a number's comma reads: 'decimal' (one comma not followed by
+    exactly three digits - "4,0", "0,9991", "1,E-01" - or one after a lone
+    0: "0,250"; or a comma after the last dot: "1.234,5"), 'ambiguous' (one
+    comma before three digits: "1,500"), 'thousands' (several groups of
+    three, or a dot after the comma) or None (no comma)."""
+    t = s.strip().replace("\u2212", "-").replace("\u00a0", "").replace(" ", "")
+    t = t.replace("$", "").replace("%", "")
+    if "," not in t:
+        return None
+    if "." in t:
+        return "decimal" if t.rfind(",") > t.rfind(".") else "thousands"
+    m = re.match(r"([+-]?\d*),(.*)$", t)
+    if t.count(",") > 1 or not m:
+        return "thousands"
+    whole, rest = m.group(1), m.group(2)
+    if whole.lstrip("+-") == "0" and rest[:1].isdigit():
+        return "decimal"
+    if _GROUPED.fullmatch(t) and t.count(",") == 1:
+        return "ambiguous"
+    if re.match(r"\d{3}(\D|$)", rest) and t.count(",") == 1 and not re.fullmatch(r"\d{3}", rest):
+        return "thousands"                       # 1,500kB
+    return "decimal"
+
+
+def parse_number(s, decimal_comma=False):
     """Numeric value of a label: plain numbers, 1,000 / $5 / 25%, 10^3 and
     2x10^3, unicode minus signs, sizes and scaled numbers (10kB, 1MB, 2KiB,
     10k, 1.5x: see _SUFFIX), durations (in seconds, see parse_duration),
+    quantities with SI units (in the base unit, see parse_quantity),
     '95-style years and dates (as decimal years, see parse_date); None if
     not a number, or not one a float can hold (such as 10^602 in body
-    text)."""
+    text).  A comma is a decimal point where comma_kind says so, and in an
+    ambiguous "1,500" when decimal_comma is set (the page writes decimal
+    commas elsewhere): Korotayev_Doomsday_preprint-005's axis 4,0 ... 0,0
+    read 40 ... 0."""
+    kind = comma_kind(s) if "," in s else None
+    if kind == "decimal" or (kind == "ambiguous" and decimal_comma):
+        s = s.replace(".", "") if "." in s else s
+        s = s.replace(",", ".")
     d = parse_duration(s)
     if d is not None:
         return d
+    q = parse_quantity(s)
+    if q is not None:
+        return q
     t = (s.strip().replace("\u2212", "-").replace("\u2013", "-")
          .replace("\u2014", "-").replace("\u00a0", "").replace(" ", ""))
     t = t.replace(",", "").replace("$", "").replace("%", "")
@@ -142,9 +227,37 @@ def parse_date(s):
 SHORT_YEAR_RE = re.compile("[\u0027\u2019\u2018\u2032`](\\d\\d)")
 
 
+def _join_exponent_signs(texts):
+    """A raised sign drawn on its own before the digits of an exponent (TeX
+    sets the minus of "10^{-3}" from a symbol font: "10", "−", "3") is
+    joined to the digits that follow it at its size and height, so that
+    the exponent is read whole ("−3", then "10^−3")."""
+    out = []
+    k = 0
+    while k < len(texts):
+        t = texts[k]
+        n = texts[k + 1] if k + 1 < len(texts) else None
+        if n is not None and t["text"].strip() in ("-", "\u2212", "+") and \
+                re.fullmatch(r"\s*\d+\s*", n["text"]) and \
+                abs(t["size"] - n["size"]) < 0.05 * max(t["size"], 1e-6) and \
+                math.hypot(n["p0"][0] - t["p1"][0], n["p0"][1] - t["p1"][1]) < 0.3 * max(t["size"], 1e-6):
+            j = dict(t)
+            j["text"] = t["text"].strip() + n["text"].strip()
+            j["p1"] = n["p1"]
+            if "glyphs" in t and "glyphs" in n:
+                j["glyphs"] = t["glyphs"] + n["glyphs"]
+            out.append(j)
+            k += 2
+            continue
+        out.append(t)
+        k += 1
+    return out
+
+
 def merge_texts(texts):
     """Join text pieces that continue each other on the same baseline."""
     out = []
+    texts = _join_exponent_signs(texts)
     for t in texts:
         if out:
             o = out[-1]
@@ -210,6 +323,12 @@ def merge_texts(texts):
         t["angle"] = ang
         t["value"] = parse_number(t["text"])
         t["date"] = t["value"] is not None and parse_date(t["text"]) is not None
+    # a page that writes decimal commas ("4,0", "0,5") writes "1,500" as 1.5
+    # too: one convention to a document (one page at least)
+    if any(t["value"] is not None and comma_kind(t["text"]) == "decimal" for t in out):
+        for t in out:
+            if comma_kind(t["text"]) == "ambiguous":
+                t["value"] = parse_number(t["text"], decimal_comma=True)
     return out
 
 
@@ -225,11 +344,22 @@ def attach_vector_minus(texts, paths):
     bar just left of a numeric label and make the label negative."""
     bars, uprights, axis_lines = [], set(), []
     for p in paths:
+        clip = p.get("clip")
         for a, b in straight_segments(p):
             if abs(a[0] - b[0]) < 0.1 and abs(a[1] - b[1]) >= 20:
-                axis_lines.append((a[0], min(a[1], b[1]), max(a[1], b[1])))
+                ly0, ly1 = min(a[1], b[1]), max(a[1], b[1])
+                if clip is not None:
+                    # only the part in view: the error bars of 2401.16279-023's
+                    # log bar chart run off the page (to y = -49419), clipped,
+                    # past the minus sign of a "10^-1" in another graph
+                    if not clip[0] - 0.5 <= a[0] <= clip[2] + 0.5:
+                        continue
+                    ly0, ly1 = max(ly0, clip[1]), min(ly1, clip[3])
+                    if ly1 - ly0 < 20:
+                        continue
+                axis_lines.append((a[0], ly0, ly1))
         for sp in p["subpaths"]:
-            x0, y0, x1, y1 = bbox_of([sp["start"]] + [q for s in sp["segs"] for q in s[1:]])
+            x0, y0, x1, y1 = subpath_bbox(sp)
             w, h = x1 - x0, y1 - y0
             if w > 0 and w > 2.5 * h:
                 bars.append((x0, y0, x1, y1))
@@ -256,4 +386,40 @@ def attach_vector_minus(texts, paths):
                 t["text"] = "-" + t["text"]
                 t["bbox"] = (x0, t["bbox"][1], t["bbox"][2], t["bbox"][3])
                 t["center"] = ((x0 + t["bbox"][2]) / 2, t["center"][1])
+                t["_minus_x0"] = x0
                 break
+    _join_vector_minus_exponents(texts)
+
+
+def _join_vector_minus_exponents(texts):
+    """'10' and a smaller raised exponent whose minus sign is a drawn bar
+    between them (attach_vector_minus made the exponent '-2') are one label,
+    10^-2: matplotlib's mathtext draws the minus of 2401.16279-023's
+    "10^{-2}" and "10^{-1}" as filled bars, and the gap the bar takes kept
+    merge_texts from joining the exponent (both labels read 10).  The bar
+    must start within 0.4 of the base's size after the base's end, the
+    exponent be smaller than 0.9 of it and raised 0.15 to 0.8 of it above
+    its baseline."""
+    drop = set()
+    for t in texts:
+        x0 = t.pop("_minus_x0", None)
+        if x0 is None or t["rotated"]:
+            continue
+        for o in texts:
+            if o is t or id(o) in drop or o["rotated"] or o["value"] is None:
+                continue
+            s = o["size"] or 1.0
+            if not o["text"].strip().endswith("10") or t["size"] >= 0.9 * s:
+                continue
+            raise_ = t["p0"][1] - o["p0"][1]
+            if (o["bbox"][2] - 0.1 * s <= x0 <= o["bbox"][2] + 0.4 * s
+                    and 0.15 * s < raise_ < 0.8 * s):
+                o["text"] = o["text"].strip() + "^" + t["text"].strip()
+                o["value"] = parse_number(o["text"])
+                o["p1"] = (t["p1"][0], o["p1"][1])
+                o["bbox"] = (o["bbox"][0], o["bbox"][1], max(o["bbox"][2], t["bbox"][2]), o["bbox"][3])
+                o["center"] = ((o["bbox"][0] + o["bbox"][2]) / 2, o["center"][1])
+                drop.add(id(t))
+                break
+    if drop:
+        texts[:] = [t for t in texts if id(t) not in drop]

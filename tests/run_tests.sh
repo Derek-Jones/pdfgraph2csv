@@ -480,6 +480,23 @@ t 'matplotlib error bars: without --errbars no low/high columns; "3x10^1" log la
   --pdf mpl-errorbars.pdf \
   --expect mpl-errorbars.noerrbars.csv
 
+t 'matplotlib line error bars (--errbars): capped bars on the vertices of two lines without markers, one zero, drop lines ending at the caps (no bars); uncapped bars in a second panel are not reported; known values' \
+  --pdf mpl-line-errorbars.pdf \
+  --expect mpl-line-errorbars.truth.csv \
+  --tol 0.000001 \
+  --cols page,graph,x_coord,y_coord,y_low,y_high \
+  -- --errbars
+
+t 'matplotlib line error bars: full output with --errbars; two side-by-side panels whose white backgrounds are nearly square are no markers' \
+  --pdf mpl-line-errorbars.pdf \
+  --expect mpl-line-errorbars.csv \
+  -- --errbars
+
+t '2204.07073-010 with --errbars: capped bars on the vertices of both polarisation lines' \
+  --pdf 2204.07073-010.pdf \
+  --expect 2204.07073-010.errbars.csv \
+  -- --errbars
+
 t 'shared x axis: two stacked GraphPad Prism graphs, x labels under the lower one only; circles of two Bezier arcs' \
   --pdf number-sense-across-the-lifespan-004.pdf \
   --expect number-sense-across-the-lifespan-004.csv
@@ -550,13 +567,13 @@ t 'two ggplot2 panels side by side sharing project-name categories, a light grey
   --expect 2610.20068v1-009.csv \
   --meta 2610.20068v1-009.meta.csv
 
-t 'MSR23_Anisha-003: two R box plots inside Form XObjects (PDFTron): text in Type 0 fonts with an embedded one-byte Identity CMap, y labels written vertically (0e+00 ... 1e+05); every outlier circle is output, those clipped far above the plot included' \
+t 'MSR23_Anisha-003: two R box plots inside Form XObjects (PDFTron): text in Type 0 fonts with an embedded one-byte Identity CMap, y labels written vertically (0e+00 ... 1e+05); every outlier circle is output, those clipped far above the plot included; 20 boxes per graph (five rows each), a whisker clipped above the plot included' \
   --pdf MSR23_Anisha-003.pdf \
   --expect MSR23_Anisha-003.csv
 
 t 'MSR23_Anisha-003: all 22463 + 11288 ZapfDingbats outliers, two legend boxes per graph, no circle hidden off the plot taken for a legend key' \
   --pdf MSR23_Anisha-003.pdf \
-  --counts '1 open-circle=22463|1 filled-rectangle=2|2 open-circle=11288|2 filled-rectangle=2'
+  --counts '1 box-max=20|1 box-median=20|1 box-min=20|1 box-q1=20|1 box-q3=20|1 filled-rectangle=2|1 open-circle=22463|2 box-max=20|2 box-median=20|2 box-min=20|2 box-q1=20|2 box-q3=20|2 filled-rectangle=2|2 open-circle=11288'
 
 t 'matplotlib axes crossing inside the plot, tick labels in its body: spines through the origin (four quadrants), log axes crossing at 1 with grid lines at the y ends and a frame round the figure; known values (tolerance 1e-6)' \
   --pdf mpl-crossing-axes.pdf \
@@ -604,6 +621,27 @@ t 'LogicProbPragSyllogistic_Reasoning-013: three ggplot2 facets traced from a bi
   --pdf LogicProbPragSyllogistic_Reasoning-013.pdf \
   --expect LogicProbPragSyllogistic_Reasoning-013.csv
 
+t 'horowitz2014-004: eight graphs on a page: y labels with SI units (10 mW ... 1 W, 22 nm ... 1.5 um, 10 MHz ... 5 GHz with the units drawn as outlines: the prefix step read from the fall 500 -> 1), an inset (Vdd 1-5 V over 1985-2015) inside a plot whose grid line must not take its labels, Helvetica+T42 glyphs named s0..s9 read by their outlines, 1x 2x 5x ... at equal spacing (a log axis fitted to its decades), legend keys of distinct shapes naming points coloured along a colour bar, a range dash in an unembedded Identity font' \
+  --pdf horowitz2014-004.pdf \
+  --expect horowitz2014-004.csv
+
+t '0307278v2-003: two log-log panels whose left y ticks are repeated on the right axis (one scale, not two: the body text beside panel B is no label); each circle drawn as a white fill, a pattern fill and a black outline (one point); top-right corner where the mirrored minor ticks cross is no plus; panel B = L/(N(N-1)) of panel A' \
+  --pdf 0307278v2-003.pdf \
+  --expect 0307278v2-003.csv
+
+t '3368089.3409714-004: ggplot2 scatter of 14 subjects drawn as big discs, squares and pentagons (13 pt, over the usual size limit; accepted as their shapes and colours are the legend keys), each with its subject id inside: ids of touching markers run together into one line and are split; the points match the paper table (years of programming)' \
+  --pdf 3368089.3409714-004.pdf \
+  --expect 3368089.3409714-004.csv
+
+t '2609.00744v2-025: log y axis labelled 10^-9, 10^-7 ... 10^3 (exponents in steps of 2) whose TeX minus signs come from a symbol font, apart from their digits; three marked points with data labels (two-line "FlashAttention, paged KV")' \
+  --pdf 2609.00744v2-025.pdf \
+  --expect 2609.00744v2-025.csv
+
+t '2014_JPL-State_of_SW_Jun-29-031: Excel for Mac line chart whose markers are images (gradient-filled diamond, square, triangle with soft masks, each over a faint black shadow image): shapes read from the masks, series from the colour of the line through each marker; data labels 55% ... 26% in the label column; Calibri subset whose ToUnicode maps the space to "$" and the "ti" ligature to "8"; figure "3-6"' \
+  --pdf 2014_JPL-State_of_SW_Jun-29-031.pdf \
+  --expect 2014_JPL-State_of_SW_Jun-29-031.csv \
+  --meta 2014_JPL-State_of_SW_Jun-29-031.meta.csv
+
 t '120875-008: R line chart without tick marks under a translucent watermark image (it hides no labels): the y label centres (50 ... 200, drawn as outlines) stand in for ticks, with y_coord_low/y_coord_high; three categories (outlined, unreadable, one on two lines) numbered #1 ... #3 at their centres; the ranges hold the paper table means 60, 43, 39, 146' \
   --pdf 120875-008.pdf \
   --expect 120875-008.csv
@@ -629,10 +667,23 @@ t '2610.30307v1-011: log y axis of durations labelled 1 s, 15 s, 1 min ... 64 h 
   --pdf 2610.30307v1-011.pdf \
   --expect 2610.30307v1-011.csv
 
+t '2204.07073-010: x axis 1939, 1949, 1965, 1977, 1991; stacked bars (cognitive under physical, labelled 87% ... 77% inside the bars) under node-link diagrams of tens of thousands of tiny markers (reported, read through the axes of the bars: squares turned by the angle of each network; the 1949 nodes, a little off the legend colours, named by the nearest swatch); two line graphs over grey bands (not bars), one with an inset of density curves whose coloured legend samples are no axis' \
+  --pdf 2204.07073-010.pdf \
+  --expect 2204.07073-010.csv
+
+t '2610.30307v1-003: a log y axis labelled 1 min, 1 hour, 1 day (values in minutes, the smallest unit; "1 day" stands at 8 hours, a day of work), six small multiples and a line chart' \
+  --pdf 2610.30307v1-003.pdf \
+  --expect 2610.30307v1-003.csv
+
 t '2610.30307v1-011: with --errbars, the bars in seconds and in index units' \
   --pdf 2610.30307v1-011.pdf \
   --expect 2610.30307v1-011.errbars.csv \
   -- --errbars
+
+t 'song2025rigorous-002: with --sizesymbol, the marker sizes (circles 1.36 and 1.43 pt across, triangles 1.8 pt); stippled drawings of a hare and a lynx (hundreds of dots of all sizes, clipped to the whole figure) over plot a are no data; plot d stacks two panels with y axis lines of their own over one x axis; the phase plot (c, observed pattern) gives the 21 corners of its path, not its arrowheads, and the drawings of panel e beside it do not count as its markers' \
+  --pdf song2025rigorous-002.pdf \
+  --expect song2025rigorous-002.sizesymbol.csv \
+  -- --sizesymbol
 
 t '2017_End-of-Moores-Law-002: log y axis labelled 1E-21 ... 1E-03 (programming notation) without tick marks, the label centres standing in for them, with x_coord_low ... y_coord_high giving the range of each value; legend keys filled white with coloured outlines name open and outlined markers' \
   --pdf 2017_End-of-Moores-Law-002.pdf \
@@ -815,6 +866,14 @@ t '3297663.3310314-005: four ruled tables (column headings, row names, shaded ce
   --pdf 3297663.3310314-005.pdf \
   --stderr 'No vector graphics found'
 
+t 'Main_causes_of_missing_errors_testing-006: a 3 x 3 table of percentages whose rules pass for axes, a column of it for y labels and words of its caption for categories; a grid of numbers is no graph' \
+  --pdf Main_causes_of_missing_errors_testing-006.pdf \
+  --stderr 'No vector graphics found'
+
+t '564-010: a table of numbers ruled with thin filled rectangles (0.5 pt squares at the joints, row names t14 ... t28, numbers split by thin spaces) is no graph' \
+  --pdf 564-010.pdf \
+  --stderr 'No vector graphics found'
+
 t 'prob-book-038: a page of mathematics (shaded definition boxes ruled above and below, bracket glyphs drawn as outlines, numbers in the prose) is no graph' \
   --pdf prob-book-038.pdf \
   --stderr 'No vector graphics found'
@@ -873,10 +932,10 @@ t '2001.10488v4-121: two 3-D cube plots (not processed) and a degenerate box 3x1
   --pdf 2001.10488v4-121.pdf \
   --stderr 'No vector graphics found'
 
-t 'S1383762124002030 page 9: box plots with 472 000 outlier circles in a 92 MB Form XObject (2.3 million operators) - must finish in well under a minute without exhausting memory; only the point counts are checked' \
+t 'S1383762124002030 page 9: box plots with 472 000 outlier circles in a 92 MB Form XObject (2.3 million operators) - must finish in well under a minute without exhausting memory; only the point counts are checked; 21 boxes in graphs 2 and 3 (a box filled and outlined across a rounding edge is one box), none in graph 1 where they are squashed flat' \
   --pdf S1383762124002030.pdf \
   --stderr 'MB of drawing instructions' \
-  --counts '1 open-circle=240613|2 open-circle=218658|3 open-circle=13121|3 filled-square=1|3 open-square=1' \
+  --counts '1 open-circle=240613|2 box-max=21|2 box-median=21|2 box-min=21|2 box-q1=21|2 box-q3=21|2 open-circle=218658|3 box-max=21|3 box-median=21|3 box-min=21|3 box-q1=21|3 box-q3=21|3 open-circle=13121' \
   -- --pages 9
 
 t 'meta file: figure numbers and captions set apart from their label ("Figure 1."), category and numeric axes, several pages' \
@@ -904,7 +963,57 @@ t 'meta file: date axis ticks, title and no caption' \
   --counts '1 filled-square=8' \
   --meta synthetic-date-axis.meta.csv
 
-t 'S1383762124002030 pages 6-7, with meta file: two-column journal pages, captions with monospaced words, category axes' \
+t 'cumulative-evol-hollywood-film-crews-007, with meta file: three log-scale panels whose outlined axes and tick labels are drawn up to four times over in the same place (repeated glyphs are one glyph); 1910 to 2010 and 3 to 3000 read in all three' \
+  --pdf cumulative-evol-hollywood-film-crews-007.pdf \
+  --expect cumulative-evol-hollywood-film-crews-007.csv \
+  --meta cumulative-evol-hollywood-film-crews-007.meta.csv
+
+t '2401.16279-023, with meta file: two log y axes labelled only 10^2, scaled by their minor ticks (2 to 9 times each power of ten); x labels 10^-2 and 10^-1 whose minus signs are drawn bars; error bars of a log bar chart clipped off the page do not hide those bars' \
+  --pdf 2401.16279-023.pdf \
+  --expect 2401.16279-023.csv \
+  --meta 2401.16279-023.meta.csv
+
+t 'sarroRE15-008, with meta file: eight R box plots (pdfTeX): boxes filled and outlined, dashed whiskers with caps, boxes of no height (just a median line), boxes without whiskers; outliers in a re-encoded ZapfDingbats subset (the circle as code 33), drawn as outlines' \
+  --pdf sarroRE15-008.pdf \
+  --expect sarroRE15-008.csv \
+  --meta sarroRE15-008.meta.csv
+
+t '2308.04785-006, with meta file: two seaborn correlation matrices with category axes both ways; each cell a coloured square with its coefficient printed in it (a label per square, values in neighbouring cells run together are split, a value just after a y label is not lost with it); the grid of numbers is no table; the colour bar is an image' \
+  --pdf 2308.04785-006.pdf \
+  --expect 2308.04785-006.csv \
+  --meta 2308.04785-006.meta.csv
+
+t '3485513-020, with meta file: three Google Sheets charts without frames or x ticks; a dot chart of 30 benchmarks whose names, slanted 60 degrees, mark the categories with their ends (2mm read as a word, not a length); two bar charts with rounded bars and soft shadows, the tallest rising above the top grid line, whose bar edges must not split the grid; the right chart averages the middle one' \
+  --pdf 3485513-020.pdf \
+  --expect 3485513-020.csv \
+  --meta 3485513-020.meta.csv
+
+t 'Korotayev_Doomsday_preprint-005, with meta file: Excel scatter plot with decimal commas (x axis 4,0 ... 0,0 falling to the right, log y axis 1,E-10 ... 1,E-01 on the right)' \
+  --pdf Korotayev_Doomsday_preprint-005.pdf \
+  --expect Korotayev_Doomsday_preprint-005.csv \
+  --meta Korotayev_Doomsday_preprint-005.meta.csv
+
+t 'Statistical_Test_Coverage_for_Linux, with meta file: 14-page IEEE paper; page 10 left: outlined R labels in e-notation (1e+00 ... 1e+06, 5e-04 ... 5e-01) on log axes, 238 open circles; pages 6 and 11: line charts whose curves are no longer hidden by circles of a diagram in the other column; page 8: horizontal interval boxes without whiskers (estimate and 95 percent interval per estimator)' \
+  --pdf Statistical_Test_Coverage_for_Linux.pdf \
+  --expect Statistical_Test_Coverage_for_Linux.csv \
+  --meta Statistical_Test_Coverage_for_Linux.meta.csv
+
+t '3576042-018, with meta file: six matplotlib line charts, all text outlined; tick marks filled as single segments (no glyphs); x labels 1 to 10 read upright though 6 and 9 read as well upside down; each framed legend below its x axis goes whole to the graph above; the I of HINDBR bridges its word, so the H is no marker' \
+  --pdf 3576042-018.pdf \
+  --expect 3576042-018.csv \
+  --meta 3576042-018.meta.csv
+
+t 'logpaper5Rediscoveries-007, with --errbars and meta file: Excel via PScript5 and Distiller; left, 37 dash markers (thin filled rectangles, a set of one size) with error bars on a log y axis, dotted fitted curve drawn as small turned pieces (no markers); right, line chart named by its own legend (Year 1, Year 2), not the left one' \
+  --pdf logpaper5Rediscoveries-007.pdf \
+  --expect logpaper5Rediscoveries-007.errbars.csv \
+  --meta logpaper5Rediscoveries-007.meta.csv \
+  -- --errbars
+
+t 'jordan-teh-026: four stem plots of Dirichlet process draws (one point per atom at the top of its stem; atoms of no mass drawn as strokes of no length or as dots on the axis); stems standing on the x axis like tick marks do not make axes' \
+  --pdf jordan-teh-026.pdf \
+  --expect jordan-teh-026.csv
+
+t 'S1383762124002030 pages 6-7, with meta file: two-column journal pages, captions with monospaced words, category axes; autocorrelation stem plots (stems up and down from the 0 line, every lag)' \
   --pdf S1383762124002030.pdf \
   --expect S1383762124002030-p6-7.csv \
   --meta S1383762124002030-p6-7.meta.csv \

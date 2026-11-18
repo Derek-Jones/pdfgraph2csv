@@ -33,12 +33,13 @@
 | 0. Open the file | `Document` (document) | decrypted, repaired file parsed by pdfminer |
 | 1. Draw the page | `Interpreter.run_page` (interpreter) | painted paths, text items, Dingbats markers, image boxes — all in page coordinates and drawing order |
 | 2. Read the text | `read_page_text` (pipeline) → `drop_hidden_glyphs` (occlusion), `outlined_text` (outlined_text), `merge_texts`, `attach_vector_minus` (text) | labels and words, including text drawn as outlines; text painted over by white boxes removed |
-| 3. Find the graphs | `find_page_graphs` (pipeline) → `find_axes` (axes), `resolve_shared_labels`, `apply_axis_multipliers` (labels), `build_graphs`, `add_panel_graphs` (graphs) | axes with value mappings, paired into plot boxes |
-| 4. Find the markers | `find_page_symbols` (pipeline) → `find_symbols` (symbols), `rebuild_fragmented_circles` (fragments) | visible marker symbols |
+| 3. Find the graphs | `find_page_graphs` (pipeline) → `find_axes` (with `_one_label_log_axes`), `drop_scattered_tick_axes` (axes), `resolve_shared_labels`, `apply_axis_multipliers` (labels), `build_graphs`, `add_panel_graphs` (graphs), `drop_tables` (nongraphs) | axes with value mappings, paired into plot boxes; tables and text pages rejected |
+| 4. Find the markers | `find_page_symbols` (pipeline) → `find_symbols`, `drop_*` (symbols), `rebuild_fragmented_circles`, `rebuild_strip_discs` (fragments), `image_symbols` (image_marks); then `drop_corner_ticks`, `drop_symbols_in_prose`, `drop_box_dashes`, `drop_rule_joints`, `drop_plot_backgrounds` (strays); box plots (`find_boxes`, charts), then bars, stems (`find_stems`) or line vertices for graphs without markers | visible marker symbols, less shapes that only look like markers |
 | 5. Describe graphs | `describe_graphs` (pipeline) → `graph_rotation` (graphs), `find_title`, `find_figure_caption` (titles) | number, title, figure number and caption, 90° turns |
 | 6. Bars and lines | `add_bars_and_lines` (pipeline) → `find_bars`, `find_line_series` (charts) | data points of charts without markers |
 | 7. Legends | `find_page_legend`, `SeriesNamer` (legend) | series name of every point |
-| 7a. Error bars (`--errbars`) | `find_error_bars` (errbars) | each marker's bar ends, page coordinates |
+| 7b. Data labels | `add_data_labels` (datalabels) | the text printed beside points (`label` column) |
+| 7a. Error bars (`--errbars`) | `find_error_bars` (errbars) | each marker's bar ends, and the capped vertical bars of line vertices, page coordinates |
 | 8. Rows | `make_rows` (rows) → `map_value` (scales), `error_bar_values`, `value_digits` (rows), `twin_view` (twin) | the CSV rows, graph by graph in increasing x (`x_order`) |
 | 9. Meta records | `graph_meta` (meta) → `tick_range` (meta) | one record per graph for the -meta file |
 
@@ -51,13 +52,23 @@ opening the file    document                                    (pikepdf, pdfmin
 drawing             tokenizer  fonts  →  interpreter            (pdfminer.six, fontTools)
 text                occlusion  text  →  outlined_text           (python-dateutil in text)
 axes                scales  →  labels  →  axes
-graphs              titles  →  graphs
-marks               symbols  fragments  charts  errbars
-naming              legend
+graphs              titles  →  graphs  →  nongraphs
+marks               symbols  fragments  image_marks  strays  charts  errbars
+naming              legend  datalabels
 output              twin  tools  styles  →  rows  meta
 top                 pipeline  →  cli  →  pdfgraph2csv.py
 shared              geometry  grouping  colours  context
 ```
+
+Small helpers that several steps need live in `geometry`: a subpath's
+corners (`vertices`), its points with the Bezier control points
+(`control_points`, `subpath_bbox`), rectangle tests (`rect_of` strict,
+`box_of` within half a point, `encloses`, `inside_rect`, `overlap_area`,
+`rect_area`) and `median` (used for typical sizes and spacings throughout:
+one stray glyph or missing tick must not move them).  `nongraphs` holds
+the tests that reject a candidate graph (a table, a text page) and
+`strays` the filters for shapes that look like markers but, once the
+graphs are known, are not data points.
 
 ## The records passed between steps
 
@@ -135,7 +146,10 @@ overlap (bars of other points at the same x), and keeps a chain that
 touches the marker, reaches beyond it, does not span 90% of the plot (grid
 lines, axes) and is not wholly outside the plot box (ticks).  A chain
 touched by several markers goes to the one at which a piece starts or ends,
-else to the one nearest its middle.  The result is
+else to the one nearest its middle.  Line vertices (`_vertex_bars`) take
+only vertical bars capped at both ends by short horizontal strokes
+(`_capped_runs`: the longest run of end-to-end pieces with a cap at each
+end), not ones already given to a marker.  The result is
 `{symbol index: {"v": (low, high) | None, "h": ...}}` in page coordinates;
 `rows.error_bar_values` maps the ends through the graph's axes (swapping
 directions in turned graphs) into `x_low, x_high, y_low, y_high`.
@@ -175,7 +189,7 @@ markers on the same page are kept.  `symbols.drop_outline_rings` and
 `symbols.drop_hidden_dots` remove outline rings (also a black border
 round a coloured disc) and dots hidden in lines;
 `outlined_text._split_unread` frees labels run into nearby words.
-Marks in text: `pipeline.drop_symbols_in_prose` drops markers set in a
+Marks in text: `strays.drop_symbols_in_prose` drops markers set in a
 line of running text outside every graph (a caption's sample markers,
 "···" in a formula, a full stop drawn as a shape).  Circles drawn as
 many-sided polygons are circles (`symbols._classify_subpath`), and discs
@@ -183,12 +197,18 @@ filled as fans of thin triangles are rebuilt by
 `fragments.rebuild_strip_discs`.
 Images with a soft mask, a mask or drawn as a stencil (a translucent
 watermark over the page) are not covers: they hide no text or outlines.
-Tables: `pipeline.drop_tables` rejects a graph with category axes both ways
+Tables: `nongraphs.drop_tables` rejects a graph with category axes both ways
 whose cells hold text (at least half of them).  It also rejects a graph whose box
 holds more words of running text than `--max-words` (default 20;
-`pipeline.prose_inside`: lines of three words or more; text in bordered
-or filled boxes, `pipeline.text_boxes`, is not counted, and
-`pipeline.drop_box_dashes` drops their dashes drawn as squares).
+`nongraphs.prose_inside`: lines of three words or more; text in bordered
+or filled boxes, `nongraphs.text_boxes`, is not counted, and
+`strays.drop_box_dashes` drops their dashes drawn as squares).
+`nongraphs.numeric_grid` rejects a graph whose box holds a grid of numbers
+(3+ columns and 3+ rows of 3+ aligned numbers, 9+ numbers in both,
+axis labels inside the box included;
+numbers may be split by thin spaces, 0.918 6); `strays.drop_rule_joints`
+drops the 0.5 pt squares filling the joints of rules drawn as filled
+rectangles.
 Figures traced from a bitmap (thousands of staircase slivers):
 `outlined_text._crowded_words` refuses numbers overlapped by three or
 more other shapes, `_letter_dots` only takes a dot about as wide as its
@@ -222,7 +242,7 @@ steps need is done once:
   them.
 * **Graphs** (`graphs._cache_for`): the graph of each clipping box and a
   grid of graph boxes, kept for the page's list of graphs and dropped by
-  `pipeline.forget_page`; `tools.PathsByX` hands each graph the paths in
+  `graphs.forget_graphs` after each page; `tools.PathsByX` hands each graph the paths in
   its column (`graph_tool`, `guess_tool`).
 * **Legends**: line samples in a grid by height and x cell; texts sorted
   once.  **Crossing strokes**: identical strokes (stacks of duplicate
@@ -319,3 +339,4 @@ these files, so fresh matplotlib plots in other styles (default, classic,
 ggplot imitation, seaborn darkgrid; scatter, line and bar charts) were used
 as a check: all six were guessed as matplotlib (a seventh, seaborn's
 "white" style, has no tick marks and is not found as a graph at all).
+

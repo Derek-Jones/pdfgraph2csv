@@ -1,10 +1,18 @@
-"""Graph titles: the text centred above a plot (with continuation lines),
-or a sub-caption below it such as "(a) ..." or "Fig. 3 ...".
+"""Graph titles and figure captions, for the -meta file.
+
+A title is the text centred above a plot (with continuation lines), or for
+want of one a sub-caption below it such as "(a) ..." or "Fig. 3 ...".  A
+caption is the paragraph starting "Fig. N" / "Figure N" below the figure.
+Titles also tell which way a graph is turned (graphs.graph_rotation).  Much
+of the code here keeps other text from passing for a title: running
+headers, axis titles of the graph above, legend headings, subscripts and
+the later lines of another graph's caption.
 """
 
 import re
 
 from .context import PAGE
+from .geometry import encloses
 from .text import is_number
 
 
@@ -74,8 +82,7 @@ def _find_title(rect, texts, symbols):
         txt = t["text"].strip()
         if not txt or is_number(t) or t["rotated"] or id(t) in headers:
             continue
-        if frame and not (frame[0] - 1 <= t["bbox"][0] and t["bbox"][2] <= frame[2] + 1 and
-                          frame[1] - 1 <= t["bbox"][1] and t["bbox"][3] <= frame[3] + 1):
+        if frame and not encloses(frame, t["bbox"], 1):
             continue                  # outside the box drawn round the chart
         cx = (t["bbox"][0] + t["bbox"][2]) / 2
         if any(zx0 <= cx <= zx1 and zx1 - zx0 > 0 and
@@ -127,14 +134,7 @@ def _find_title(rect, texts, symbols):
                     0 <= o["bbox"][0] - line["bbox"][2] < 0.3 * s and \
                     abs(o["center"][1] - line["center"][1]) < 0.6 * s:
                 title += o["text"].strip()
-        # words of the same line drawn as separate texts ("a)" + "LLVM")
-        end = line["bbox"][2]
-        for o in sorted(texts, key=lambda o: o["bbox"][0]):
-            if o is not line and not o["rotated"] and abs(o["size"] - s) <= 0.1 * s and \
-                    abs(o["p0"][1] - line["p0"][1]) < 0.2 * s and \
-                    0 <= o["bbox"][0] - end < 0.6 * s and o["text"].strip():
-                title += " " + o["text"].strip()
-                end = o["bbox"][2]
+        title += _rest_of_line(line, texts, s)
         # ... or start on a line just above it ("Vth" over "(s: 6.9 p: 0.03)")
         top = best[3]
         for _ in range(3):
@@ -183,16 +183,22 @@ def _find_title(rect, texts, symbols):
                 best = (gap, txt, t["size"], t)
     if not best:
         return "", 0.0
-    # the rest of the caption's line: "a)" + "LLVM"
-    title, s, line = best[1], best[2] or 1.0, best[3]
+    return best[1] + _rest_of_line(best[3], texts, best[2] or 1.0), best[2]
+
+
+def _rest_of_line(line, texts, s):
+    """The words drawn as separate texts further along the line of `line`
+    (" LLVM" after "a)"), each starting within 0.6 em of the one before;
+    "" if none."""
+    out = ""
     end = line["bbox"][2]
     for o in sorted(texts, key=lambda o: o["bbox"][0]):
         if o is not line and not o["rotated"] and abs(o["size"] - s) <= 0.1 * s and \
                 abs(o["p0"][1] - line["p0"][1]) < 0.2 * s and \
                 0 <= o["bbox"][0] - end < 0.6 * s and o["text"].strip():
-            title += " " + o["text"].strip()
+            out += " " + o["text"].strip()
             end = o["bbox"][2]
-    return title, best[2]
+    return out
 
 
 _CAPTION_RE = re.compile(r"^(\(?[a-zA-Z]\)|Fig(ure|\.)?\s*\d)")
@@ -200,9 +206,10 @@ _CAPTION_RE = re.compile(r"^(\(?[a-zA-Z]\)|Fig(ure|\.)?\s*\d)")
 
 # -- figure captions ----------------------------------------------------------
 
-# "Fig. 5.", "Figure 3:", "FIGURE 12 -", "Fig 2", "Figure S3", "Figure 4.2"
+# "Fig. 5.", "Figure 3:", "FIGURE 12 -", "Fig 2", "Figure S3", "Figure 4.2",
+# "Figure 3-6" (chapter and figure)
 # (small-caps fonts may map the label to lower case: "figure 2.")
-_FIGURE_RE = re.compile(r"^\s*(?:Fig(?:ure)?|FIG(?:URE)?|fig(?:ure)?)\.?\s*([A-Z]?\d+(?:\.\d+)?[a-z]?)"
+_FIGURE_RE = re.compile(r"^\s*(?:Fig(?:ure)?|FIG(?:URE)?|fig(?:ure)?)\.?\s*([A-Z]?\d+(?:[.\-–]\d+)?[a-z]?)"
                         r"\s*(?:[.:|–—-]\s*)?(.*)$", re.S)
 
 
@@ -280,12 +287,12 @@ def find_figure_caption(rect, lines, graph_rects):
     x0, y0, x1, y1 = rect
     h = y1 - y0
     best = None
-    for k, ln in enumerate(lines):
+    for ln in lines:
         m = _FIGURE_RE.match(ln["text"])
         if not m or m.group(2)[:1] in (")", "]", ",", ";"):
             continue                           # none, or a reference: "(see Fig. 2)."
         ln = _caption_head(ln, m, lines)
-        bx0, by0, bx1, by1 = ln["bbox"]
+        bx0, _, bx1, by1 = ln["bbox"]
         gap = y0 - by1
         if bx1 <= x0 or bx0 >= x1:
             continue                           # not across the graph's width

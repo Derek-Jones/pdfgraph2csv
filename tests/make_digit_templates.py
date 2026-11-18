@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Generate the digit templates embedded in pdfpoints/outlined_text.py (_DIGIT_TEMPLATES).
+"""Generate the digit templates embedded in pdfpoints/outlined_text.py (_DIGIT_TEMPLATES),
+and the templates of the shorter glyphs 'e' and '+' of e-notation labels
+(_SHORT_TEMPLATES, Liberation Sans only).
 
 Needs Pillow and the fonts below; the pdfpoints package itself does not.  Each digit
 is rendered large, cropped to its ink, resampled to GW x GH cells (cell is
@@ -38,6 +40,13 @@ def main():
         for ch in "0123456789":
             hx, asp = template(font, ch)
             print('    ("%s", %.3f, "%s"),' % (ch, asp, hx))
+    print("]")
+    print()
+    print("_SHORT_TEMPLATES = [")
+    font = ImageFont.truetype(FONTS[0], 300)
+    for ch in "e+":
+        hx, asp = template(font, ch)
+        print('    ("%s", %.3f, "%s"),' % (ch, asp, hx))
     print("]")
 
 

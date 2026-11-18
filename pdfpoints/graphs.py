@@ -4,10 +4,12 @@ inset graphs, assigning symbols to graphs and recognising graphs turned by
 """
 
 import math
-from .geometry import (
-    axis_aligned, bbox_of, frame_rect, merge_collinear, rect_distance,
-    straight_segments, to_frame)
+
 from .context import PAGE
+from .geometry import (
+    axis_aligned, bbox_of, frame_rect, median, merge_collinear, overlap_area, rect_area,
+    rect_distance, straight_segments, to_frame, vertices)
+from .scales import map_value
 from .titles import find_title
 
 
@@ -94,27 +96,33 @@ def build_graphs(axes):
             return a["pos"] < mid < b["lo"]
         return False
 
+    def partner(a, others, gaps):
+        """The index of the axis among `others` closest to forming a corner
+        with `a`, or None.  gaps(a, b) = (gap along a, gap along b)."""
+        cands = []
+        for k, b in enumerate(others):
+            along_a, along_b = gaps(a, b)
+            if along_b <= tol(a, b) and not wrong_side(b, a) and (
+                    along_a <= 0.5 * (a["hi"] - a["lo"]) or borrows_axis(b, a)):
+                cands.append(((along_a, along_b), k))
+        return min(cands)[1] if cands else None
+
     # every x axis takes the y axis that comes closest to forming a corner
     # with it, and every y axis the closest x axis; each choice is a graph
     # (an axis shared by side-by-side panels takes part in several).  The
-    # second gap may be loose (a y axis set off from the end of the x axis),
-    # but one more than half the axis long is another graph's axis, used
-    # only if it shares this graph's scale (borrows_axis)
+    # gap along the axis may be loose (a y axis set off from the end of the
+    # x axis), but one more than half the axis long is another graph's
+    # axis, used only if it shares this graph's scale (borrows_axis)
     pairs = set()
     for i, xa in enumerate(xs):
-        cands = [(corner(xa, ya), j) for j, ya in enumerate(ys)]
-        cands = [c for c in cands if c[0][1] <= tol(xa, ys[c[1]]) and (
-            c[0][0] <= 0.5 * (xa["hi"] - xa["lo"]) or borrows_axis(ys[c[1]], xa))
-            and not wrong_side(ys[c[1]], xa)]
-        if cands:
-            pairs.add((i, min(cands)[1]))
+        j = partner(xa, ys, corner)
+        if j is not None:
+            pairs.add((i, j))
     for j, ya in enumerate(ys):
-        cands = [(corner(xa, ya)[::-1], i) for i, xa in enumerate(xs)]
-        cands = [c for c in cands if c[0][1] <= tol(xs[c[1]], ya) and (
-            c[0][0] <= 0.5 * (ya["hi"] - ya["lo"]) or borrows_axis(xs[c[1]], ya))
-            and not wrong_side(xs[c[1]], ya)]
-        if cands:
-            pairs.add((min(cands)[1], j))
+        i = partner(ya, xs, lambda a, b: corner(b, a)[::-1])
+        if i is not None:
+            pairs.add((i, j))
+    stack_on_shared_x(xs, ys, pairs)
     # axes that cross inside the plot (Excel's log axes crossing at 1, axes
     # through the origin): each line runs across the other one, well inside
     # its ends, with the crossing point inside both; only for axes that
@@ -148,6 +156,45 @@ def build_graphs(axes):
     return order_graphs(merge_twin_axes(graphs))
 
 
+def stack_on_shared_x(xs, ys, pairs):
+    """Stacked panels each with a labelled y axis line of its own but one x
+    axis, under the bottom panel only, and no x axis line in the others
+    (plot d of song2025rigorous-002): a y axis left without a graph, on
+    the line of a graph's y axis (the same x) and just above or below it
+    (a gap under half its length), takes that graph's x axis, if the x
+    axis reaches the y axis and the panel has no x axis line or frame of
+    its own (_own_x_line).  Adds the pairs to `pairs`."""
+    used_y = {j for _, j in pairs}
+    for j, ya in enumerate(ys):
+        if j in used_y or not ya["has_line"] or not ya.get("labels"):
+            continue
+        span = ya["hi"] - ya["lo"]
+        best = None
+        for i, k in pairs:
+            yb, xa = ys[k], xs[i]
+            if abs(yb["pos"] - ya["pos"]) > max(1.0, 0.01 * span) or \
+                    not xa["lo"] - 1 <= ya["pos"] <= xa["hi"] + 1:
+                continue
+            gap = max(yb["lo"] - ya["hi"], ya["lo"] - yb["hi"])
+            if 0 <= gap <= 0.5 * span and (best is None or gap < best[0]):
+                best = (gap, i)
+        if best and not _own_x_line(xs[best[1]], ya):
+            pairs.add((best[1], j))
+
+
+def _own_x_line(xa, ya):
+    """Does a horizontal line (of any shade) lie at an end of y axis `ya`,
+    over half as long as x axis `xa` and across from it?  Then the panel
+    has an x axis (or frame) of its own and borrows no other."""
+    tol = 0.05 * (ya["hi"] - ya["lo"])
+    need = 0.5 * (xa["hi"] - xa["lo"])
+    for lo, hi, pp in list(PAGE.dark_lines[0]) + list(PAGE.all_lines[0]):
+        if min(hi, xa["hi"]) - max(lo, xa["lo"]) >= need and \
+                min(abs(pp - ya["lo"]), abs(pp - ya["hi"])) <= tol:
+            return True
+    return False
+
+
 def merge_twin_axes(graphs):
     """A graph with a scale on both sides (a left and a right y axis over
     one x axis, or a bottom and a top x axis beside one y axis) is found as
@@ -173,6 +220,12 @@ def merge_twin_axes(graphs):
                         all(min(abs(ax["pos"] - e) for e in ends) <= tol for ax in (a, b)) and \
                         other + "2" not in g and other + "2" not in h:
                     first, second = (a, b) if a["pos"] < b["pos"] else (b, a)
+                    if _mirrored(first, second):
+                        # the same scale drawn on both sides: one graph
+                        if g[other] is second:
+                            g[other] = first
+                        del out[j]
+                        continue
                     g[other], g[other + "2"] = first, second
                     lo = min(first["lo"], second["lo"])
                     hi = max(first["hi"], second["hi"])
@@ -185,17 +238,46 @@ def merge_twin_axes(graphs):
     return out
 
 
+def _mirrored(a, b):
+    """Whether axis b, opposite axis a, repeats a's scale: the same series of
+    tick marks (one set within the other, as one side may lack the minor
+    ticks), and labels that do not say otherwise.  The user asked for such
+    ticks to be treated as one scale unless the labels differ: labels that
+    give other values at those ticks make b a second scale; labels that are
+    words opposite numbers (body text beside the plot) do not."""
+    ta, tb = a.get("tick_pos") or [], b.get("tick_pos") or []
+    small, big = (ta, tb) if len(ta) <= len(tb) else (tb, ta)
+    if len(small) < 3:
+        return False
+    tol = max(0.5, 0.005 * (max(big) - min(big) if big else 0))
+    # (a tick at an end of the axis may be lost in the frame's corner)
+    big = list(big) + [a["lo"], a["hi"], b["lo"], b["hi"]]
+    if sum(1 for p in small if any(abs(p - q) <= tol for q in big)) < 0.9 * len(small):
+        return False
+    ma, mb = a.get("map"), b.get("map")
+    if not ma or not mb:
+        return True
+    if (ma["kind"] == "nominal") != (mb["kind"] == "nominal"):
+        return True                      # words opposite numbers: not a scale
+    if mb["kind"] == "nominal":
+        return [v for _, v in ma["ticks"]] == [v for _, v in mb["ticks"]]
+    for p, _ in b.get("ticks", ()):
+        va, vb = map_value(ma, p), map_value(mb, p)
+        if va is None or vb is None or abs(va - vb) > 1e-3 * max(abs(va), abs(vb), 1e-12):
+            return False                 # other values: a second scale
+    return True
+
+
 def dark_frame_lines(paths):
     """Merged dark horizontal and vertical stroked lines (frames, borders)."""
     hs, vs = [], []
     for p in paths:
         if not p["stroke"] or sum(p["stroke_rgb"] or (0, 0, 0)) >= 1.5:
             continue
-        for sp in p["subpaths"]:
-            for a, b in straight_segments({"subpaths": [sp]}):
-                aa = axis_aligned(a, b)
-                if aa:
-                    (hs if aa[0] == "h" else vs).append(aa[1:])
+        for a, b in straight_segments(p):
+            aa = axis_aligned(a, b)
+            if aa:
+                (hs if aa[0] == "h" else vs).append(aa[1:])
     return merge_collinear(hs), merge_collinear(vs)
 
 
@@ -258,14 +340,10 @@ def frame_texts(texts, rot):
     out = []
     for t in texts:
         u = dict(t)
-        x0, y0, x1, y1 = t["bbox"]
-        pts = [to_frame(p, rot) for p in ((x0, y0), (x1, y1))]
-        u["bbox"] = (min(p[0] for p in pts), min(p[1] for p in pts),
-                     max(p[0] for p in pts), max(p[1] for p in pts))
+        u["bbox"] = frame_rect(t["bbox"], rot)
         u["center"] = ((u["bbox"][0] + u["bbox"][2]) / 2, (u["bbox"][1] + u["bbox"][3]) / 2)
         u["p0"], u["p1"] = to_frame(t["p0"], rot), to_frame(t["p1"], rot)
-        up = to_frame(t["up"], rot)
-        u["up"] = up
+        u["up"] = to_frame(t["up"], rot)
         ang = (t.get("angle", 0.0) - rot + 180) % 360 - 180
         u["angle"] = ang
         u["rotated"] = not (abs(ang) < 10 or abs(abs(ang) - 180) < 10)
@@ -315,7 +393,7 @@ def set_graph_backgrounds(graphs, paths):
         sp = p["subpaths"][0]
         if len(sp["segs"]) < 3:
             continue
-        pts = [sp["start"]] + [s[-1] for s in sp["segs"]]
+        pts = vertices(sp)
         b = bbox_of(pts)
         if p["fill"]:
             boxes.append((b, p["idx"]))
@@ -333,7 +411,7 @@ def set_graph_backgrounds(graphs, paths):
         for b in rects:
             m = min(x0 - b[0], y0 - b[1], b[2] - x1, b[3] - y1)
             if m >= 2.0 and b[2] - b[0] <= 1.6 * w and b[3] - b[1] <= 2.0 * h and (
-                    best is None or (b[2] - b[0]) * (b[3] - b[1]) < (best[2] - best[0]) * (best[3] - best[1])):
+                    best is None or rect_area(b) < rect_area(best)):
                 best = b
         if best:
             PAGE.chart_frames[tuple(g["rect"])] = best
@@ -382,12 +460,14 @@ def clip_graph(graphs, s):
 
 
 def _clip_graph(graphs, c):
+    """The graph whose box lies (at least 90%) inside clipping box c, c
+    being at most 1.5 times its area (the smallest such c's graph), or
+    None: plots clip their markers to the plot box or a little beyond it."""
     best = None
+    carea = max(0.0, c[2] - c[0]) * max(0.0, c[3] - c[1])
     for g in graphs:
-        x0, y0, x1, y1 = g["rect"]
-        area = max((x1 - x0) * (y1 - y0), 1e-9)
-        ov = max(0.0, min(x1, c[2]) - max(x0, c[0])) * max(0.0, min(y1, c[3]) - max(y0, c[1]))
-        carea = max(0.0, c[2] - c[0]) * max(0.0, c[3] - c[1])
+        area = max(rect_area(g["rect"]), 1e-9)
+        ov = overlap_area(g["rect"], c)
         if ov >= 0.9 * area and carea <= 1.5 * area and (best is None or carea < best[0]):
             best = (carea, g)
     return best[1] if best else None
@@ -399,9 +479,8 @@ def _graphs_at(graphs, x, y):
     small multiples have hundreds of panels and thousands of points)."""
     cache = _cache_for(graphs)
     if cache["at"] is None:
-        sizes = sorted(max(g["rect"][2] - g["rect"][0], g["rect"][3] - g["rect"][1])
-                       for g in graphs) or [1.0]
-        cell = max(sizes[len(sizes) // 2], 1.0)
+        cell = max(median((max(g["rect"][2] - g["rect"][0], g["rect"][3] - g["rect"][1])
+                           for g in graphs), 1.0), 1.0)
         grid = {}
         for k, g in enumerate(graphs):
             x0, y0, x1, y1 = g["rect"]
@@ -414,18 +493,34 @@ def _graphs_at(graphs, x, y):
     return [graphs[k] for k in ks if rect_distance(graphs[k]["rect"], x, y) == 0]
 
 
+def rects_gap(a, b):
+    """Distance between two rectangles (0 when they meet)."""
+    dx = max(a[0] - b[2], 0, b[0] - a[2])
+    dy = max(a[1] - b[3], 0, b[1] - a[3])
+    return math.hypot(dx, dy)
+
+
+def nearest_to_frame(graphs, frame):
+    """The graph nearest a legend frame (as a whole)."""
+    return min(graphs, key=lambda g: rects_gap(g["rect"], frame))
+
+
 def graph_for_symbol(graphs, s):
     """The graph a symbol belongs to: the graph it was clipped to; else,
     among the graphs whose box contains it, the innermost one painted before
-    the symbol; otherwise the nearest graph.  Returns (distance, graph)."""
+    the symbol; else, for a key in a legend frame outside all graphs, the
+    graph nearest the frame (see strays.mark_legend_frames); otherwise the
+    nearest graph.  Returns (distance, graph)."""
     g = clip_graph(graphs, s)
     if g is not None:
         return rect_distance(g["rect"], s["cx"], s["cy"]), g
     inside = _graphs_at(graphs, s["cx"], s["cy"])
     if inside:
         before = [g for g in inside if g.get("bg", -1) < s["idx"]] or inside
-        g = max(before, key=lambda g: (g.get("bg", -1),
-                                       -(g["rect"][2] - g["rect"][0]) * (g["rect"][3] - g["rect"][1])))
+        g = max(before, key=lambda g: (g.get("bg", -1), -rect_area(g["rect"])))
         return 0.0, g
+    if s.get("frame"):
+        g = nearest_to_frame(graphs, s["frame"])
+        return rect_distance(g["rect"], s["cx"], s["cy"]), g
     return min(((rect_distance(g["rect"], s["cx"], s["cy"]), g) for g in graphs),
                key=lambda dg: dg[0])

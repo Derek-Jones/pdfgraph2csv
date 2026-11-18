@@ -1,0 +1,7 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+6,1,"words, if we were to continue collecting data, we would still see a significant number of new traces. Once the asymptote is reached, one could say that it is relatively difficult to identify any new trace that has not been executed previously.",5,Accumulation curve estimated with the random method with 95% CI.,Adobe Illustrator CS5.1,,149,0,150,0,2000
+7,2,"indicates, each system-call provides a different number of unique-traces. As each fold needs to have the same length, the analysis is performed by dividing some system-calls into different folds (e.g., clone) and joining some of them into one fold (e.g., futex(wait), futex(wake)).",6,MSE values with k equal to 100. Horizontal line represents the mean value.,Adobe Illustrator CS5.1,,103,0,100,150,300
+8,3,"The results obtained from the different estimators are 8. The box-plot shows the results with the 95% CI of each estimator. Furthermore, it allows visualizing the differences or the alignments of the results.",8,Comparison of the obtained results with 95% CI.,Adobe Illustrator CS5.1,R,30,2500,3500,#1,#6
+10,4,,10,Data CDF of the frequency of occurrence data and the fitted power-law (blue line).,Adobe Illustrator CS5.1,,238,1,1e+06,0.0005,0.5
+10,5,,11,Frequency distribution of all recorded system-calls (black b,Adobe Illustrator CS5.1,,10,2,10,0,800
+11,6,,12,P points). Pzero real value estimated with the remaining data set.,Adobe Illustrator CS5.1,,1152,0,500,0,0.012

@@ -1,0 +1,3 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,Year 2: LN and Pareto,4,Note Pareto difficulty in high rate tail,,,38,0,40,0.01,100
+1,2,Successive Years,5,"Similar processes, similar results",,,47,0,40,0.01,100

@@ -36,8 +36,8 @@ from pdfminer.pdftypes import PDFStream, resolve1, stream_value
 from pdfminer.psparser import LIT, PSEOF, PSKeyword, keyword_name, literal_name
 
 from .context import PAGE, SETTINGS
-from .fonts import DINGBAT_ANCHOR, DINGBAT_SYMBOLS, FontInfo
-from .geometry import bbox_of, mapply, mmul
+from .fonts import DINGBAT_ANCHOR, DINGBAT_SYMBOLS, FontInfo, dingbat_code, register_fonts
+from .geometry import bbox_of, control_points, mapply, mmul
 from .tokenizer import Floats, coordinate_decimals, has_inline_image, operators
 from .tools import tool_name, xmp_creator_tool
 
@@ -47,13 +47,16 @@ IDENTITY = (1, 0, 0, 1, 0, 0)
 class Interpreter:
     """Executes a page and collects, in page coordinates and drawing order:
     `paths` (painted paths), `texts` (text items), `glyph_symbols`
-    (ZapfDingbats markers) and `images` ((box, drawing step))."""
+    (ZapfDingbats markers), `images` ((box, drawing step) of unmasked
+    images, which may hide what is under them) and `image_marks` (images
+    small enough to be markers)."""
 
     def __init__(self, doc):
         self.doc = doc
         self.paths = []
         self.texts = []
         self.glyph_symbols = []
+        self.image_marks = []
         self.images = []
         self.order = 0
         self.fonts = {}          # id(pdfminer font) -> FontInfo
@@ -101,6 +104,15 @@ class ExtraState:
 class ContentInterpreter(PDFPageInterpreter):
     """pdfminer's interpreter, extended to record paths, colours, clipping,
     opacity, text, markers and images (see the module description)."""
+
+    def init_resources(self, resources):
+        # (fonts of every resource dictionary are noted: a subset whose
+        # glyph names are made up is read through its sibling subsets)
+        if resources:
+            fonts = resolve1(resources.get("Font"))
+            if isinstance(fonts, dict):
+                register_fonts(fonts.values())
+        return super().init_resources(resources)
 
     MAX_DEPTH = 25                        # Form XObject nesting
 
@@ -257,9 +269,11 @@ class ContentInterpreter(PDFPageInterpreter):
                 "res": _resolution(self.unit, self.ctm), "tool": self.tool,
                 "style": self._style()})
         if self.clip_next and subpaths:
-            pts = [q for sp in subpaths for q in [sp["start"]] +
-                   [r for seg in sp["segs"] for r in seg[1:]]]
-            b, c = bbox_of(pts), self.extra.clip
+            # (only the clip's bounding box is kept: enough to tell which
+            # plot a marker belongs to, and to keep markers clipped out of
+            # view, which the user wants reported)
+            b = bbox_of([q for sp in subpaths for q in control_points(sp)])
+            c = self.extra.clip
             self.extra.clip = b if c is None else (max(b[0], c[0]), max(b[1], c[1]),
                                                    min(b[2], c[2]), min(b[3], c[3]))
         self.clip_next = False
@@ -405,8 +419,8 @@ class ContentInterpreter(PDFPageInterpreter):
                 continue
             for code, u in font.decode(item):
                 w = font.width(code, u) / 1000.0
-                if font.dingbats and code in DINGBAT_SYMBOLS and ts.render not in (3, 7):
-                    self.dingbat_marker(code, base, pen, th)
+                if font.dingbats and dingbat_code(code, u) is not None and ts.render not in (3, 7):
+                    self.dingbat_marker(dingbat_code(code, u), base, pen, th)
                     last_end = None                   # a marker separates text
                 elif not font.dingbats and u.isspace():
                     saw_space = True
@@ -478,13 +492,20 @@ class ContentInterpreter(PDFPageInterpreter):
             sub.form_name = literal_name(xobjid) if not isinstance(xobjid, str) else xobjid
             sub.render_contents(res, [xobj], ctm=mmul(matrix, self.ctm))
         elif subtype == "Image":
+            pts = [mapply(self.ctm, u, v) for u, v in ((0, 0), (1, 0), (0, 1), (1, 1))]
+            xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+            box = (min(xs), min(ys), max(xs), max(ys))
             # an image with a soft mask, a mask or drawn as a stencil (a
             # translucent watermark over the page) hides nothing for sure
             if not (xobj.get("SMask") or xobj.get("Mask") or resolve1(xobj.get("ImageMask"))):
-                pts = [mapply(self.ctm, u, v) for u, v in ((0, 0), (1, 0), (0, 1), (1, 1))]
-                xs, ys = [p[0] for p in pts], [p[1] for p in pts]
-                self.page.images.append(((min(xs), min(ys), max(xs), max(ys)), self.page.order))
-            self.page.order += 1
+                self.page.images.append((box, self.page.order))
+            if 1.0 <= max(box[2] - box[0], box[3] - box[1]) <= 30.0:
+                # small enough to be a marker drawn as a picture (Excel for
+                # Mac draws gradient-filled markers this way): image_marks.py
+                self.page.record("image_marks", {"box": box, "xobj": xobj, "ctm": self.ctm,
+                                                 "clip": self.extra.clip, "tool": self.tool})
+            else:
+                self.page.order += 1
 
 
 _FORM_TOOLS = {}                          # id(XObject stream) -> tool name

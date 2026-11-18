@@ -1,14 +1,26 @@
-"""Marker symbols drawn as vector paths: classification of subpaths into
-circles, squares, triangles, diamonds, polygons, crosses and plus signs,
-and the removal of things that are not markers (letters, dashes, doubled
-outlines, highlight boxes).
+"""Marker symbols drawn as vector paths.
+
+find_symbols classifies each closed subpath (classify_subpath: circle,
+square, triangle, diamond, polygon) and pairs straight strokes into plus
+signs, crosses and asterisks (match_crossing_strokes).  Programs draw
+markers in many ways - four or eight Bezier arcs, two half circles, a
+20-gon, a fan of triangles, a filled body plus a stroked outline, every
+outline written twice - so each way has its own rule here.
+
+The drop_* functions remove shapes that have a marker's form but are not
+data points, judged from the shapes alone: dots hidden in a line of their
+own colour, bits covered by a later marker, one-off specks, outline rings
+and highlight circles drawn round a point, and boxes round a point.  (The
+filters that need the page's graphs are in strays.py.)
 """
 
 import collections
 import math
 
 from .colours import color_name
-from .geometry import axis_aligned, bbox_of, flatten_subpath, memoized
+from .geometry import (
+    axis_aligned, bbox_of, encloses, flatten_subpath, median, memoized, rect_area, subpath_bbox,
+    vertices)
 from .grouping import BoxGrid, DisjointSets
 
 
@@ -67,8 +79,7 @@ def drop_covered_bits(symbols, paths):
         if k not in last or c["idx"] > last[k]["idx"]:
             last[k] = c
     covers = list(last.values())
-    sizes = sorted(c["size"] for c in covers)
-    grid = BoxGrid(max(sizes[len(sizes) // 2], 0.5))
+    grid = BoxGrid(max(median(c["size"] for c in covers), 0.5))
     for c in covers:
         r = c["size"] / 2
         grid.add(id(c), (c["cx"] - r, c["cy"] - r, c["cx"] + r, c["cy"] + r))
@@ -97,8 +108,8 @@ def drop_specks(symbols):
     series of small dots repeats its look and is kept."""
     if len(symbols) < 100:
         return symbols
-    sizes = sorted(s["size"] for s in symbols)
-    small = [s for s in symbols if s["size"] < 0.35 * sizes[len(sizes) // 2]]
+    typical = median(s["size"] for s in symbols)
+    small = [s for s in symbols if s["size"] < 0.35 * typical]
     if not small:
         return symbols
     looks = collections.Counter((s["shape"], s["filled"], s["rgb"]) for s in symbols)
@@ -180,15 +191,24 @@ def drop_highlight_boxes(symbols):
     cand = [s for s in symbols
             if not s.get("filled") and s["shape"] in ("square", "circle") and s["size"] > 0]
     style = lambda s: (s["shape"], s["rgb"], round(s["size"], 1))
-    total, hits = {}, {}
+    total, hits = collections.Counter(), collections.Counter()
     hl = set()
     for s in cand:
-        total[style(s)] = total.get(style(s), 0) + 1
+        total[style(s)] += 1
         if highlights(s):
             hl.add(id(s))
-            hits[style(s)] = hits.get(style(s), 0) + 1
+            hits[style(s)] += 1
     return [s for s in symbols
             if not (id(s) in hl and hits[style(s)] == total[style(s)])]
+
+
+def _turned_square(v):
+    """Are the four corners v those of a square at any angle: four equal
+    sides and equal diagonals (within 8%)?"""
+    sides = [math.hypot(v[k][0] - v[k - 1][0], v[k][1] - v[k - 1][1]) for k in range(4)]
+    d1 = math.hypot(v[2][0] - v[0][0], v[2][1] - v[0][1])
+    d2 = math.hypot(v[3][0] - v[1][0], v[3][1] - v[1][1])
+    return min(sides) > 0.92 * max(sides) and min(d1, d2) > 0.92 * max(d1, d2)
 
 
 def _rotationally_symmetric(verts, size):
@@ -284,6 +304,7 @@ def _classify_subpath(sp):
     aspect = min(w, h) / max(w, h)
     shape = None
     ring = False
+    turned = None
     centre = ((x0 + x1) / 2, (y0 + y1) / 2)      # the middle of the box
     if curves == 2 and lines <= 1:
         # a circle of two half-circle arcs (GraphPad Prism): their control
@@ -313,7 +334,7 @@ def _classify_subpath(sp):
                 min(outer) > 0.95 * r_out and min(inner) > 0.3 * r_out:
             shape, ring = "circle", True
     elif curves == 0:                       # a polygon: count its corners
-        verts = [sp["start"]] + [s[1] for s in sp["segs"]]
+        verts = vertices(sp)
         uniq = []
         for v in verts:
             if not uniq or math.hypot(v[0] - uniq[-1][0], v[1] - uniq[-1][1]) > 0.01 * size:
@@ -356,6 +377,14 @@ def _classify_subpath(sp):
                         sides.add("t")
                 if sides == {"l", "r", "t", "b"}:
                     shape = "diamond" if aspect > 0.85 else "thin-diamond"
+                elif _turned_square(uniq):
+                    # a square turned by some other angle (the nodes of
+                    # 2204.07073-010's network drawings, each network
+                    # turned its own way): its edge is its size
+                    shape = "square"
+                    side = sum(math.hypot(uniq[k][0] - uniq[k - 1][0], uniq[k][1] - uniq[k - 1][1])
+                               for k in range(4)) / 4
+                    turned = side
         elif n >= 13 and aspect > 0.85:
             # a circle drawn as a polygon of many short sides (a 20-gon)
             cx0, cy0 = (x0 + x1) / 2, (y0 + y1) / 2
@@ -376,7 +405,12 @@ def _classify_subpath(sp):
     if shape in ("polygon", "triangle", "diamond") and elongation(flatten_subpath(sp)) > 1.8 or \
             shape == "thin-diamond" and elongation(flatten_subpath(sp)) > 2.2:
         return None
-    out = {"shape": shape, "cx": centre[0], "cy": centre[1], "size": size}
+    out = {"shape": shape, "cx": centre[0], "cy": centre[1], "size": size, "w": w, "h": h}
+    if turned is not None:
+        out["w"] = out["h"] = turned
+        out["turned"] = True
+    if shape == "circle" and size != max(w, h):      # measured on the curve
+        out["w"] = out["h"] = size
     if ring:
         out["ring"] = True
     return out
@@ -444,8 +478,7 @@ def _containers(boxes):
     in order).  A box containing box k covers k's centre, so only the boxes
     covering that point are tested (grid index; boxes spanning very many
     cells are tested directly)."""
-    sizes = sorted(max(b[2] - b[0], b[3] - b[1]) for b in boxes)
-    cell = max(sizes[len(sizes) // 2], 1e-3)
+    cell = max(median(max(b[2] - b[0], b[3] - b[1]) for b in boxes), 1e-3)
     grid, big = {}, []
     for m, o in enumerate(boxes):
         gx0, gy0, gx1, gy1 = int(o[0] // cell), int(o[1] // cell), int(o[2] // cell), int(o[3] // cell)
@@ -457,12 +490,11 @@ def _containers(boxes):
                 grid.setdefault((gx, gy), []).append(m)
     out = []
     for k, b in enumerate(boxes):
-        area = (b[2] - b[0]) * (b[3] - b[1])
+        area = rect_area(b)
         cx, cy = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
         for m in sorted(grid.get((int(cx // cell), int(cy // cell)), []) + big):
             o = boxes[m]
-            if m != k and (o[2] - o[0]) * (o[3] - o[1]) > area and \
-                    o[0] <= b[0] and o[1] <= b[1] and b[2] <= o[2] and b[3] <= o[3]:
+            if m != k and rect_area(o) > area and encloses(o, b, 0.0):
                 out.append((k, m))
                 break
     return out
@@ -484,8 +516,7 @@ def find_symbols(paths, glyph_symbols=(), text_parts=frozenset()):
         hole_of = {}        # outer contour -> its holes
         if p["fill"] and len(p["subpaths"]) > 1:
             # a contour inside another contour of the same path is a hole
-            boxes = [bbox_of([sp["start"]] + [q for s in sp["segs"] for q in s[1:]])
-                     for sp in p["subpaths"]]
+            boxes = [subpath_bbox(sp) for sp in p["subpaths"]]
             for k, m in _containers(boxes):
                 holes.add(k)
                 hole_of.setdefault(m, []).append(k)
@@ -525,7 +556,7 @@ def find_symbols(paths, glyph_symbols=(), text_parts=frozenset()):
                     c["outline_rgb"] = p["stroke_rgb"]      # (filled and stroked at once)
                 syms.append(c)
                 if all(seg[0] == "l" for seg in sp["segs"]):
-                    verts = [sp["start"]] + [seg[1] for seg in sp["segs"]]
+                    verts = vertices(sp)
                     for a, b in zip(verts, verts[1:] + verts[:1]):
                         marker_edges.add(_edge_key(a, b))
             elif (p["stroke"] and not sp["closed"] and len(sp["segs"]) == 1
@@ -688,12 +719,34 @@ def _join_asterisks(syms):
     return [s for k, s in enumerate(syms) if k not in gone]
 
 
+def _same_place(a, b):
+    tol = 0.02 * max(a["size"], b["size"], 1e-9)
+    return (a["shape"] == b["shape"] and abs(a["idx"] - b["idx"]) <= 2 and
+            abs(a["cx"] - b["cx"]) <= tol and abs(a["cy"] - b["cy"]) <= tol and
+            abs(a["size"] - b["size"]) <= 0.1 * max(a["size"], b["size"]))
+
+
+def _drop_pattern_overlays(syms):
+    gone = set()
+    for i, a in enumerate(syms):
+        if a["rgb"] is None and a["filled"] and (
+                i > 0 and syms[i - 1]["rgb"] is not None and _same_place(a, syms[i - 1]) or
+                i + 1 < len(syms) and syms[i + 1]["rgb"] is not None and _same_place(a, syms[i + 1])):
+            gone.add(i)
+    return [s for i, s in enumerate(syms) if i not in gone] if gone else syms
+
+
 def merge_fill_outline(syms):
     """Many programs (e.g. Excel) draw one marker as a filled shape followed
     immediately by a separate stroke of the same outline, or vice versa.
     Such a pair is one data point: report it once, as a filled symbol.
     Only directly consecutive fill/stroke pairs are merged, so genuinely
-    repeated data points (two fills or two outlines) are all kept."""
+    repeated data points (two fills or two outlines) are all kept.
+    A fill in a pattern (whose colour is unknown) of the outline drawn just
+    before or after it is a texture laid over that marker, not another
+    point: it is dropped first (white fill, pattern fill, black outline is
+    one marker)."""
+    syms = _drop_pattern_overlays(syms)
     out = []
     i = 0
     while i < len(syms):
@@ -723,3 +776,15 @@ LINE_SHAPES = ("plus", "cross", "asterisk")
 def symbol_signature(s):
     """What makes markers of one series alike: shape, filled, colour."""
     return (s["shape"], s["shape"] in LINE_SHAPES or s["filled"], color_name(s["rgb"])[1])
+
+
+def drop_lone_turned(symbols):
+    """Squares turned by an odd angle are markers only in numbers: 20 or
+    more of one colour and size (the nodes of a network drawing).  A few
+    are the dashes of a line or bits of a drawing (month-axis)."""
+    turned = [s for s in symbols if s.get("turned")]
+    if not turned:
+        return symbols
+    groups = collections.Counter((s["rgb"], round(s["w"], 2)) for s in turned)
+    lone = {id(s) for s in turned if groups[(s["rgb"], round(s["w"], 2))] < 20}
+    return [s for s in symbols if id(s) not in lone] if lone else symbols

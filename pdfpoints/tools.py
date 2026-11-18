@@ -119,7 +119,9 @@ class PathsByX:
 def graph_tool(g, paths, glyph_symbols):
     """The program that drew a graph, as recorded for the embedded graphic
     its paths were drawn in: the most common one among the paths (and
-    Dingbats markers) inside the graph's box.  "" if none is recorded."""
+    Dingbats markers) inside the graph's box (a page may hold graphs from
+    several programs, and a graph's box may overlap the document's own
+    rules and text).  "" if none is recorded."""
     x0, y0, x1, y1 = g["rect"]
     mx, my = 0.05 * (x1 - x0), 0.05 * (y1 - y0)
     count = {}

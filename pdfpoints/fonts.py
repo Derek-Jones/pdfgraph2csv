@@ -44,6 +44,21 @@ DINGBAT_SYMBOLS = {
     117: ("diamond", (35, -14, 754, 705)),    # a78 black diamond
 }
 
+# An embedded subset of the font may give its glyphs other codes (pdfTeX
+# re-encodes R's ZapfDingbatsITC: sarroRE15-008 shows the a71 circle as
+# code 33); its glyph names still decode to these characters.
+DINGBAT_BY_UNICODE = {"\u271b": 59, "\u25cf": 108, "\u25a0": 110, "\u25b2": 115,
+                      "\u25bc": 116, "\u25c6": 117}
+
+
+def dingbat_code(code, u):
+    """The standard ZapfDingbats code of a marker glyph shown with `code`
+    decoding to `u`, or None: by the character when it is one of the
+    marker glyphs, else by the code."""
+    if u in DINGBAT_BY_UNICODE:
+        return DINGBAT_BY_UNICODE[u]
+    return code if code in DINGBAT_SYMBOLS else None
+
 
 
 
@@ -183,9 +198,11 @@ class FontInfo:
         umap = getattr(self.font, "unicode_map", None)
         if umap is not None:
             try:
-                return umap.get_unichr(c)
+                u = umap.get_unichr(c)
             except KeyError:
                 pass
+            else:
+                return self._checked(c, u, umap)
         if c in self.diffs:
             u = toUnicode(self.diffs[c])
             if u and not _controls(u):
@@ -197,7 +214,9 @@ class FontInfo:
             if 0x20 <= c < 0x7F:
                 return chr(c)
             if not u:
-                return "?"
+                # a made-up name ("s4": PostScript copies of TrueType
+                # subsets): the glyph is known by its outline
+                return outline_twin(self._spec, self.base, self.diffs[c]) or "?"
         if "CMSY" in self.base.upper() and c in (0, 0xA1):
             return "-"                       # TeX's minus sign
         if c in (0x96, 0x97, 0xAD):
@@ -214,7 +233,55 @@ class FontInfo:
                 u = prog.unicode(c)
                 if u:
                     return u
+            elif "Identity" in self._ordering():
+                # glyph numbers of a font that is not embedded: nothing
+                # tells which characters they are
+                return "\ufffd"
         return chr(c) if 0 <= c < 0x110000 else "?"
+
+    def _ordering(self):
+        """The CIDSystemInfo ordering of a Type 0 font ('' if none)."""
+        try:
+            df = resolve1(resolve1(self._spec.get("DescendantFonts"))[0])
+            info = resolve1(df.get("CIDSystemInfo")) or {}
+            o = resolve1(info.get("Ordering"))
+            return o.decode("latin1") if isinstance(o, bytes) else str(o or "")
+        except Exception:
+            return ""
+
+    def _checked(self, c, u, umap):
+        """A ToUnicode entry, repaired where a producer that could not name a
+        glyph mapped its code to itself (Office for Mac via Quartz: a
+        Calibri subset renumbered from 0x21 maps the space, code 0x24, to
+        "$" and the "ti" ligature, code 0x38, to "8").  Such an entry is
+        suspect in a renumbered subset (most codes map elsewhere): it is a
+        space if its glyph has no outline, and a lost ligature if another
+        code of a different width already maps to that character."""
+        if u != chr(c) or self.two_byte or not self._renumbered(umap):
+            return u
+        glyphs = self._simple_glyphs()
+        if glyphs is None:
+            return u
+        g = glyphs.get(c)
+        if g is not None and g["contours"] == 0 and g["advance"] > 0:
+            return " "
+        twins = [k for k, v in umap.cid2unichr.items() if v == u and k != c]
+        if not twins or all(abs(self.widths.get(k, 0) - self.widths.get(c, 0)) < 1 for k in twins):
+            return u
+        return _ligature(c, glyphs, umap) or "\ufffd"
+
+    def _renumbered(self, umap):
+        if not hasattr(self, "_renum"):
+            m = umap.cid2unichr
+            same = sum(1 for k, v in m.items() if v == chr(k))
+            # (a subset font, its codes given out afresh from 0x21)
+            self._renum = len(self.base) > 7 and self.base[6] == "+" and len(m) >= 8 and same <= 0.25 * len(m)
+        return self._renum
+
+    def _simple_glyphs(self):
+        if not hasattr(self, "_glyphs"):
+            self._glyphs = _simple_glyph_metrics(self._spec)
+        return self._glyphs
 
     def width(self, code, u):
         """Advance width of a glyph in 1/1000 em."""
@@ -357,6 +424,164 @@ def _program_unicode(data, kind):
             if u and all(ord(ch) >= 0x20 for ch in u):
                 out[g] = u
     return out
+
+
+# Glyphs known by outline.  Some producers rename the glyphs of a subset
+# ("s0" ... "s9" in PostScript copies of TrueType fonts, "Helvetica+T42"),
+# leaving no character name; the same glyphs drawn under their real names
+# ("five") are usually in the same font program, or in another subset of
+# the same font on the page.  The interpreter registers the fonts of every
+# resource dictionary it meets (register_fonts), so that a subset met
+# before its sibling can still use it.
+_SIBLINGS = {}          # base name without the subset prefix -> [font spec]
+_OUTLINES = {}          # id(font spec) -> {glyph name: (ops, coords, width)}
+
+
+def _family(base):
+    return base[7:] if len(base) > 7 and base[6] == "+" else base
+
+
+def register_fonts(specs):
+    """Note font specs (dicts) met in a resource dictionary."""
+    for spec in specs:
+        spec = resolve1(spec)
+        if not isinstance(spec, dict):
+            continue
+        base = getattr(resolve1(spec.get("BaseFont")), "name", None)
+        if base:
+            fam = _SIBLINGS.setdefault(_family(base), [])
+            if all(o is not spec for o in fam):
+                fam.append(spec)
+
+
+def _outlines(spec):
+    """{glyph name: (drawing ops, coordinates, advance)} of a simple font's
+    embedded CFF (FontFile3) or TrueType (FontFile2) program, or {}."""
+    key = id(spec)
+    if key in _OUTLINES:
+        return _OUTLINES[key]
+    out = {}
+    try:
+        from fontTools.pens.recordingPen import RecordingPen
+        fd = resolve1(spec.get("FontDescriptor")) or {}
+        st = resolve1(fd.get("FontFile3"))
+        if isinstance(st, PDFStream):
+            from fontTools.cffLib import CFFFontSet
+            cff = CFFFontSet()
+            cff.decompile(io.BytesIO(st.get_data()), None)
+            cs = cff[cff.fontNames[0]].CharStrings
+            for name in cs.keys():
+                pen = RecordingPen()
+                cs[name].draw(pen)
+                out[name] = (tuple(op for op, _ in pen.value),
+                             tuple(v for _, pts in pen.value for q in pts for v in q),
+                             getattr(cs[name], "width", 0) or 0)
+        else:
+            st = resolve1(fd.get("FontFile2"))
+            if isinstance(st, PDFStream):
+                from fontTools.ttLib import TTFont
+                tt = TTFont(io.BytesIO(st.get_data()))
+                gs = tt.getGlyphSet()
+                for name in tt.getGlyphOrder():
+                    pen = RecordingPen()
+                    gs[name].draw(pen)
+                    out[name] = (tuple(op for op, _ in pen.value),
+                                 tuple(v for _, pts in pen.value for q in pts for v in q),
+                                 tt["hmtx"][name][0])
+    except Exception:                 # no program, or one fontTools cannot read
+        out = {}
+    _OUTLINES[key] = out
+    return out
+
+
+def outline_twin(spec, base, name):
+    """The character of glyph `name` (a name that is no character name) of
+    the font `spec`: a blank glyph with an advance is a space; otherwise
+    the character of the one named glyph, in this font or a sibling subset,
+    drawn with the same operations at coordinates within 2 units (subsets
+    re-encoded with rounding).  "" if none or several characters fit."""
+    mine = _outlines(spec).get(name)
+    if mine is None:
+        return ""
+    ops, coords, width = mine
+    if not ops:
+        return " " if width > 0 else ""
+    found = set()
+    for other in [spec] + [o for o in _SIBLINGS.get(_family(base), ()) if o is not spec]:
+        for gname, (o_ops, o_coords, _) in _outlines(other).items():
+            if o_ops != ops or len(o_coords) != len(coords):
+                continue
+            u = toUnicode(gname.split(".")[0])
+            if not u or _controls(u) or len(u) != 1:
+                continue
+            if all(abs(a - b) <= 2 for a, b in zip(coords, o_coords)):
+                found.add(u)
+        if found:
+            break                      # (the font's own glyphs first)
+    return found.pop() if len(found) == 1 else ""
+
+
+# standard Latin ligatures, as lost by producers that cannot name them
+_LIGATURE_SEQS = ("ff", "fi", "fl", "ffi", "ffl", "ft", "fft", "fj", "fb", "fh", "fk",
+                  "tt", "ti", "tf", "tz", "st", "ct")
+
+
+def _ligature(c, glyphs, umap):
+    """The letters of the ligature glyph of code c, from the font's other
+    glyphs: a ligature starts where its first letter starts (same left
+    edge), spans the letters' heights and is about as wide as they are
+    together (within 3%; letters are drawn closer in a ligature).  "" unless
+    exactly one standard ligature fits."""
+    g = glyphs.get(c)
+    if g is None or g["contours"] == 0:
+        return ""
+    letters = {}
+    for k, v in umap.cid2unichr.items():
+        if k != c and len(v) == 1 and k in glyphs and glyphs[k]["contours"] != 0:
+            letters.setdefault(v, glyphs[k])
+    tol = 0.02 * g["upem"]
+    fits = []
+    for seq in _LIGATURE_SEQS:
+        ms = [letters.get(ch) for ch in seq]
+        if None in ms:
+            continue
+        if abs(g["xmin"] - ms[0]["xmin"]) <= tol and \
+                abs(g["ymax"] - max(m["ymax"] for m in ms)) <= tol and \
+                abs(g["ymin"] - min(m["ymin"] for m in ms)) <= tol and \
+                abs(g["advance"] - sum(m["advance"] for m in ms)) <= 0.03 * g["advance"]:
+            fits.append(seq)
+    return fits[0] if len(fits) == 1 else ""
+
+
+def _simple_glyph_metrics(spec):
+    """{code: {"contours", "advance", "xmin", "ymin", "xmax", "ymax",
+    "upem"}} of a simple TrueType font's embedded program (codes through
+    its (1, 0) or (3, 0) cmap), or None."""
+    try:
+        from fontTools.ttLib import TTFont
+        fd = resolve1(spec.get("FontDescriptor")) or {}
+        st = resolve1(fd.get("FontFile2"))
+        if not isinstance(st, PDFStream):
+            return None
+        tt = TTFont(io.BytesIO(st.get_data()))
+        cmap = {}
+        for t in tt["cmap"].tables:
+            if (t.platformID, t.platEncID) in ((1, 0), (3, 0)):
+                for code, name in t.cmap.items():
+                    cmap.setdefault(code & 0xFF, name)    # (symbol cmaps: 0xF000 + code)
+        glyf, hmtx, upem = tt["glyf"], tt["hmtx"], tt["head"].unitsPerEm
+        out = {}
+        for code, name in cmap.items():
+            gl = glyf[name]
+            n = gl.numberOfContours
+            if n != 0:
+                gl.recalcBounds(glyf)
+            out[code] = {"contours": n, "advance": hmtx[name][0], "upem": upem,
+                         "xmin": getattr(gl, "xMin", 0), "ymin": getattr(gl, "yMin", 0),
+                         "xmax": getattr(gl, "xMax", 0), "ymax": getattr(gl, "yMax", 0)}
+        return out
+    except Exception:                 # no program, or one fontTools cannot read
+        return None
 
 
 def _differences(spec):

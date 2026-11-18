@@ -1,0 +1,2 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,,3a,Scatterplot of the phase transitions from Panov’s list with the fitted power-law regression line (with a logarithmic scale for the Y-axis) – for the Singularity date identified as 2027 CE with the least squares method,,Excel,19,0,4,1e-10,0.1

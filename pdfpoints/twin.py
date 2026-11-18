@@ -1,4 +1,4 @@
-"""Graphs with a scale on both sides (option-free).
+"""Graphs with a scale on both sides (no option needed).
 
 A graph may carry two y scales, one on the left and one on the right (or
 two x scales, at the bottom and the top).  Each series belongs to one of
@@ -61,19 +61,18 @@ def axis_title(axis, texts, side):
 
 
 def _axis_colours(axis, title_items):
+    """The colours (hex) of an axis's labels and title, black apart: an axis
+    drawn in its series' colour says which series it carries."""
     cols = [tx.get("rgb") for _, tx in axis.get("labels", ())] + \
         [t.get("rgb") for t in title_items]
-    cols = [color_name(c)[1] for c in cols if c]
-    dark = {"#000000"}
-    cols = [c for c in cols if c not in dark]
-    return set(cols)
+    return {color_name(c)[1] for c in cols if c} - {"#000000"}
 
 
 def assign_twin_axes(g, texts, series_info):
-    """{series name: "first" | "second"} for a graph with a second scale
-    (g["y2"] or g["x2"]); series_info is {name: set of colour hex codes}.
-    Also sets g["twin"] = (data axis letter, first side name, second side
-    name, titles) and returns the names it could not place."""
+    """({series name: "first" | "second"}, names it could not place) for a
+    graph with a second scale (g["y2"] or g["x2"]); series_info is {name:
+    set of colour hex codes}.  Also sets g["twin"] = {"axis": data axis
+    letter, "sides": the two sides' names, "titles": the axis titles}."""
     key = "y" if "y2" in g else "x"
     first, second = g[key], g[key + "2"]
     rect = g["rect"]
@@ -108,7 +107,7 @@ def assign_twin_axes(g, texts, series_info):
     return out, unsure
 
 
-def twin_axes(graphs, symbols, namer, texts, warnings, debug):
+def twin_axes(graphs, symbols, namer, texts, debug):
     """For each graph with a scale on both sides, which scale each of its
     series is read against (g["twin_map"]: series name -> "first" /
     "second")."""
@@ -132,10 +131,10 @@ def twin_axes(graphs, symbols, namer, texts, warnings, debug):
 def warn_twin_unsure(graphs, rows, warnings):
     """Warn about reported series whose scale (left or right) is unknown."""
     for g in graphs:
+        unsure = g.get("twin_unsure", ())
+        # (the key of an unnamed series is its colour, as in twin_key)
         names = sorted(set(r["series"] or r["color_hex"] for r in rows if r["graph"] == g["no"]
-                           and twin_key(r["series"], {"rgb": None}) in g.get("twin_unsure", ())
-                           or (not r["series"] and "#colour " + r["color_hex"]
-                               in g.get("twin_unsure", ()))))
+                           and (r["series"] or "#colour " + r["color_hex"]) in unsure))
         if names:
             warnings.append("graph %d has a scale on both sides; not known which one "
                             "series %s use%s: read against the %s one" % (

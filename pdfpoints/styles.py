@@ -33,6 +33,9 @@ Signs used (each adds to the program's score):
 
 import re
 
+from .colours import color_name
+from .symbols import as_closed, classify_subpath
+
 _PALETTES = {
     "ggplot2": {"f8766d", "00bfc4", "7cae00", "c77cff", "00ba38", "619cff", "e76bf3",
                 "a3a500", "00bf7d", "00b0f6", "ebebeb"},
@@ -69,10 +72,6 @@ def _matches(h, rgbs, tol=2):
     return any(all(abs(a - b) <= tol for a, b in zip(c, r)) for r in rgbs)
 
 
-def _hex(rgb):
-    return "%02x%02x%02x" % tuple(int(round(255 * max(0.0, min(1.0, c)))) for c in rgb)
-
-
 def guess_tool(rect, paths, texts, glyph_symbols):
     """The likely program ("R", "R (ggplot2)", "R (lattice)", "matplotlib",
     "MATLAB", "Excel", "gnuplot", "Mathematica", "Stata") that drew the
@@ -94,7 +93,7 @@ def guess_tool(rect, paths, texts, glyph_symbols):
     for p in mine:
         for on, rgb in ((p["fill"], p["fill_rgb"]), (p["stroke"], p["stroke_rgb"])):
             if on and rgb:
-                h = _hex(rgb)
+                h = color_name(rgb)[1][1:]
                 colours[h] = colours.get(h, 0) + 1
     fonts = {}
     for t in words:
@@ -155,7 +154,6 @@ def guess_tool(rect, paths, texts, glyph_symbols):
 
     # filled diamonds: the first default marker of Excel's charts
     if score.get("Excel") and any(p["fill"] for p in mine):
-        from .symbols import as_closed, classify_subpath
         diamonds = sum(1 for p in mine[:400] if p["fill"] and
                        (classify_subpath(as_closed(p["subpaths"][0])) or {}).get("shape")
                        == "diamond")
@@ -173,7 +171,7 @@ def guess_tool(rect, paths, texts, glyph_symbols):
     best, s = ranked[0]
     second = ranked[1][1] if len(ranked) > 1 else 0.0
     if best.startswith("R (") and len(ranked) > 1 and ranked[1][0] == "R":
-        second = max((v for k, v in ranked[2:]), default=0.0)
+        second = max((v for _, v in ranked[2:]), default=0.0)
     if s < 2.5 or s - second < 1.0:
         return ""
     return best

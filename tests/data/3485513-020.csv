@@ -1,0 +1,201 @@
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
+1,1,bar,,0,Copy+Patch,1.157428907,royalblue,#4285f4
+1,1,bar,Chrome V8 Liftoff,0,Chrome V8 Liftoff,1.612525081,tomato,#ea4335
+1,1,bar,Wasmer SinglePass,0,Wasmer (SinglePass),1.341935383,orange,#fbbc04
+1,1,bar,Wasmer Cranelift,0,Wasmer (Cranelift),1.126675353,seagreen,#34a853
+1,1,bar,Wasmtime Cranelift,0,Wasmtime (Cranelift),0.591643698,darkorange,#ff6d01
+1,1,bar,Chrome V8 TurboFan,0,Chrome V8 TurboFan,0.942183727,mediumturquoise,#46bdc6
+1,1,bar,WAVM (LLVM),0,WAVM (LLVM),0.431743035,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,2mm,1.551225856,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,2mm,1.846298049,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,2mm,1.128321667,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,2mm,0.543119617,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,2mm,0.507071549,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,2mm,0.44805711,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,1,2mm,3.522435338,tomato,#ea4335
+1,2,filled-circle,Chrome V8 Liftoff,0,3mm,1.484186236,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,3mm,1.819058107,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,3mm,1.061265737,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,3mm,0.484985991,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,3mm,0.456848924,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,3mm,0.419642751,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,adi,1.35257001,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,adi,1.570913647,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,adi,0.907808622,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,adi,0.797413453,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,adi,0.836087647,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,adi,0.726524357,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,atax,1.893649878,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,atax,1.893649878,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,atax,0.895379379,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,atax,0.527591219,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,atax,0.527591219,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,atax,0.396235974,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,bicg,2.730829554,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,bicg,1.732526432,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,bicg,1.200124199,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,bicg,0.734255934,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,bicg,0.800806213,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,bicg,0.667705654,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,cholesky,1.726491235,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,cholesky,2.16890379,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,cholesky,0.719706216,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,cholesky,0.524019034,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,cholesky,0.506989992,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,cholesky,0.46445001,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,correlation,1.2385211,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,correlation,1.33216452,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,correlation,1.040142548,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,correlation,1.011565075,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,correlation,1.025853811,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,correlation,0.968715177,mediumpurple,#8e7cc3
+1,2,filled-circle,Wasmer SinglePass,1,correlation,3.522435338,orange,#fbbc04
+1,2,filled-circle,Chrome V8 Liftoff,0,covariance,1.262335661,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,covariance,1.330566008,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,covariance,1.070285909,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,covariance,1.013163586,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,covariance,1.019508699,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,covariance,0.967132977,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 TurboFan,1,covariance,3.292021307,mediumturquoise,#46bdc6
+1,2,filled-circle,Chrome V8 Liftoff,0,deriche,1.193681219,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,deriche,1.676709017,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,deriche,1.097069134,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,deriche,0.958602144,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,deriche,0.903844966,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,deriche,0.826561823,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,doitgen,2.0351834,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,doitgen,2.202766138,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,doitgen,1.022330561,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,doitgen,0.590210464,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,doitgen,0.497676216,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,doitgen,0.426999167,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,durbin,1.143067121,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,durbin,1.642226838,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,durbin,1.00045705,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,durbin,0.529842184,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,durbin,0.501313645,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,durbin,0.39436017,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,fdtd-2d,1.64395584,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,fdtd-2d,1.358735698,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,fdtd-2d,1.223074259,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,fdtd-2d,0.60740262,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,fdtd-2d,0.567407207,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,fdtd-2d,0.459931768,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,floyd-,1.471952729,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,floyd-,1.031725895,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,floyd-,1.037369619,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,floyd-,0.279430447,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,floyd-,0.348101201,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,floyd-,0.23160559,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,gemm,1.824489784,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,gemm,1.4198543,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,gemm,1.148139949,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,gemm,0.802584149,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,gemm,0.513123057,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,gemm,0.468837761,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,gemver,1.761054971,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,gemver,1.737289344,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,gemver,1.071770241,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,gemver,0.739002534,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,gemver,0.715236908,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,gemver,0.643923716,mediumpurple,#8e7cc3
+1,2,filled-circle,Wasmer Cranelift,1,gemver,3.522435338,seagreen,#34a853
+1,2,filled-circle,,0,gesummv,2.994763394,indianred,#d9503f
+1,2,filled-circle,Chrome V8 Liftoff,0,gesummv,2.99703067,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,gesummv,1.832368162,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,gesummv,1.266674478,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,gesummv,0.734255934,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,gesummv,0.834081352,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,gesummv,0.717618364,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,gramschmidt,1.140734599,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,gramschmidt,1.08790216,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,gramschmidt,0.998548623,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,gramschmidt,1.124406945,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,gramschmidt,1.10710061,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,gramschmidt,1.082127944,mediumpurple,#8e7cc3
+1,2,filled-circle,WAVM (LLVM),1,gramschmidt,3.292021307,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,head-3d,1.490563971,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,head-3d,1.543787883,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,head-3d,1.14207213,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,head-3d,0.64493502,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,head-3d,0.526433113,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,head-3d,0.534262558,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,jacobi-1D,1.99874386,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,jacobi-1D,1.459670288,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,jacobi-1D,1.200124199,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,jacobi-1D,0.601155375,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,jacobi-1D,0.601155375,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,jacobi-1D,0.441418394,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,jacobi-2D,1.619619317,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,jacobi-2D,1.381131172,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,jacobi-2D,1.116642746,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,jacobi-2D,0.665666736,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,jacobi-2D,0.491380037,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,jacobi-2D,0.489096449,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,lu,1.661131684,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,lu,1.886554444,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,lu,1.018122235,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,lu,0.695059776,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,lu,0.69194431,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,lu,0.614025025,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,ludcmp,1.202260985,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,ludcmp,1.786207062,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,ludcmp,0.92102081,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,ludcmp,0.655896242,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,ludcmp,0.684865187,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,ludcmp,0.611562012,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,mvt,1.732526432,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,mvt,1.898918442,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,mvt,1.00045705,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,mvt,0.744238475,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,mvt,0.767531073,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,mvt,0.700980794,mediumpurple,#8e7cc3
+1,2,filled-circle,Wasmtime Cranelift,1,mvt,3.522435338,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 Liftoff,0,nussinov,1.388259228,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,nussinov,1.167273154,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,nussinov,1.08937018,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,nussinov,0.578792524,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,nussinov,0.584713542,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,nussinov,0.490401357,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,seidel,1.081801717,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,seidel,1.296263254,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,seidel,1.05268597,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,seidel,0.912702025,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,seidel,1.021857532,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,seidel,0.874190945,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,symm,1.697505979,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,symm,1.498360793,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,symm,1.027843795,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,symm,0.751513334,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,symm,0.811261784,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,symm,0.706706075,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,syr2k,1.524246894,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,syr2k,1.372763453,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,syr2k,1.093529573,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,syr2k,0.812485134,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,syr2k,0.847163049,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,syr2k,0.77416979,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,syrk,2.037140762,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,syrk,1.631852824,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,syrk,1.162575488,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,syrk,0.680493747,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,syrk,0.620777921,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,syrk,0.511981263,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,trisolv,1.551225856,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,trisolv,2.239711329,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,trisolv,0.673447247,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,trisolv,0.465184021,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,trisolv,0.346404821,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,trisolv,0.441075856,mediumpurple,#8e7cc3
+1,2,filled-circle,Chrome V8 Liftoff,0,trmm,1.394620652,tomato,#ea4335
+1,2,filled-circle,Wasmer SinglePass,0,trmm,1.726148697,orange,#fbbc04
+1,2,filled-circle,Wasmer Cranelift,0,trmm,0.993084323,seagreen,#34a853
+1,2,filled-circle,Wasmtime Cranelift,0,trmm,0.930465078,darkorange,#ff6d01
+1,2,filled-circle,Chrome V8 TurboFan,0,trmm,0.956269622,mediumturquoise,#46bdc6
+1,2,filled-circle,WAVM (LLVM),0,trmm,0.902849974,mediumpurple,#8e7cc3
+1,3,bar,Chrome V8 Liftoff,0,Chrome V8 Liftoff,1.625176405,tomato,#ea4335
+1,3,bar,Wasmer SinglePass,0,Wasmer (SinglePass),1.618988266,orange,#fbbc04
+1,3,bar,Wasmer Cranelift,0,Wasmer (Cranelift),1.042769621,seagreen,#34a853
+1,3,bar,Wasmtime Cranelift,0,Wasmtime (Cranelift),0.701992016,darkorange,#ff6d01
+1,3,bar,Chrome V8 TurboFan,0,Chrome V8 TurboFan,0.689615738,mediumturquoise,#46bdc6
+1,3,bar,WAVM (LLVM),0,WAVM (LLVM),0.615265936,mediumpurple,#8e7cc3

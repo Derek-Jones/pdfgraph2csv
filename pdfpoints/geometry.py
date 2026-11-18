@@ -17,9 +17,88 @@ def mapply(m, x, y):
     return (m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5])
 
 
+# A subpath is {"start": (x, y), "segs": [("l", p) | ("c", p1, p2, p3)],
+# "closed": bool}.  Most tests on shapes need one of two point lists: the
+# corners (where each segment ends) or every point including the Bezier
+# control points, whose bounding box always contains the curve.
+
+def vertices(sp):
+    """The start of a subpath and the end of each segment: the corners of a
+    polygon (of a curved outline, the points where its curves meet)."""
+    return [sp["start"]] + [seg[-1] for seg in sp["segs"]]
+
+
+def control_points(sp):
+    """Every point that defines a subpath, Bezier control points included:
+    their bounding box contains the whole outline."""
+    return [sp["start"]] + [q for seg in sp["segs"] for q in seg[1:]]
+
+
+def subpath_bbox(sp):
+    """(x0, y0, x1, y1) enclosing a subpath (from its control points)."""
+    return bbox_of(control_points(sp))
+
+
+def is_polygon(sp):
+    """A subpath of straight segments only (and at least one)."""
+    return bool(sp["segs"]) and all(seg[0] == "l" for seg in sp["segs"])
+
+
+def box_of(sp, tol=0.5):
+    """An axis-aligned box drawn as a 4- or 5-point polygon whose corners
+    lie within `tol` of its bounding box's corners -> (x0, y0, x1, y1), else
+    None.  Looser than rect_of: boxes round notes and table rules come from
+    many programs, some writing coordinates with few decimals."""
+    if not is_polygon(sp):
+        return None
+    v = vertices(sp)
+    if not 4 <= len(v) <= 5:
+        return None
+    x0, y0, x1, y1 = bbox_of(v)
+    if any(min(abs(q[0] - x0), abs(q[0] - x1)) > tol or min(abs(q[1] - y0), abs(q[1] - y1)) > tol
+           for q in v):
+        return None
+    return x0, y0, x1, y1
+
+
+def median(values, default=None):
+    """The middle value (the upper one of an even count), or `default` for
+    none.  Medians, not means, are used throughout for sizes and gaps: one
+    stray glyph or a missing tick must not move the typical value."""
+    vs = sorted(values)
+    return vs[len(vs) // 2] if vs else default
+
+
+def inside_rect(rect, x, y, slack=0.0):
+    """Whether (x, y) lies in rect, widened by `slack` on every side."""
+    return rect[0] - slack <= x <= rect[2] + slack and rect[1] - slack <= y <= rect[3] + slack
+
+
+def encloses(outer, inner, slack=0.5):
+    """Whether box `outer` (widened by `slack`) contains box `inner`."""
+    return (outer[0] - slack <= inner[0] and inner[2] <= outer[2] + slack and
+            outer[1] - slack <= inner[1] and inner[3] <= outer[3] + slack)
+
+
+def rect_area(rect):
+    return (rect[2] - rect[0]) * (rect[3] - rect[1])
+
+
+def overlap_area(a, b):
+    """Area common to two rectangles (0 if they do not overlap)."""
+    return max(0.0, min(a[2], b[2]) - max(a[0], b[0])) * max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
+
+
+def fmt_rect(rect):
+    """A rectangle for debug output (2 decimals)."""
+    return tuple(round(v, 2) for v in rect)
+
+
 def rect_of(sp):
-    """Axis-aligned rectangle (x0, y0, x1, y1) traced by a subpath, or None."""
-    pts = [sp["start"]] + [seg[-1] for seg in sp["segs"]]
+    """Axis-aligned rectangle (x0, y0, x1, y1) traced by a subpath, or None.
+    Strict (coordinates to 0.01): used where a box must be exact, such as
+    plot frames and covers."""
+    pts = vertices(sp)
     if any(seg[0] != "l" for seg in sp["segs"]) or not 4 <= len(pts) <= 5:
         return None
     if len(pts) == 5 and math.hypot(pts[4][0] - pts[0][0], pts[4][1] - pts[0][1]) > 0.01:
@@ -157,10 +236,7 @@ def _flatten(sp, steps):
         else:
             p1, p2, p3 = seg[1], seg[2], seg[3]
             for k in range(1, steps + 1):
-                t = k / float(steps)
-                mt = 1 - t
-                pts.append((mt ** 3 * cur[0] + 3 * mt * mt * t * p1[0] + 3 * mt * t * t * p2[0] + t ** 3 * p3[0],
-                            mt ** 3 * cur[1] + 3 * mt * mt * t * p1[1] + 3 * mt * t * t * p2[1] + t ** 3 * p3[1]))
+                pts.append(bezier_point(cur, p1, p2, p3, k / float(steps)))
             cur = p3
     return pts
 
@@ -175,8 +251,7 @@ def thin_rect_line(sp):
 def _thin_rect_line(sp):
     if not sp["segs"]:
         return None
-    pts = [sp["start"]] + [q for s in sp["segs"] for q in s[1:]]
-    x0, y0, x1, y1 = bbox_of(pts)
+    x0, y0, x1, y1 = subpath_bbox(sp)
     w, h = x1 - x0, y1 - y0
     t, L = min(w, h), max(w, h)
     if L <= 0 or t > 2.0 or t > 0.4 * L:

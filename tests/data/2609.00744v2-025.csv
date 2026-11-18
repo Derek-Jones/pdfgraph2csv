@@ -1,0 +1,4 @@
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex,label
+1,1,filled-circle,,0,129999.459,1.3699685,black,#000000,"FlashAttention, paged KV"
+1,1,filled-square,,0,129999.459,6.799329,black,#000000,full-SRAM residency
+1,1,filled-triangle,,0,129999.463,340.97483,black,#000000,KV recomputed each step

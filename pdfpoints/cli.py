@@ -40,6 +40,11 @@ def main():
     ap.add_argument("--rotation", action="store_true",
                     help="add a column with the rotation of each point's graph "
                          "(0, 90, -90 or 180 degrees)")
+    ap.add_argument("--sizesymbol", action="store_true",
+                    help="add a column symbol_size: the size of each point's marker in PDF "
+                         "points (1/72 inch) - the diameter of a circle, the average edge "
+                         "length of a box (other shapes: the mean of their bounding box's "
+                         "width and height)")
     ap.add_argument("--digits", type=int, default=None, metavar="N",
                     help="significant digits of the numbers written (default: as many "
                          "as the precision of the PDF's coordinates justifies, at least 6)")
@@ -61,11 +66,11 @@ def main():
     args = ap.parse_args()
     if args.digits is not None and not 1 <= args.digits <= 17:
         ap.error("--digits must be between 1 and 17")
+    if args.max_words < 0:
+        ap.error("--max-words must be 0 or more")
     num = "%%.%dg" % args.digits if args.digits else "%g"
     pages = {int(p) for p in args.pages.split(",")} if args.pages else None
     SETTINGS.glyph_centre = args.glyph_centre
-    if args.max_words < 0:
-        ap.error("--max-words must be 0 or more")
     SETTINGS.max_words = args.max_words
     info = {}
     try:
@@ -82,11 +87,16 @@ def main():
         write_meta(args.meta, info["meta"], num)
     cols = ["page", "graph", "symbol", "series", "legend_key",
             "x_coord", "y_coord", "color", "color_hex"]
+    if any(r.get("label") for r in rows):
+        # text printed beside points (values, names): the data labels
+        cols.append("label")
     if any(r.get("axis") for r in rows):
         # a graph with a scale on both sides: which one each value is read against
         cols.append("axis")
     if args.rotation:
         cols.append("rotation")
+    if args.sizesymbol:
+        cols.append("symbol_size")
     if any(r.get("x_coord_low") != "" or r.get("y_coord_low") != "" for r in rows):
         # an axis without tick marks, its label centres taken as ticks: the
         # range each value may really lie in
@@ -123,14 +133,19 @@ def round_values(rows, col):
             r[col] = int(round(v))
 
 
+# columns holding data values: written with the digits the PDF's precision
+# justifies for that axis (x_digits / y_digits, see rows.value_digits)
+VALUE_COLUMNS = {"x_coord", "y_coord", "x_low", "x_high", "y_low", "y_high",
+                 "x_coord_low", "x_coord_high", "y_coord_low", "y_coord_high"}
+
+
 def cell(row, col, num, digits):
     """One CSV cell: a data value with the digits its precision justifies
     (unless --digits fixes them), other numbers with `num`."""
     v = row[col]
     if not isinstance(v, float):
         return v
-    if digits is None and col in ("x_coord", "y_coord", "x_low", "x_high", "y_low", "y_high",
-                                  "x_coord_low", "x_coord_high", "y_coord_low", "y_coord_high"):
+    if digits is None and col in VALUE_COLUMNS:
         return "%%.%dg" % row.get(col[0] + "_digits", 6) % v
     return num % v
 

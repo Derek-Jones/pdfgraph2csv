@@ -14,7 +14,8 @@ import math
 import re
 
 from .context import PAGE
-from .geometry import bbox_of, flatten_subpath, thin_rect_line, to_frame
+from .geometry import (
+    bbox_of, encloses, flatten_subpath, median, subpath_bbox, thin_rect_line, to_frame)
 from .grouping import BoxGrid, DisjointSets
 from .occlusion import CoverIndex
 from .symbols import classify_subpath
@@ -69,6 +70,17 @@ _DIGIT_TEMPLATES = [  # (char, aspect w/h, 12x16 bitmap rows top->bottom as hex)
 ]
 
 
+# shorter glyphs of R's e-notation labels ("1e+00", "5e-04":
+# Statistical_Test_Coverage_for_Linux page 10), rendered from Liberation
+# Sans by tests/make_digit_templates.py (Arial / Helvetica metrics): 'e'
+# stands on the baseline, 0.77 of a digit's height; '+' is centred, 0.69
+# of it
+_SHORT_TEMPLATES = [
+    ("e", 0.866, "0f83fc70e606e07c03e07ffffffc00e00e0060670e3fc0f8"),
+    ("+", 0.993, "060060060060060060060ffffff060060060060060060060"),
+]
+
+
 _TGW, _TGH = 12, 16
 
 
@@ -77,6 +89,7 @@ _NCELLS = _TGW * _TGH
 # each template as one integer: cell i (row-major, top row first) is bit
 # _NCELLS - 1 - i, so a glyph's agreement with it is a popcount of the XOR
 _TEMPLATES = [(ch, asp, int(hx, 16)) for ch, asp, hx in _DIGIT_TEMPLATES]
+_SHORT = [(ch, asp, int(hx, 16)) for ch, asp, hx in _SHORT_TEMPLATES]
 
 # number of set bits (int.bit_count is Python 3.10+)
 _popcount = int.bit_count if hasattr(int, "bit_count") else (lambda v: bin(v).count("1"))
@@ -137,7 +150,15 @@ def _read_glyph(polys, box, word_box):
         return "1", 0.95
     cells = _raster(polys, box)
     best = ("?", 0.0)
-    for ch, tasp, bits in _TEMPLATES:
+    # a glyph clearly shorter than the word may be an 'e' on the baseline
+    # or a '+' about the middle (e-notation); full-height glyphs are digits
+    short = []
+    if h < 0.88 * H:
+        bottom = (y0 - word_box[1]) / H
+        mid = ((y0 + y1) / 2 - word_box[1]) / H
+        short = [t for t in _SHORT if (t[0] == "e" and bottom < 0.1 and h > 0.6 * H) or
+                 (t[0] == "+" and 0.35 < mid < 0.65 and bottom > 0.05 and h > 0.45 * H)]
+    for ch, tasp, bits in _TEMPLATES + short:
         agree = (_NCELLS - _popcount(cells ^ bits)) / float(_NCELLS)
         q = agree - 0.5 * abs(asp - tasp)
         if q > best[1]:
@@ -250,8 +271,8 @@ def outlined_text(paths, blobs=None, covers=()):
     if not parts:
         return [], set()
     markerlike_keys = {(g[0], g[1]) for g in markerlike}
-    words = _words_with_markerlike(_group_words(_group_glyphs(parts + markerlike)),
-                                   markerlike_keys)
+    words = _words_with_markerlike(
+        _group_words(_merge_repeated(_group_glyphs(parts + markerlike))), markerlike_keys)
 
     def n_real(word):          # glyphs that are not marker-like ('.', 'o')
         return sum(1 for g in word if not set(g["members"]) <= markerlike_keys)
@@ -284,6 +305,14 @@ def outlined_text(paths, blobs=None, covers=()):
     votes = collections.Counter(
         rot for word, (rot, q, text, wb) in readings
         if n_real(word) >= 3 and q >= 0.75 and parse_number(text) is not None)
+    # words of two real glyphs vote too when they read clearly better one
+    # way than any other (3576042-018: matplotlib's outlined "0.1" ... "0.8"
+    # outvote "(b)" of a caption, read upside down as "191", so that the x
+    # labels' "6" and "9" are read upright)
+    for word, (rot, q, text, wb) in readings:
+        if n_real(word) == 2 and q >= 0.75 and parse_number(text) is not None and \
+                all(read(word, r)[1] <= q - 0.2 for r in (0, 90, -90, 180) if r != rot):
+            votes[rot] += 1
     page_rot = max(votes, key=votes.get) if votes else None
     readings = [_exponent_minus(word, best, dashes) for word, best in readings]
     readings = _join_split_exponents(readings, read, dashes, page_rot)
@@ -333,8 +362,7 @@ def _crowded_words(shapes):
     (hundreds of overlapping pieces) can read as '1' or '-1'."""
     if not shapes:
         return lambda word: False
-    hs = sorted(max(g[3][2] - g[3][0], g[3][3] - g[3][1]) for g in shapes)
-    grid = BoxGrid(max(hs[len(hs) // 2], 1.0))
+    grid = BoxGrid(max(median(max(g[3][2] - g[3][0], g[3][3] - g[3][1]) for g in shapes), 1.0))
     for g in shapes:
         grid.add(((g[0], g[1]), g[3]), g[3])
 
@@ -447,8 +475,8 @@ def _overlap_test(word):
 
     if len(word) <= 64:
         return lambda g, _w: any(o is not g and overlap(g["box"], o["box"]) for o in word)
-    sizes = sorted(max(o["box"][2] - o["box"][0], o["box"][3] - o["box"][1]) for o in word)
-    grid = BoxGrid(max(sizes[len(sizes) // 2], 0.05))
+    grid = BoxGrid(max(median(max(o["box"][2] - o["box"][0], o["box"][3] - o["box"][1])
+                              for o in word), 0.05))
     for k, o in enumerate(word):
         grid.add(k, o["box"])
     index = {id(o): k for k, o in enumerate(word)}
@@ -457,6 +485,12 @@ def _overlap_test(word):
         me = index[id(g)]
         return any(k != me and overlap(g["box"], word[k]["box"]) for k in grid.near(g["box"]))
     return test
+
+
+def _area(poly):
+    """Signed area of a polygon (shoelace)."""
+    return 0.5 * sum(poly[i][0] * poly[i - 1][1] - poly[i - 1][0] * poly[i][1]
+                     for i in range(len(poly)))
 
 
 def _glyph_parts(paths, covers):
@@ -471,6 +505,7 @@ def _glyph_parts(paths, covers):
     markerlike = []        # contours of paths made only of marker shapes (or
                            # round letters): text only beside real letters
     stems = []             # thin straight bars: stems of 'i' and 'j' (boxes)
+    bars = []              # the same as glyph parts (see the end)
     # colours of marker circles: a single round shape of such a colour is a
     # marker (or its converted outline ring), never a character - characters
     # like 'o' or '0' come with a hole, i.e. two contours
@@ -498,14 +533,25 @@ def _glyph_parts(paths, covers):
                 info.append((k, poly, bbox_of(poly), sp))
         if not info:
             continue
+        # a filled straight line paints nothing: 3576042-018 (matplotlib)
+        # fills each tick mark, a single line segment, and that empty
+        # contour joined the label below it into one unreadable word (tiny
+        # curved specks of no area are kept: the glyph fragments of
+        # cumulative-evol-hollywood-film-crews-007)
+        if len(info) == 1 and all(g[0] == "l" for g in info[0][3]["segs"]):
+            b = info[0][2]
+            if max(b[2] - b[0], b[3] - b[1]) >= 0.5 and abs(_area(info[0][1])) < 1e-4:
+                continue
         big = max(max(b[2] - b[0], b[3] - b[1]) for _, _, b, _ in info)
         if big > 30:                               # far larger than a glyph
             continue
         if all(classify_subpath(sp) is not None or thin_rect_line(sp) is not None
                for _, _, _, sp in info):
-            if len(info) == 1 and thin_rect_line(info[0][3]) is not None:
+            bar = len(info) == 1 and thin_rect_line(info[0][3]) is not None
+            if bar:
                 stems.append(info[0][2])
-            if len(info) == 1 and thin_rect_line(info[0][3]) is not None and big < 6:
+                bars.append((p["idx"], info[0][0], info[0][1], info[0][2], p["fill_rgb"]))
+            if bar and big < 6:
                 dashes.append(_Dash(info[0][1], p["idx"]))  # maybe a minus sign
             elif all(classify_subpath(sp) is not None for _, _, _, sp in info):
                 # markers - or letters that look like them ('o', '.'): text
@@ -537,14 +583,33 @@ def _glyph_parts(paths, covers):
         else:
             full.append(m)
     markerlike = full
-    if parts:
-        # tall slender pieces (axis-break wiggles, brackets) are no digits
-        # and would glue neighbouring labels into one unreadable word
-        hs = sorted(g[3][3] - g[3][1] for g in parts)
-        hmed = hs[len(hs) // 2]
-        parts = [g for g in parts
-                 if not (g[3][3] - g[3][1] > 1.8 * hmed and
-                         g[3][3] - g[3][1] > 4 * (g[3][2] - g[3][0]))]
+    # an upright bar between two glyphs of its colour and height is a
+    # letter ('I', 'l', '1'): 3576042-018's outlined legend name "HINDBR"
+    # fell apart at its 'I', and the 'H' alone was taken for a marker (a
+    # tick mark has no glyph level with it on both sides)
+    for bar in bars:
+        b = bar[3]
+        h, w = b[3] - b[1], b[2] - b[0]
+        if h < 2.5 * w:
+            continue
+        reach = 0.6 * h
+
+        def level(g):
+            gb = g[3]
+            gh = gb[3] - gb[1]
+            return g[4] == bar[4] and 0.6 * h <= gh <= 1.4 * h and \
+                min(gb[3], b[3]) - max(gb[1], b[1]) >= 0.7 * h
+        others = parts + markerlike
+        left = any(level(g) and 0 <= b[0] - g[3][2] <= reach for g in others)
+        right = any(level(g) and 0 <= g[3][0] - b[2] <= reach for g in others)
+        if left and right:
+            markerlike.append(bar)
+    # tall slender pieces (axis-break wiggles, brackets) are no digits and
+    # would glue neighbouring labels into one unreadable word
+    hmed = median(g[3][3] - g[3][1] for g in parts)
+    parts = [g for g in parts
+             if not (g[3][3] - g[3][1] > 1.8 * hmed and
+                     g[3][3] - g[3][1] > 4 * (g[3][2] - g[3][0]))]
     return parts, dashes, markerlike, stems
 
 
@@ -558,8 +623,7 @@ def _letter_dots(markerlike, stems, in_words):
     dots = set()
     if not stems:
         return dots
-    ts = sorted(min(s[2] - s[0], s[3] - s[1]) for s in stems)
-    grid = BoxGrid(max(10 * ts[len(ts) // 2], 1.0))
+    grid = BoxGrid(max(10 * median(min(s[2] - s[0], s[3] - s[1]) for s in stems), 1.0))
     for s in stems:
         grid.add(s, s)
     for idx, k, poly, b, rgb in markerlike:
@@ -588,8 +652,7 @@ def _letter_dots(markerlike, stems, in_words):
 
 def _round_blob(sp):
     """A single round shape made of curves (a marker disc, not a glyph)."""
-    pts = [sp["start"]] + [q for s in sp["segs"] for q in s[1:]]
-    x0, y0, x1, y1 = bbox_of(pts)
+    x0, y0, x1, y1 = subpath_bbox(sp)
     w, h = x1 - x0, y1 - y0
     return (w > 0 and h > 0 and min(w, h) / max(w, h) > 0.8 and
             sum(1 for s in sp["segs"] if s[0] == "c") >= 3)
@@ -604,9 +667,7 @@ def _group_glyphs(parts):
     by_path = {}
     for path_idx, k, poly, b, rgb in parts:
         for gl in by_path.get(path_idx, ()):
-            ob = gl["box"]
-            if (ob[0] <= b[0] + 1e-6 and ob[1] <= b[1] + 1e-6
-                    and b[2] <= ob[2] + 1e-6 and b[3] <= ob[3] + 1e-6):
+            if encloses(gl["box"], b, 1e-6):
                 gl["polys"].append(poly)
                 gl["members"].append((path_idx, k))
                 break
@@ -616,6 +677,26 @@ def _group_glyphs(parts):
             glyphs.append(gl)
             by_path.setdefault(path_idx, []).append(gl)
     return glyphs
+
+
+def _merge_repeated(glyphs):
+    """A glyph drawn again in the same place (same colour, box and outline,
+    to 0.01 pt) is one glyph: its repeats join its members (they are text,
+    not markers) but add no outline.  cumulative-evol-hollywood-film-crews-007
+    draws its axes and tick labels up to four times over; each "1910" was
+    eight overlapping glyphs, no line of text, and no label was read."""
+    out, seen = [], {}
+    for gl in glyphs:
+        key = (gl["rgb"], tuple(round(v, 2) for v in gl["box"]),
+               tuple(tuple((round(q[0], 2), round(q[1], 2)) for q in poly)
+                     for poly in sorted(gl["polys"], key=len)))
+        first = seen.get(key)
+        if first is None:
+            seen[key] = gl
+            out.append(gl)
+        else:
+            first["members"].extend(gl["members"])
+    return out
 
 
 def _group_words(glyphs, reach=0.45):
@@ -742,7 +823,7 @@ def _blob_items(word):
     labels and legend labels.  Slanted (or merged) words are offered letter
     by letter (flag 'glyph')."""
     gb = [gl["box"] for gl in word]
-    hmed = sorted(b[3] - b[1] for b in gb)[len(gb) // 2]
+    hmed = median(b[3] - b[1] for b in gb)
     if hmed < 1.5:
         return []
     idx = min(gl["path"] for gl in word)

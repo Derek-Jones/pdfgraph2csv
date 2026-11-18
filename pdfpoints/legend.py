@@ -1,13 +1,19 @@
 """Legends: legend keys (a marker or line sample with a label to its right)
 and the naming of every data symbol's series from them.
+
+The series column of the output comes from here.  Keys are reported as
+points too (legend_key = 1), so they must be told from data points: a key
+has its label just to its right, stands apart on its line, and lines up
+with the other keys of its legend.
 """
 
 import bisect
 import math
+import re
 
 from .colours import color_name
 from .context import PAGE
-from .geometry import thin_rect_line, bbox_of, rect_distance
+from .geometry import bbox_of, median, rect_distance, thin_rect_line, vertices
 from .graphs import frame_symbols, frame_texts
 from .symbols import symbol_signature
 from .text import is_number
@@ -118,7 +124,7 @@ def find_legend(symbols, texts, hlines=()):
     # neighbours just left and right of them (concentric layers are fine)
     if keys:
         grid = {}
-        cell = max(1.0, sorted(s["size"] for s in symbols)[len(symbols) // 2])
+        cell = max(1.0, median(s["size"] for s in symbols))
         for j, s in enumerate(symbols):
             grid.setdefault((int(s["cx"] // cell), int(s["cy"] // cell)), []).append(j)
         for i in list(keys):
@@ -203,15 +209,25 @@ def numbered_legend(symbols, texts):
     return keys
 
 
-def legend_for_lines(series, paths, texts):
+def legend_for_lines(series, paths, texts, rect=None):
     """Legend entries of line series: a short horizontal line sample (or a
-    row of dashes) in the series' style with a label just to its right."""
+    row of dashes) in the series' style with a label just to its right.
+    With the graph's box `rect`, only samples within it or beside it (a
+    quarter of its size off) count: logpaper5Rediscoveries-007's right
+    graph took the names of the left one's legend (D-Lognormal for its
+    solid line) instead of its own (Year 1, 2, 3)."""
     names = {}
     samples = []
+    if rect is not None:
+        mx, my = 0.25 * (rect[2] - rect[0]), 0.25 * (rect[3] - rect[1])
+        area = (rect[0] - mx, rect[1] - my, rect[2] + mx, rect[3] + my)
     for p in paths:
         for sp in p["subpaths"]:
-            pts = [sp["start"]] + [s[-1] for s in sp["segs"]]
+            pts = vertices(sp)
             b = bbox_of(pts)
+            if rect is not None and not (area[0] <= (b[0] + b[2]) / 2 <= area[2] and
+                                         area[1] <= (b[1] + b[3]) / 2 <= area[3]):
+                continue
             if p["stroke"] and not sp["closed"] and len(sp["segs"]) == 1 and \
                     abs(b[3] - b[1]) < 0.05 and 3 < b[2] - b[0] < 60:
                 samples.append((("solid",), p["stroke_rgb"], b))
@@ -250,6 +266,12 @@ def legend_for_lines(series, paths, texts):
     return names
 
 
+def _clean_label(label):
+    """A legend name: one unknown character between numbers ("85\ufffd90",
+    a dash in a font that cannot be read) is a range dash."""
+    return re.sub(r"(?<=\d)\ufffd(?=\d)", "\u2013", label) if label else label
+
+
 def find_page_legend(symbols, texts, blobs, graphs, paths):
     """Legend keys of the page: {symbol index: series name}.  Combines
     keys with text labels (also in turned graphs), colour swatches labelled
@@ -260,8 +282,8 @@ def find_page_legend(symbols, texts, blobs, graphs, paths):
     shown = [i for i, s in enumerate(symbols) if not clipped_out(s)]
     if len(shown) < len(symbols):
         keys = _page_legend([symbols[i] for i in shown], texts, blobs, graphs, paths)
-        return {shown[i]: name for i, name in keys.items()}
-    return _page_legend(symbols, texts, blobs, graphs, paths)
+        return {shown[i]: _clean_label(name) for i, name in keys.items()}
+    return {i: _clean_label(name) for i, name in _page_legend(symbols, texts, blobs, graphs, paths).items()}
 
 
 def clipped_out(s):
@@ -302,7 +324,7 @@ def _unreadable_legend_keys(symbols, texts, blobs, graphs, hlines, legend):
     cands, inner = {}, {}
     for i, label in find_legend(symbols, texts + unread, hlines).items():
         s = symbols[i]
-        if label != "\x00" or i in legend or s["shape"] in ("line", "bar"):
+        if label != "\x00" or i in legend or s["shape"] in ("line", "bar", "stem") or s["shape"].startswith("box-"):
             continue
         d, g = min(((rect_distance(g["rect"], s["cx"], s["cy"]), k)
                     for k, g in enumerate(graphs)))
@@ -326,10 +348,23 @@ def _unreadable_legend_keys(symbols, texts, blobs, graphs, hlines, legend):
                         key=lambda o: o["cy"])
         sizes = [o["size"] for o in column]
         if (len(column) >= 3 and len({symbol_signature(o) for o in column}) == len(column)
-                and max(sizes) <= 1.5 * min(sizes)
+                and max(sizes) <= 2.0 * min(sizes)   # (shapes of one nominal size differ)
                 and all(b["cy"] - a["cy"] >= 0.8 * max(sizes) for a, b in zip(column, column[1:]))):
             keys.append(i)                  # rows of similar keys, one under another
     return keys
+
+
+def _claim(table, key, label):
+    """Record that `key` is named `label`; a key claimed by two different
+    labels is ambiguous (None) and names nothing."""
+    table[key] = label if table.get(key, label) == label else None
+
+
+def _nearest_graph(graphs, s):
+    if s.get("frame") and not any(rect_distance(g["rect"], s["cx"], s["cy"]) == 0 for g in graphs):
+        from .graphs import nearest_to_frame
+        return nearest_to_frame(graphs, s["frame"])
+    return min(graphs, key=lambda g: rect_distance(g["rect"], s["cx"], s["cy"]))
 
 
 class SeriesNamer:
@@ -344,20 +379,44 @@ class SeriesNamer:
         self.line_names = line_names
         self.by_marker = {}       # (graph no, marker signature) -> label / None
         self.by_colour = {}       # (graph no, colour) -> label / None (swatches)
+        self.by_shape = {}        # (graph no, shape, colour) -> label / None (image markers)
+        self.form_keys = {}       # graph no -> {(shape, filled): label} when the keys' shapes differ
         self.figure = []          # (rgb, signature, label) of keys outside all graphs
         self.by_outline = {}      # (graph no, shape, outline colour) -> label (white keys)
+        self.swatches = {}        # graph no -> [(rgb, label)] of its colour swatches
         self._figure_cache = {}
+        self._near_cache = {}
         for i, label in legend.items():
             s = symbols[i]
-            g = min(graphs, key=lambda g: rect_distance(g["rect"], s["cx"], s["cy"]))
-            key = (g["no"], symbol_signature(s))
-            # the same marker with different labels is ambiguous
-            self.by_marker[key] = label if self.by_marker.get(key, label) == label else None
+            g = _nearest_graph(graphs, s)
+            # (the same marker with different labels is ambiguous)
+            _claim(self.by_marker, (g["no"], symbol_signature(s)), label)
+            # (a marker drawn as an image is filled, while its key may have
+            # been exported as an outline: shape and colour must do)
+            _claim(self.by_shape, (g["no"], s["shape"], color_name(s["rgb"])[1]), label)
+            if label:
+                self.form_keys.setdefault(g["no"], {}).setdefault(
+                    (s["shape"], bool(s.get("filled"))), []).append(label)
             if s["shape"] in ("rectangle", "square") and s["filled"]:
-                ck = (g["no"], color_name(s["rgb"])[1])
-                self.by_colour[ck] = label if self.by_colour.get(ck, label) == label else None
+                _claim(self.by_colour, (g["no"], color_name(s["rgb"])[1]), label)
+                if label and s["rgb"]:
+                    self.swatches.setdefault(g["no"], []).append((tuple(s["rgb"]), label))
             if s["rgb"] and all(rect_distance(g["rect"], s["cx"], s["cy"]) > 0 for g in graphs):
                 self.figure.append((s["rgb"], symbol_signature(s), label))
+        # (near colours name nothing in a graph whose swatches are themselves
+        # near each other: symbols-on-axes' swatches #ff0500, #ff0e00 ...
+        # sample a continuous colour scale its markers are drawn along)
+        for gno, keys in list(self.swatches.items()):
+            if any(la != lb and max(abs(a - b) for a, b in zip(ka, kb)) <= 2 * self.NEAR_SWATCH
+                   for ka, la in keys for kb, lb in keys):
+                del self.swatches[gno]
+        # (a shape names a series only if every key of the graph has its own
+        # shape, each naming one series)
+        for gno, keys in list(self.form_keys.items()):
+            if len(keys) >= 2 and all(len(set(v)) == 1 and len(v) == 1 for v in keys.values()):
+                self.form_keys[gno] = {k: v[0] for k, v in keys.items()}
+            else:
+                del self.form_keys[gno]
         # a key filled white with a coloured outline (on a white legend box)
         # looks like an open marker of the outline's colour: it also names
         # the markers of its shape in that colour, open or filled, and those
@@ -367,24 +426,66 @@ class SeriesNamer:
             out = s.get("outline_rgb")
             if not (s["filled"] and out and s["rgb"] and min(s["rgb"]) > 0.97 and min(out) <= 0.97):
                 continue
-            g = min(graphs, key=lambda g: rect_distance(g["rect"], s["cx"], s["cy"]))
+            g = _nearest_graph(graphs, s)
             for filled in (False, True):
                 self.by_marker.setdefault((g["no"], symbol_signature(dict(s, filled=filled, rgb=out))), label)
-            ok = (g["no"], s["shape"], color_name(out)[1])
-            self.by_outline[ok] = label if self.by_outline.get(ok, label) == label else None
+            _claim(self.by_outline, (g["no"], s["shape"], color_name(out)[1]), label)
 
     def name(self, si, s, g):
         """Series name of symbol number `si` (`s`) in graph `g`."""
         named = self.line_names.get(id(s)) or self.by_marker.get((g["no"], symbol_signature(s)))
         if named:
             return named
+        if s.get("image"):
+            named = self.by_shape.get((g["no"], s["shape"], color_name(s["rgb"])[1]))
+            if named:
+                return named
         if s.get("outline_rgb") and si not in self.legend:
             named = self.by_outline.get((g["no"], s["shape"], color_name(s["outline_rgb"])[1]))
             if named:
                 return named
         if si in self.legend:
             return self.legend[si]
-        return self.by_colour.get((g["no"], color_name(s["rgb"])[1])) or self._figure_series(s)
+        return (self.by_colour.get((g["no"], color_name(s["rgb"])[1])) or self._figure_series(s)
+                or self._by_form(g, s) or self._by_near_swatch(g, s))
+
+    # largest difference in any channel (0..1) between a marker's colour
+    # and the swatch that names it, and how much nearer that swatch must be
+    # than any other
+    NEAR_SWATCH = 0.15
+    NEAR_SWATCH_RATIO = 2.0
+
+    def _by_near_swatch(self, g, s):
+        """A marker whose colour is near, but not exactly, that of one
+        colour swatch of its graph's legend takes the swatch's name.  The
+        1949 network of 2204.07073-010 draws its nodes in #c90204 and
+        #1740dc while the legend's swatches are #c01025 (Physical) and
+        #143dfa (Cognitive), about 0.13 apart in one channel.  The swatch
+        must be within NEAR_SWATCH in every channel and NEAR_SWATCH_RATIO
+        times nearer than any swatch with another name, so a colour between
+        two keys, or far from all of them, stays unnamed."""
+        rgb = s.get("rgb")
+        keys = self.swatches.get(g["no"])
+        if not rgb or not keys:
+            return ""
+        ck = (g["no"], tuple(rgb))
+        if ck not in self._near_cache:
+            near = sorted((max(abs(a - b) for a, b in zip(rgb, k)), label) for k, label in keys)
+            d, label = near[0]
+            other = [dd for dd, lb in near if lb != label]
+            ok = d <= self.NEAR_SWATCH and all(dd > self.NEAR_SWATCH_RATIO * d for dd in other)
+            self._near_cache[ck] = label if ok else ""
+        return self._near_cache[ck]
+
+    def _by_form(self, g, s):
+        """A chart that colours its points along a colour bar (by year,
+        say) keeps the legend's shapes but not its colours: when every
+        legend key of the graph has a different shape, a point takes the
+        name of the key with its shape."""
+        keys = self.form_keys.get(g["no"])
+        if not keys:
+            return ""
+        return keys.get((s["shape"], bool(s.get("filled")))) or ""
 
     def _figure_series(self, s):
         """(cached: the answer depends only on the colour and the marker)"""
@@ -397,6 +498,12 @@ class SeriesNamer:
         return self._figure_cache[key]
 
     def _figure_series_uncached(self, s):
+        """A data line is not named by a marker key outside all graphs that
+        merely shares its colour: song2025rigorous-002's black phase-plot
+        path (no legend of its own) is not the black dot of panel e's key
+        ("Correct model but there are ...")."""
+        if s["shape"] == "line":
+            return ""
         rgb = s["rgb"]
         same = {label for _, sig, label in self.figure if sig == symbol_signature(s)}
         if len(same) == 1:                 # the same marker as one key
@@ -406,6 +513,6 @@ class SeriesNamer:
         if d > 0.03:
             return ""
         # keys of that colour with other markers: only one may match
-        if len({lb for dd, lb in near if dd <= 0.03}) > 1 and s["shape"] not in ("line", "bar"):
+        if len({lb for dd, lb in near if dd <= 0.03}) > 1 and s["shape"] not in ("line", "bar", "stem") and not s["shape"].startswith("box-"):
             return ""
         return label

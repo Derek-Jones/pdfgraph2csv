@@ -7,10 +7,54 @@ import bisect
 import math
 
 from .context import PAGE
-from .geometry import bbox_of
+from .geometry import bbox_of, control_points, median
 
 
 def fit_axis(pairs, rescue=False):
+    """See _fit_axis; when no scale fits, labels whose unit's SI prefix
+    steps up along the axis are tried (_prefix_steps)."""
+    m = _fit_axis(pairs, rescue)
+    if m is None:
+        stepped = _prefix_steps(pairs)
+        if stepped is not None:
+            m = _fit_axis(stepped, False)
+            if m is not None and m["kind"] == "log" and m["n"] == len(stepped):
+                m["prefix_steps"] = True
+                return m
+            return None
+    return m
+
+
+def _prefix_steps(pairs):
+    """Labels such as 10, 20, 50, ... 500 MHz, 1, 2, 5 GHz whose units
+    could not be read (drawn as outlines): along the axis the values grow
+    and then fall back where the unit's SI prefix steps up, a factor of
+    1000.  Returns the pairs with the values after each fall multiplied by
+    1000 (in the unit of the lowest labels), or None if the labels do not
+    fall, or fall by other than about 1000 times what the steps before
+    them lead to expect."""
+    ps = sorted(pairs)
+    if len(ps) < 4 or any(v <= 0 for _, v in ps):
+        return None
+    ups = sum(1 for a, b in zip(ps, ps[1:]) if b[1] > a[1])
+    if ups < len(ps) - 1 - ups:
+        ps = ps[::-1]                    # (values grow along the list, mostly)
+    out, scale, falls = [ps[0]], 1.0, 0
+    for (c0, v0), (c1, v1) in zip(ps, ps[1:]):
+        if v1 < v0:
+            # the value expected next, from the ratio of the step before
+            prev = out[-2][1] / scale if len(out) >= 2 else None
+            ratio = v0 / prev if prev else 2.0
+            expect = v0 * ratio
+            if not 300 <= expect / v1 <= 3000:
+                return None
+            scale *= 1000.0
+            falls += 1
+        out.append((c1, v1 * scale))
+    return out if falls else None
+
+
+def _fit_axis(pairs, rescue=False):
     """Fit tick positions to label values: [(coord, value)] -> mapping dict
     (see map_value) or None.
 
@@ -49,6 +93,9 @@ def fit_axis(pairs, rescue=False):
         return a, b, res
 
     n0 = len(pairs)
+    rounded = _rounded_log_steps(pairs, lsq)
+    if rounded is not None:
+        return rounded
     while len(pairs) >= max(2, n0 // 2 + 1):
         if len(set(v for _, v in pairs)) < 2:
             return None
@@ -96,6 +143,34 @@ def fit_axis(pairs, rescue=False):
     return None
 
 
+def _rounded_log_steps(pairs, lsq):
+    """A log axis whose ticks step evenly (a constant ratio) but whose
+    labels between the decades are rounded names: 1x, 2x, 5x, 10x at equal
+    spacing are 1, 2.15, 4.64, 10.  With 2+ labels that are exact powers of
+    ten, ticks evenly spaced (within 2%) and the other labels within 10% of
+    the values the decades give them, the mapping is fitted to the decades
+    alone.  None otherwise."""
+    if len(pairs) < 4 or any(v <= 0 for _, v in pairs):
+        return None
+    ps = sorted(pairs)
+    gaps = [b[0] - a[0] for a, b in zip(ps, ps[1:])]
+    med = sorted(gaps)[len(gaps) // 2]
+    if med <= 0 or any(abs(g - med) > 0.02 * med for g in gaps):
+        return None
+    dec = [(c, v) for c, v in ps if abs(math.log10(v) - round(math.log10(v))) < 1e-9]
+    if len(dec) < 2 or len(dec) == len(ps) or len(set(v for _, v in dec)) < 2:
+        return None
+    fit = lsq(dec, True)
+    if fit is None or max(fit[2]) > 1e-3:
+        return None
+    a, b, _ = fit
+    if any(abs(10 ** (a * c + b) - v) > 0.1 * v for c, v in ps):
+        return None
+    vals = [v for _, v in ps]
+    return {"kind": "log", "a": a, "b": b, "n": len(ps), "resid": max(fit[2]),
+            "range": max(vals) - min(vals)}
+
+
 def map_value(m, c):
     """Page coordinate -> data value through an axis mapping.  Values
     closer to zero than the fit's own error are reported as 0."""
@@ -114,7 +189,10 @@ def map_value(m, c):
     return 0.0 if abs(v) < eps else v
 
 
-_NOMINAL = {}                       # id(mapping) -> (mapping, positions, ticks)
+# id(mapping) -> (mapping, positions, ticks): every point of a category axis
+# is looked up, and graphs may hold 100 000 points.  The mapping is kept in
+# the entry so that a reused id (a mapping freed and another made) is noticed.
+_NOMINAL = {}
 
 
 def _nearest_tick(m, c):
@@ -154,17 +232,16 @@ def nominal_map(labelled):
 
 def find_break_marks(paths):
     """Boxes of short open curved strokes (pieces of the wiggle lines
-    that mark broken axes)."""
+    that mark broken axes).  They decide where a piecewise axis is cut, and
+    keep the wiggles from being read as outlined glyphs."""
     out = []
     for p in paths:
         if not p["stroke"] or p["fill"]:
             continue
         for sp in p["subpaths"]:
-            if not sp["segs"] or any(seg[0] != "c" for seg in sp["segs"]):
+            if sp["closed"] or not sp["segs"] or any(seg[0] != "c" for seg in sp["segs"]):
                 continue
-            if sp["closed"]:
-                continue
-            pts = [sp["start"]] + [q for seg in sp["segs"] for q in seg[1:]]
+            pts = control_points(sp)
             b = bbox_of(pts)
             ends = math.hypot(pts[-1][0] - pts[0][0], pts[-1][1] - pts[0][1])
             # an open stroke whose ends are well apart (not a circle)
@@ -211,10 +288,9 @@ def piecewise_axis(pairs, orient, apos):
                  and b[1 - k] - 2 <= apos <= b[3 - k] + 2]
         if not marks:
             continue
-        cs = sorted((b[k] + b[k + 2]) / 2 for b in marks)
         if found is not None:
             return None                      # ambiguous
-        found = (cs[len(cs) // 2], m1, m2)
+        found = (median((b[k] + b[k + 2]) / 2 for b in marks), m1, m2)
     if found is None:
         return None
     cut, m1, m2 = found

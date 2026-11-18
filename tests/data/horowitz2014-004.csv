@@ -1,0 +1,2452 @@
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
+1,1,filled-square,Decrease in FO4,0,1985.825644174,0.9981455238,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1985.825645315,0.9981165443,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,1,1986.708718609,6540.660139,red,#ff0000
+1,1,filled-square,Decrease in FO4,1,1986.708719359,3934.110012,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1987.168416498,1.1824343638,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1987.168416723,1.5032153646,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1988.329741635,1.5032153646,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1988.329742401,1.5462620651,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1989.333781912,1.5032153646,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1989.333783052,2.07018436,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1989.333783052,3.641837633,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1990.410461275,1.5032153646,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1990.410461801,4.922151275,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1991.4991471,1.875477591,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1991.499147295,7.447946576,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1992.503187376,1.875477591,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1992.503187946,10.305427839,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1992.503187946,17.052958867,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1992.503187946,20.87847142,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1992.660470916,9.648489048,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1992.660472011,1.875477591,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1992.829913188,2.003172944,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1992.829914043,14.877579344,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1992.829914043,16.577730407,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1992.829914043,20.97747054,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1992.829914043,23.15597128,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1992.829914043,21.47698783,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1992.829914043,31.00376701,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1992.829914043,33.27171736,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1992.914558736,2.499100713,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1992.914558901,16.500465354,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1992.914558901,21.98839954,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1992.914558901,21.27477204,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1992.914558901,34.22349426,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1993.253291009,1.875477591,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1993.253291744,16.73530102,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1993.253291744,18.56083226,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1993.325780015,2.499100713,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1993.325781006,16.500465354,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1993.325781006,17.95950157,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1993.664511552,17.95950157,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1993.664512288,2.306959487,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1994.245174503,13.163658321,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.245174503,23.59686855,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.245174503,27.56215757,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1994.245174744,2.499100713,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1994.245174744,2.306959487,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1994.329819361,18.21510233,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1994.329970372,2.499100713,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1994.41461535,36.3832759,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1994.41461592,4.992056662,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1994.499261468,3.002734638,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1994.499261468,3.002734638,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1994.499261468,2.13956267,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1994.499261468,3.002734638,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1994.499262489,35.70556989,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.499262489,33.58598819,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.499262489,39.78816582,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.499262489,41.31535667,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.499262489,41.90089521,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.499262489,11.868960476,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.499262489,13.040483256,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.499262489,14.877579344,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.499262489,26.92111,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.499262489,26.04739258,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.499262489,32.34450777,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1994.583907016,2.499100713,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1994.583907346,31.2966159,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.753348193,57.98001402,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.753348193,62.51627633,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.753348193,68.36283613,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.753348193,69.99069772,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.753348193,80.98710226,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1994.753348193,86.09812542,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1994.753348193,3.002734638,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1994.995278301,32.65002075,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1994.995278376,4.29412769,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1995.164569472,2.429599392,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1995.164570297,12.917701139,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.249215155,35.53706434,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1995.249365101,2.499100713,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1995.503300844,13.351004338,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.503300844,38.86276269,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.503300844,25.68339672,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1995.503301745,3.746125016,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1995.503301745,5.99808618,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1995.503301745,1.875477591,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1995.575940832,4.29412769,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1995.575940832,4.29412769,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1995.575941252,48.2581142,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.575941252,44.54522326,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.66058611,36.72909715,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1995.66058638,3.746125016,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1995.829878106,91.09973496,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.829878106,95.48993842,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.829878106,102.96100842,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.829878106,119.13745668,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.829878106,108.94221538,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.829878106,118.01572232,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.829878106,120.82592261,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.829878106,143.81703438,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.829878106,155.7951721,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.829878106,166.40283217,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.829878106,161.0117424,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.829878106,224.9029186,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.829878106,38.6793917,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.829878106,44.75640268,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1995.830027557,4.29412769,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1995.830027557,3.746125016,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1995.914673105,3.002734638,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1995.914673105,5.99808618,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1995.914673105,3.002734638,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1995.914674095,92.39627215,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.914674095,106.91286963,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.914674095,80.60497079,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.914674095,46.69191001,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.914674095,53.52223792,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.914674095,65.8358557,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.914674095,84.09563363,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1995.914674095,100.56631488,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.083963795,90.6698878,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.083963795,91.96022575,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.083963795,94.14998982,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.083963795,101.51622311,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.083963795,131.50982715,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.083963795,31.74203132,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.083963795,44.54522326,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.083963795,55.83682706,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.083963795,64.60948341,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1996.083964201,4.29412769,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1996.083964201,4.29412769,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1996.49533475,48.2581142,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.49533475,54.53815982,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1996.49533556,5.99808618,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1996.49533556,7.518517401,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1996.579981108,4.29412769,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1996.579981889,58.52766949,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.579981889,71.65732168,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.579981889,79.85066259,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.579981889,78.73024017,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.579981889,85.69180191,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.749271604,33.27171736,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.749271604,59.36063898,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.749271604,71.3233431,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1996.749271604,84.09563363,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1996.749272204,4.29412769,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1996.749272204,3.002734638,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1996.833918743,35.70556989,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1996.834067833,5.183665682,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1997.414579398,116.35968395,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1997.414730289,5.357229693,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1997.668666933,5.66877428,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1997.668667398,98.22731774,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1997.668667398,105.41272459,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1997.668667398,130.27926334,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1997.668667398,118.01572232,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1997.668667398,141.12987618,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1998.080038293,7.518517401,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1998.080038353,127.85245616,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1998.164683195,209.5725223,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1998.164683195,265.1776054,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1998.164683195,234.6289292,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1998.164683195,252.9859163,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1998.164683841,4.29412769,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1998.745346146,292.7333952,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1998.745346296,7.518517401,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1998.829991004,116.91142556,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1998.829991004,124.87883168,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1998.829991004,220.7136845,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1998.829991844,5.803759643,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1998.914638143,145.17547119,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1998.914638143,248.2735843,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1998.914638143,245.9502189,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1998.914787473,5.99808618,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1999.168723847,204.6982308,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1999.168724117,7.518517401,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,1999.326008752,6.257473426,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1999.326009097,132.75201512,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1999.410653955,252.9859163,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1999.4106543,15.018548343,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1999.834031641,303.9691219,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1999.834032121,11.538542951,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,1999.918827645,265.1776054,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,1999.918827645,320.1097126,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,1999.91882775,15.018548343,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2000.003472487,305.3924872,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2000.003472487,363.5034675,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2000.003472487,338.7254333,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2000.003472487,312.6645188,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2000.003472487,384.6204407,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2000.003472487,453.4966851,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2000.003473298,5.99808618,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2000.075961749,337.1271832,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2000.075961749,345.154884,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2000.076112385,7.518517401,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2000.245402595,382.8052987,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2000.245403481,11.538542951,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2000.414694577,15.018548343,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2000.414694592,412.7557335,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2000.584135438,287.2637985,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2000.584135753,15.018548343,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2000.753426849,15.018548343,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2000.753426849,21.47635613,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2000.753427435,259.0100382,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2000.753427435,326.2047044,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2000.753427435,408.8931277,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2000.910710404,351.7060618,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2000.910711485,7.518517401,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2001.0800024,550.0347826,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2001.080152661,21.47635613,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2001.164798209,15.018548343,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2001.164798389,445.0490705,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2001.418735243,482.1160249,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2001.418735243,308.2773751,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2001.418884934,15.018548343,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2001.418884934,11.538542951,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2001.503530482,15.018548343,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2001.503530482,15.018548343,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2001.503531232,438.8039844,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2001.503531232,534.7070006,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2001.503531232,498.2589622,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2001.503531232,679.7863025,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2001.503531232,750.4259346,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2002.084191887,610.0340428,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2002.084191887,709.1839189,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2002.084192938,15.018548343,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2002.495413992,654.6585208,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2002.495414217,21.47635613,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2002.580058849,679.7863025,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2002.580209846,11.538542951,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2002.918791692,1043.2570873,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2002.918792037,21.47635613,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2003.1607218,852.1028167,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2003.160872301,21.47635613,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2003.330162647,958.5025095,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2003.330163397,21.47635613,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2003.753540332,1277.2923056,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2003.753541218,21.47635613,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2004.50349528,1477.97205,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2004.50349528,1277.2923056,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2004.50349528,1403.3671236,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2004.50364485,21.47635613,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2004.50364485,21.47635613,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2004.50364485,28.35141944,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2004.660779405,15.018548343,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2004.660780546,801.5196338,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2004.91486613,21.47635613,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2004.914866235,1283.27336,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2005.410882047,1224.2741405,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2005.410883037,28.35141944,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2005.495528585,28.35141944,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2005.495529186,1601.0684053,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.003551729,1631.4587725,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.003551729,1140.8220988,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2006.003551954,28.35141944,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.003551954,28.35141944,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.076191041,28.35141944,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.076191041,47.80513885,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.076191041,48.48549215,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.076191041,48.48549215,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2006.076192137,1430.0048709,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.076192137,1383.6758158,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.076192137,1654.6777969,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.076192137,1313.9080329,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.076192137,1390.2355281,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.076192137,1470.9983515,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.076192137,1541.8875026,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.414922684,1608.5655657,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2006.414923314,48.48549215,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.499568862,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.499568862,47.80513885,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.499568862,48.03179078,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2006.499569837,1396.7454509,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.499569837,1702.1104017,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.499569837,1443.5969971,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.499569837,1593.5138954,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.499569837,1742.641187,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.499569837,2016.43169,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.499569837,2194.605425,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.499569837,2411.223406,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2006.58421441,28.35141944,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.58421441,46.6932744,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.58421441,46.6932744,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2006.58421468,1608.5655657,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.58421468,1742.641187,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.58421468,1923.61369,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.58421468,2236.391418,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.58421468,2492.103959,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.58421468,2587.756179,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2006.669010039,28.35141944,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.669010039,28.35141944,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.669010039,46.47565249,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.669010039,49.64003305,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.669010039,47.80513885,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2006.669010684,1043.2570873,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.669010684,1477.97205,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.669010684,1792.491514,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.669010684,1914.648162,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.669010684,2006.91731,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.669010684,2503.771259,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.669010684,1130.1471912,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.669010684,1271.2655066,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.669010684,1416.6240205,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.669010684,1563.8303458,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.826144788,1307.7072972,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2006.826294674,48.48549215,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.910940222,48.03179078,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.910940222,48.03179078,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2006.910940222,48.03179078,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2006.910940792,1416.6240205,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.910940792,1601.0684053,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.910940792,1950.990682,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.910940792,2184.376853,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2006.995585635,1750.801286,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2006.99558577,48.03179078,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2007.080230492,1571.1531445,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.080230492,2322.22885,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.080230492,1742.641187,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.080230492,1923.61369,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.080230492,1997.447836,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.080230492,2215.463076,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2007.080231318,46.6932744,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.080231318,46.6932744,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.080231318,46.6932744,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.080231318,46.6932744,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.164876866,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.164876866,28.35141944,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2007.164877631,1826.621128,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.164877631,1784.137106,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2007.249672494,46.6932744,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2007.249673635,1556.4515406,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2007.334318042,28.35141944,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.334318042,46.6932744,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.334318042,47.80513885,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.334318042,48.03179078,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2007.334318478,1905.61404,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.334318478,2492.103959,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.334318478,2725.164587,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.334318478,2563.39127,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.418963335,1878.87379,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.418963335,1923.61369,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.418963335,2143.56273,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.418963335,2503.771259,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.418963335,2215.463076,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2007.41896359,36.55684974,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.41896359,46.47565249,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2007.503608193,1083.2995003,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.503608193,1734.418678,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2007.503609138,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.503609138,47.80513885,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.576248226,46.6932744,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.576248226,47.80513885,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2007.576248586,2587.756179,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.576248586,2870.038084,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.576248586,2910.882047,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.660893443,2025.87383,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.660893443,1028.6177346,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.660893443,2045.011219,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.660893443,2515.643353,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2007.660893774,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.660893774,28.35141944,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.660893774,47.80513885,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2007.745538301,2468.63966,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2007.745539321,46.47565249,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2007.83033429,2205.009582,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.83033429,2225.8372,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.83033429,2434.141966,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.83033429,2503.771259,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2007.83033495,46.6932744,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.83033495,46.6932744,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.83033495,45.18050148,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.83033495,46.6932744,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.914980498,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2007.914980498,42.89990641,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2007.914981429,3123.815396,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2007.914981429,3597.550203,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.084271129,2910.882047,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.084271129,3213.175837,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.084271129,3198.199932,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.084271129,2599.873617,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.084271129,2674.403357,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.084271129,3183.109488,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2008.084271594,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.084271594,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.084271594,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.084271594,42.89990641,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2008.25371199,1784.137106,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.25371199,2468.63966,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.25371199,2938.379672,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.25371199,3079.983647,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.25371199,3842.497393,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.25371199,2575.546063,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.25371199,2870.038084,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.25371199,3123.815396,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.25371199,3352.324971,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2008.253712771,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.253712771,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.253712771,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.253712771,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.253712771,42.89990641,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2008.326201252,1792.491514,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.326201252,2777.052612,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2008.326201777,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.326201777,42.89990641,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2008.410997241,1662.5222816,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2008.410997406,43.51044941,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2008.495642099,2422.654502,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2008.495642954,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.580288502,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.580288502,50.10892564,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.580288502,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.580288502,42.89990641,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2008.580289237,1870.116784,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.580289237,1896.732404,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.580289237,1541.8875026,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.580289237,1623.8549121,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.580289237,1923.61369,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.580289237,2790.056435,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.580289237,3198.199932,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2008.66493405,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.66493405,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.66493405,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.66493405,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.66493405,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.66493405,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.66493405,42.89990641,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2008.66493408,2883.474761,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.66493408,3597.550203,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.66493408,2587.756179,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.66493408,2952.136286,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.66493408,3368.022563,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.66493408,2790.056435,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.66493408,2575.546063,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.749578938,3700.462389,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2008.749729679,42.89990641,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2008.834374926,3008.348598,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.834374926,4467.283757,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2008.834375227,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.834375227,42.89990641,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2008.919019784,2457.133874,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.919019784,2738.086458,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.919019784,3806.542353,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.919019784,3933.995264,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2008.919019784,2624.430958,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2008.919020775,59.92307503,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.919020775,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.919020775,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2008.919020775,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.003666323,42.89990641,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2009.003666923,1852.617716,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.07630505,2236.391418,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.07630505,2322.22885,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.07630505,3448.222199,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2009.07630541,59.92307503,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.07630541,59.92307503,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.07630541,42.89990641,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2009.160949892,2133.572069,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.160949892,2257.515456,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.160949892,2045.011219,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.160949892,2074.114107,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.160949892,2143.56273,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.160949892,3383.992664,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.160949892,3735.635124,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2009.160950958,59.92307503,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.160950958,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.160950958,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.245596506,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.245596506,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.245596506,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.245596506,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.245596506,42.89990641,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2009.245597031,2377.528082,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.245597031,3198.199932,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.245597031,3352.324971,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.245597031,3878.79205,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.245597031,4202.093423,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.245597031,4530.596,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.245597031,4726.797062,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.245597031,4638.478906,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.245597031,4383.81452,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.330241889,3352.324971,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.330241889,2829.764694,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2009.330392135,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.330392135,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.415037682,59.92307503,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.415037682,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.415037682,42.89990641,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2009.415037878,2257.515456,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.415037878,3183.109488,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.415037878,4104.360056,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.415037878,4467.283757,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.499682735,2551.446148,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2009.49968323,59.92307503,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.668974326,59.92307503,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.668974326,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.668974326,42.89990641,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2009.668974732,2492.103959,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.668974732,2278.839022,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.668974732,4363.382552,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2009.753769955,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.753769955,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.753769955,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2009.753769955,42.89990641,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2009.753770721,4302.154024,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.753770721,4573.659093,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.753770721,4682.567448,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.753770721,3915.659801,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.753770721,3665.836421,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.753770721,3700.462389,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.753770721,3933.995264,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.753770721,4241.784676,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.753770721,4404.597251,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.753770721,4908.225914,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2009.91090484,4509.479891,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2009.91105459,42.89990641,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2010.080345686,3530.331555,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2010.080345686,3665.836421,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2010.080345686,4084.99397,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2010.080345686,4202.093423,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2010.080345686,4027.671889,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2010.080345686,4302.154024,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2010.080345686,2829.764694,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2010.080345686,3051.160897,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2010.080345686,3168.087417,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2010.080345686,83.30626121,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2010.080345686,83.30626121,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2010.080345686,83.30626121,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2010.080345686,83.30626121,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2010.080345686,83.30626121,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2010.249636782,83.30626121,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2010.249636782,83.30626121,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2010.249636782,83.30626121,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2010.249637683,4977.787347,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2010.249637683,3065.448258,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2010.249637683,5291.931028,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2010.33443139,4552.074591,red,#ff0000
+1,1,filled-thin-diamond,Increase in Performance,0,2010.33443139,642.4642915,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2010.334432411,83.30626121,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2010.334432411,42.89990641,blue,#0000ff
+1,1,filled-square,Decrease in FO4,0,2010.419077959,83.30626121,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2010.419078529,3952.645497,red,#ff0000
+1,1,filled-square,Decrease in FO4,0,2010.661008142,83.30626121,blue,#0000ff
+1,1,filled-thin-diamond,Increase in Performance,0,2010.661008637,4084.99397,red,#ff0000
+1,2,filled-square,,0,1985.824970844,277218.8581,red,#ff0000
+1,2,filled-square,,0,1987.494309994,270732.2428,red,#ff0000
+1,2,filled-square,,0,1988.498496225,121253.1265,red,#ff0000
+1,2,filled-square,,0,1989.332789887,1212641.901,red,#ff0000
+1,2,filled-square,,0,1990.494702211,80688.6066,red,#ff0000
+1,2,filled-square,,0,1991.07468079,1213182.084,red,#ff0000
+1,2,filled-square,,0,1991.498287913,806959.689,red,#ff0000
+1,2,filled-square,,0,1992.079018302,605205.8717,red,#ff0000
+1,2,filled-square,,0,1992.502022598,3129716.079,red,#ff0000
+1,2,filled-square,,0,1992.502173864,1102569.625,red,#ff0000
+1,2,filled-square,,0,1992.828740451,1697826.176,red,#ff0000
+1,2,filled-square,,0,1992.913311964,2319092.829,red,#ff0000
+1,2,filled-square,,0,1993.082904254,1102734.992,red,#ff0000
+1,2,filled-square,,0,1993.252047295,3206137.452,red,#ff0000
+1,2,filled-square,,0,1993.25234756,932222.56,red,#ff0000
+1,2,filled-square,,0,1993.324599063,2809840.993,red,#ff0000
+1,2,filled-square,,0,1993.494042369,1506246.546,red,#ff0000
+1,2,filled-square,,0,1993.748206171,1618815.629,red,#ff0000
+1,2,filled-square,,0,1994.243915799,3529885.771,red,#ff0000
+1,2,filled-square,,0,1994.244064782,1618815.629,red,#ff0000
+1,2,filled-square,,0,1994.328636295,2434095.712,red,#ff0000
+1,2,filled-square,,0,1994.413356807,2320131.178,red,#ff0000
+1,2,filled-square,,0,1994.498079601,2878883.338,red,#ff0000
+1,2,filled-square,,0,1994.498079601,2320131.178,red,#ff0000
+1,2,filled-square,,0,1994.498079601,2810677.512,red,#ff0000
+1,2,filled-square,,0,1994.498079601,1914912.478,red,#ff0000
+1,2,filled-square,,0,1994.498079601,2615615.147,red,#ff0000
+1,2,filled-square,,0,1994.498228584,1506694.972,red,#ff0000
+1,2,filled-square,,0,1994.751791873,9325830.53,red,#ff0000
+1,2,filled-square,,0,1994.993938213,3616078.43,red,#ff0000
+1,2,filled-square,,0,1995.163530502,1002190.316,red,#ff0000
+1,2,filled-square,,0,1995.163530502,1619297.567,red,#ff0000
+1,2,filled-square,,0,1995.502114551,2009570.846,red,#ff0000
+1,2,filled-square,,0,1995.502114551,2811514.281,red,#ff0000
+1,2,filled-square,,0,1995.502114551,3325268.426,red,#ff0000
+1,2,filled-square,,0,1995.502114551,3131579.856,red,#ff0000
+1,2,filled-square,,0,1995.574519619,7079097.72,red,#ff0000
+1,2,filled-square,,0,1995.574668602,2320473.872,red,#ff0000
+1,2,filled-square,,0,1995.574668602,2320473.872,red,#ff0000
+1,2,filled-square,,0,1995.828383156,9785359.37,red,#ff0000
+1,2,filled-square,,0,1995.828683421,2616393.844,red,#ff0000
+1,2,filled-square,,0,1995.913252651,5245550.829,red,#ff0000
+1,2,filled-square,,0,1996.082544675,6829546.81,red,#ff0000
+1,2,filled-square,,0,1996.082695957,3617154.976,red,#ff0000
+1,2,filled-square,,0,1996.167416453,3021639.168,red,#ff0000
+1,2,filled-square,,0,1996.251987981,4330047.104,red,#ff0000
+1,2,filled-square,,0,1996.40941381,2616786.26,red,#ff0000
+1,2,filled-square,,0,1996.578554553,5122042.583,red,#ff0000
+1,2,filled-square,,0,1996.747846578,9108982.39,red,#ff0000
+1,2,filled-square,,0,1996.748146842,3022085.479,red,#ff0000
+1,2,filled-square,,0,1996.832418106,15072776.37,red,#ff0000
+1,2,filled-square,,0,1997.074564446,4543409.494,red,#ff0000
+1,2,filled-square,,0,1997.244007752,3531995.849,red,#ff0000
+1,2,filled-square,,0,1997.328427984,8893174.52,red,#ff0000
+1,2,filled-square,,0,1997.328728248,2617178.696,red,#ff0000
+1,2,filled-square,,0,1997.413148495,7610435.16,red,#ff0000
+1,2,filled-square,,0,1997.413299776,6589766.212,red,#ff0000
+1,2,filled-square,,0,1997.667312297,6434622.53,red,#ff0000
+1,2,filled-square,,0,1997.667312297,5123567.47,red,#ff0000
+1,2,filled-square,,0,1998.163021925,15260249.01,red,#ff0000
+1,2,filled-square,,0,1998.332614214,8895822.12,red,#ff0000
+1,2,filled-square,,0,1998.417185728,9332783.72,red,#ff0000
+1,2,filled-square,,0,1998.659180801,7612700.87,red,#ff0000
+1,2,filled-square,,0,1998.743303067,142003463.7,red,#ff0000
+1,2,filled-square,,0,1998.828475109,15079524.82,red,#ff0000
+1,2,filled-square,,0,1998.828624092,6435572.956,red,#ff0000
+1,2,filled-square,,0,1998.91319562,7256273.67,red,#ff0000
+1,2,filled-square,,0,1998.913344604,5777820.175,red,#ff0000
+1,2,filled-square,,0,1999.167059158,21612341.68,red,#ff0000
+1,2,filled-square,,0,1999.167208141,9560671.53,red,#ff0000
+1,2,filled-square,,0,1999.324782968,2714425.673,red,#ff0000
+1,2,filled-square,,0,1999.663218034,10652238.2,red,#ff0000
+1,2,filled-square,,0,1999.832361075,28138608.13,red,#ff0000
+1,2,filled-square,,0,1999.917081572,22140071.61,red,#ff0000
+1,2,filled-square,,0,2000.001802083,15264792.15,red,#ff0000
+1,2,filled-square,,0,2000.159076645,22140071.61,red,#ff0000
+1,2,filled-square,,0,2000.412940183,37530174.83,red,#ff0000
+1,2,filled-square,,0,2000.751675514,29175473.14,red,#ff0000
+1,2,filled-square,,0,2000.908649811,142088028.2,red,#ff0000
+1,2,filled-square,,0,2000.908950076,42316235.29,red,#ff0000
+1,2,filled-square,,0,2001.077941836,184993847.3,red,#ff0000
+1,2,filled-square,,0,2001.163113878,15269336.64,red,#ff0000
+1,2,filled-square,,0,2001.416677166,187239026.4,red,#ff0000
+1,2,filled-square,,0,2001.417126414,25270200.59,red,#ff0000
+1,2,filled-square,,0,2001.501849209,15642182.91,red,#ff0000
+1,2,filled-square,,0,2001.574251978,33295338.4,red,#ff0000
+1,2,filled-square,,0,2001.743544003,42322485.61,red,#ff0000
+1,2,filled-square,,0,2002.081979069,130680412.7,red,#ff0000
+1,2,filled-square,,0,2002.082279333,55771335.22,red,#ff0000
+1,2,filled-square,,0,2002.324125409,55771335.22,red,#ff0000
+1,2,filled-square,,0,2002.40884592,55771335.22,red,#ff0000
+1,2,filled-square,,0,2002.493566416,37546893.57,red,#ff0000
+1,2,filled-square,,0,2002.57783768,224174402.7,red,#ff0000
+1,2,filled-square,,0,2003.158868334,55118986.99,red,#ff0000
+1,2,filled-square,,0,2003.328160358,106611287.2,red,#ff0000
+1,2,filled-square,,0,2003.751467202,106611287.2,red,#ff0000
+1,2,filled-square,,0,2004.501340632,278327490.3,red,#ff0000
+1,2,filled-square,,0,2004.501489615,106627034.2,red,#ff0000
+1,2,filled-square,,0,2004.501489615,126130139.6,red,#ff0000
+1,2,filled-square,,0,2004.658764178,130758530.2,red,#ff0000
+1,2,filled-square,,0,2004.912478732,599625753.1,red,#ff0000
+1,2,filled-square,,0,2005.166791533,170243220.9,red,#ff0000
+1,2,filled-square,,0,2005.493509386,114612975.2,red,#ff0000
+1,2,filled-square,,0,2005.577929633,281747023,red,#ff0000
+1,2,filled-square,,0,2005.66280141,114612975.2,red,#ff0000
+1,2,filled-square,,0,2006.001385459,170268754.6,red,#ff0000
+1,2,filled-square,,0,2006.001385459,232573310.1,red,#ff0000
+1,2,filled-square,,0,2006.073788244,380285955.5,red,#ff0000
+1,2,filled-square,,0,2006.073788244,380285955.5,red,#ff0000
+1,2,filled-square,,0,2006.073788244,380285955.5,red,#ff0000
+1,2,filled-square,,0,2006.073939525,235395937.6,red,#ff0000
+1,2,filled-square,,0,2006.074088509,152866303,red,#ff0000
+1,2,filled-square,,0,2006.412523574,380285955.5,red,#ff0000
+1,2,filled-square,,0,2006.497244071,295630063.2,red,#ff0000
+1,2,filled-square,,0,2006.497395352,156575507,red,#ff0000
+1,2,filled-square,,0,2006.497395352,152866303,red,#ff0000
+1,2,filled-square,,0,2006.581966865,246995031.7,red,#ff0000
+1,2,filled-square,,0,2006.581966865,295673729.2,red,#ff0000
+1,2,filled-square,,0,2006.581966865,295673729.2,red,#ff0000
+1,2,filled-square,,0,2006.581966865,380342992.1,red,#ff0000
+1,2,filled-square,,0,2006.582115864,168277532.1,red,#ff0000
+1,2,filled-square,,0,2006.666387112,1339830947,red,#ff0000
+1,2,filled-square,,0,2006.666687377,229818989.1,red,#ff0000
+1,2,filled-square,,0,2006.666687377,295673729.2,red,#ff0000
+1,2,filled-square,,0,2006.666687377,295673729.2,red,#ff0000
+1,2,filled-square,,0,2006.823812941,380342992.1,red,#ff0000
+1,2,filled-square,,0,2006.908382171,585683002,red,#ff0000
+1,2,filled-square,,0,2006.908382171,585683002,red,#ff0000
+1,2,filled-square,,0,2006.908382171,585683002,red,#ff0000
+1,2,filled-square,,0,2006.99310498,585683002,red,#ff0000
+1,2,filled-square,,0,2007.077825477,585769510.3,red,#ff0000
+1,2,filled-square,,0,2007.077825477,585769510.3,red,#ff0000
+1,2,filled-square,,0,2007.078125741,168277532.1,red,#ff0000
+1,2,filled-square,,0,2007.078125741,168277532.1,red,#ff0000
+1,2,filled-square,,0,2007.162697269,229853458.2,red,#ff0000
+1,2,filled-square,,0,2007.162697269,229853458.2,red,#ff0000
+1,2,filled-square,,0,2007.162697269,247031514.1,red,#ff0000
+1,2,filled-square,,0,2007.247117501,585769510.3,red,#ff0000
+1,2,filled-square,,0,2007.331838013,585769510.3,red,#ff0000
+1,2,filled-square,,0,2007.331838013,585769510.3,red,#ff0000
+1,2,filled-square,,0,2007.331838013,585769510.3,red,#ff0000
+1,2,filled-square,,0,2007.416409526,800113634,red,#ff0000
+1,2,filled-square,,0,2007.41670979,295718075.5,red,#ff0000
+1,2,filled-square,,0,2007.501581583,154744419,red,#ff0000
+1,2,filled-square,,0,2007.501581583,106706533.5,red,#ff0000
+1,2,filled-square,,0,2007.573835369,585769510.3,red,#ff0000
+1,2,filled-square,,0,2007.573835369,585769510.3,red,#ff0000
+1,2,filled-square,,0,2007.573835369,507285456.9,red,#ff0000
+1,2,filled-square,,0,2007.573984353,295718075.5,red,#ff0000
+1,2,filled-square,,0,2007.574135634,168302387.5,red,#ff0000
+1,2,filled-square,,0,2007.658555866,295718075.5,red,#ff0000
+1,2,filled-square,,0,2007.658707147,229887408.7,red,#ff0000
+1,2,filled-square,,0,2007.658707147,229887408.7,red,#ff0000
+1,2,filled-square,,0,2007.658707147,247031514.1,red,#ff0000
+1,2,filled-square,,0,2007.74327866,466419962.8,red,#ff0000
+1,2,filled-square,,0,2007.74327866,466419962.8,red,#ff0000
+1,2,filled-square,,0,2007.74327866,295718075.5,red,#ff0000
+1,2,filled-square,,0,2007.827547626,1744676590,red,#ff0000
+1,2,filled-square,,0,2007.82784789,413728869.4,red,#ff0000
+1,2,filled-square,,0,2007.827999172,295718075.5,red,#ff0000
+1,2,filled-square,,0,2007.828148155,168302387.5,red,#ff0000
+1,2,filled-square,,0,2007.912419419,829474090,red,#ff0000
+1,2,filled-square,,0,2007.912419419,829474090,red,#ff0000
+1,2,filled-square,,0,2007.912419419,829474090,red,#ff0000
+1,2,filled-square,,0,2007.912419419,829474090,red,#ff0000
+1,2,filled-square,,0,2007.912570685,413728869.4,red,#ff0000
+1,2,filled-square,,0,2007.912570685,413728869.4,red,#ff0000
+1,2,filled-square,,0,2007.997291196,295761754.5,red,#ff0000
+1,2,filled-square,,0,2007.997591461,106706533.5,red,#ff0000
+1,2,filled-square,,0,2008.082011708,413789985.4,red,#ff0000
+1,2,filled-square,,0,2008.082011708,413789985.4,red,#ff0000
+1,2,filled-square,,0,2008.082011708,413789985.4,red,#ff0000
+1,2,filled-square,,0,2008.082011708,413789985.4,red,#ff0000
+1,2,filled-square,,0,2008.166431939,829598497,red,#ff0000
+1,2,filled-square,,0,2008.251154749,829598497,red,#ff0000
+1,2,filled-square,,0,2008.251154749,829598497,red,#ff0000
+1,2,filled-square,,0,2008.251154749,829598497,red,#ff0000
+1,2,filled-square,,0,2008.251154749,829598497,red,#ff0000
+1,2,filled-square,,0,2008.251303732,466489918.2,red,#ff0000
+1,2,filled-square,,0,2008.251303732,460965374.7,red,#ff0000
+1,2,filled-square,,0,2008.251303732,413789985.4,red,#ff0000
+1,2,filled-square,,0,2008.251303732,460965374.7,red,#ff0000
+1,2,filled-square,,0,2008.323857783,466489918.2,red,#ff0000
+1,2,filled-square,,0,2008.323857783,466489918.2,red,#ff0000
+1,2,filled-square,,0,2008.323857783,466489918.2,red,#ff0000
+1,2,filled-square,,0,2008.324009065,229921888.1,red,#ff0000
+1,2,filled-square,,0,2008.324309329,47783706.42,red,#ff0000
+1,2,filled-square,,0,2008.408578279,295761754.5,red,#ff0000
+1,2,filled-square,,0,2008.493301089,413789985.4,red,#ff0000
+1,2,filled-square,,0,2008.493750337,47790872.48,red,#ff0000
+1,2,filled-square,,0,2008.577872602,466558821,red,#ff0000
+1,2,filled-square,,0,2008.577872602,413789985.4,red,#ff0000
+1,2,filled-square,,0,2008.577872602,413789985.4,red,#ff0000
+1,2,filled-square,,0,2008.662441832,829598497,red,#ff0000
+1,2,filled-square,,0,2008.662441832,829598497,red,#ff0000
+1,2,filled-square,,0,2008.662593114,413852041,red,#ff0000
+1,2,filled-square,,0,2008.662593114,460965374.7,red,#ff0000
+1,2,filled-square,,0,2008.662593114,460965374.7,red,#ff0000
+1,2,filled-square,,0,2008.662742097,229921888.1,red,#ff0000
+1,2,filled-square,,0,2008.662742097,229921888.1,red,#ff0000
+1,2,filled-square,,0,2008.747164627,829721033,red,#ff0000
+1,2,filled-square,,0,2008.74731361,413852041,red,#ff0000
+1,2,filled-square,,0,2008.74731361,413852041,red,#ff0000
+1,2,filled-square,,0,2008.747613874,94665963,red,#ff0000
+1,2,filled-square,,0,2008.831885138,735877747,red,#ff0000
+1,2,filled-square,,0,2008.832034121,423893898.5,red,#ff0000
+1,2,filled-square,,0,2008.916456651,735877747,red,#ff0000
+1,2,filled-square,,0,2008.916456651,735877747,red,#ff0000
+1,2,filled-square,,0,2008.916605634,461033461.5,red,#ff0000
+1,2,filled-square,,0,2008.916756916,229956372.6,red,#ff0000
+1,2,filled-square,,0,2009.001328429,455506250.5,red,#ff0000
+1,2,filled-square,,0,2009.073731214,762881044,red,#ff0000
+1,2,filled-square,,0,2009.073731214,762881044,red,#ff0000
+1,2,filled-square,,0,2009.073880197,413852041,red,#ff0000
+1,2,filled-square,,0,2009.074031478,229956372.6,red,#ff0000
+1,2,filled-square,,0,2009.15845171,762881044,red,#ff0000
+1,2,filled-square,,0,2009.15845171,829721033,red,#ff0000
+1,2,filled-square,,0,2009.15845171,829721033,red,#ff0000
+1,2,filled-square,,0,2009.159052239,47797932.14,red,#ff0000
+1,2,filled-square,,0,2009.243172221,735988117,red,#ff0000
+1,2,filled-square,,0,2009.243172221,735988117,red,#ff0000
+1,2,filled-square,,0,2009.243172221,735988117,red,#ff0000
+1,2,filled-square,,0,2009.243172221,735988117,red,#ff0000
+1,2,filled-square,,0,2009.327895016,413913175.1,red,#ff0000
+1,2,filled-square,,0,2009.327895016,461033461.5,red,#ff0000
+1,2,filled-square,,0,2009.327895016,413913175.1,red,#ff0000
+1,2,filled-square,,0,2009.412466544,762995453,red,#ff0000
+1,2,filled-square,,0,2009.412466544,735988117,red,#ff0000
+1,2,filled-square,,0,2009.412466544,735988117,red,#ff0000
+1,2,filled-square,,0,2009.412466544,735988117,red,#ff0000
+1,2,filled-square,,0,2009.412615527,413913175.1,red,#ff0000
+1,2,filled-square,,0,2009.412766809,229990338.3,red,#ff0000
+1,2,filled-square,,0,2009.49718704,913369428,red,#ff0000
+1,2,filled-square,,0,2009.666479065,762995453,red,#ff0000
+1,2,filled-square,,0,2009.666479065,736096826,red,#ff0000
+1,2,filled-square,,0,2009.666479065,736096826,red,#ff0000
+1,2,filled-square,,0,2009.751199576,781509054,red,#ff0000
+1,2,filled-square,,0,2009.751199576,781509054,red,#ff0000
+1,2,filled-square,,0,2009.751199576,781509054,red,#ff0000
+1,2,filled-square,,0,2009.751199576,781509054,red,#ff0000
+1,2,filled-square,,0,2009.751350858,413913175.1,red,#ff0000
+1,2,filled-square,,0,2009.908474139,736096826,red,#ff0000
+1,2,filled-square,,0,2010.077917429,385245168.6,red,#ff0000
+1,2,filled-square,,0,2010.077917429,385245168.6,red,#ff0000
+1,2,filled-square,,0,2010.077917429,385245168.6,red,#ff0000
+1,2,filled-square,,0,2010.077917429,385245168.6,red,#ff0000
+1,2,filled-square,,0,2010.077917429,385245168.6,red,#ff0000
+1,2,filled-square,,0,2010.077917429,385245168.6,red,#ff0000
+1,2,filled-square,,0,2010.162337676,1218216415,red,#ff0000
+1,2,filled-square,,0,2010.247060471,1189354719,red,#ff0000
+1,2,filled-square,,0,2010.247360735,385245168.6,red,#ff0000
+1,2,filled-square,,0,2010.332081247,385245168.6,red,#ff0000
+1,2,filled-square,,0,2010.41665276,385245168.6,red,#ff0000
+1,2,filled-square,,0,2010.658647819,385245168.6,red,#ff0000
+1,2,filled-square,,0,2010.743370628,385245168.6,red,#ff0000
+1,2,filled-square,,0,2010.743519611,178818334,red,#ff0000
+1,2,filled-square,,0,2011.081803396,1005750177,red,#ff0000
+1,3,filled-square,,0,1985.824162039,1.495256647e-06,red,#ff0000
+1,3,filled-square,,0,1987.493651964,1.301927865e-06,red,#ff0000
+1,3,filled-square,,0,1988.497690275,1.205706438e-06,red,#ff0000
+1,3,filled-square,,0,1989.332434096,1.0023391444e-06,red,#ff0000
+1,3,filled-square,,0,1990.493898419,8.018520159e-07,red,#ff0000
+1,3,filled-square,,0,1991.074629431,8.019280607e-07,red,#ff0000
+1,3,filled-square,,0,1991.497934446,8.020052859e-07,red,#ff0000
+1,3,filled-square,,0,1992.078665459,6.514789095e-07,red,#ff0000
+1,3,filled-square,,0,1992.501972757,8.020813452e-07,red,#ff0000
+1,3,filled-square,,0,1992.501972757,8.020813452e-07,red,#ff0000
+1,3,filled-square,,0,1992.828690976,7.542545518e-07,red,#ff0000
+1,3,filled-square,,0,1992.913411563,6.032729233e-07,red,#ff0000
+1,3,filled-square,,0,1993.082703769,6.516034365e-07,red,#ff0000
+1,3,filled-square,,0,1993.251995976,8.021585852e-07,red,#ff0000
+1,3,filled-square,,0,1993.252147257,5.015184896e-07,red,#ff0000
+1,3,filled-square,,0,1993.324701386,6.033310181e-07,red,#ff0000
+1,3,filled-square,,0,1993.494142576,6.516034365e-07,red,#ff0000
+1,3,filled-square,,0,1993.748157682,5.015660518e-07,red,#ff0000
+1,3,filled-square,,0,1994.244165809,6.033882359e-07,red,#ff0000
+1,3,filled-square,,0,1994.244165809,5.015660518e-07,red,#ff0000
+1,3,filled-square,,0,1994.328737413,6.033882359e-07,red,#ff0000
+1,3,filled-square,,0,1994.413760564,3.017601567e-07,red,#ff0000
+1,3,filled-square,,0,1994.498180901,5.016143523e-07,red,#ff0000
+1,3,filled-square,,0,1994.498180901,5.016143523e-07,red,#ff0000
+1,3,filled-square,,0,1994.498180901,5.016143523e-07,red,#ff0000
+1,3,filled-square,,0,1994.498180901,6.517289344e-07,red,#ff0000
+1,3,filled-square,,0,1994.498180901,7.038736623e-07,red,#ff0000
+1,3,filled-square,,0,1994.498180901,5.016143523e-07,red,#ff0000
+1,3,filled-square,,0,1994.752193695,5.016143523e-07,red,#ff0000
+1,3,filled-square,,0,1994.99434031,3.520138677e-07,red,#ff0000
+1,3,filled-square,,0,1995.163632516,5.016619236e-07,red,#ff0000
+1,3,filled-square,,0,1995.163632516,5.016619236e-07,red,#ff0000
+1,3,filled-square,,0,1995.50206793,8.024652718e-07,red,#ff0000
+1,3,filled-square,,0,1995.502216929,6.517907483e-07,red,#ff0000
+1,3,filled-square,,0,1995.502216929,5.016619236e-07,red,#ff0000
+1,3,filled-square,,0,1995.502368195,3.520472514e-07,red,#ff0000
+1,3,filled-square,,0,1995.574922339,5.016619236e-07,red,#ff0000
+1,3,filled-square,,0,1995.574922339,3.520472514e-07,red,#ff0000
+1,3,filled-square,,0,1995.574922339,3.520472514e-07,red,#ff0000
+1,3,filled-square,,0,1995.828935133,5.017102334e-07,red,#ff0000
+1,3,filled-square,,0,1995.829086414,3.520472514e-07,red,#ff0000
+1,3,filled-square,,0,1995.913655735,5.017102334e-07,red,#ff0000
+1,3,filled-square,,0,1996.083099223,3.520811533e-07,red,#ff0000
+1,3,filled-square,,0,1996.083099223,3.520811533e-07,red,#ff0000
+1,3,filled-square,,0,1996.167519545,6.518535092e-07,red,#ff0000
+1,3,filled-square,,0,1996.252242431,5.017585431e-07,red,#ff0000
+1,3,filled-square,,0,1996.409666145,3.520811533e-07,red,#ff0000
+1,3,filled-square,,0,1996.579109633,3.520811533e-07,red,#ff0000
+1,3,filled-square,,0,1996.748250558,5.017585431e-07,red,#ff0000
+1,3,filled-square,,0,1996.748401839,3.521145435e-07,red,#ff0000
+1,3,filled-square,,0,1996.833122441,2.904645531e-07,red,#ff0000
+1,3,filled-square,,0,1997.075120058,2.816581435e-07,red,#ff0000
+1,3,filled-square,,0,1997.244260983,5.018061328e-07,red,#ff0000
+1,3,filled-square,,0,1997.329132852,3.521484519e-07,red,#ff0000
+1,3,filled-square,,0,1997.329132852,3.521484519e-07,red,#ff0000
+1,3,filled-square,,0,1997.413704471,3.521484519e-07,red,#ff0000
+1,3,filled-square,,0,1997.413855737,2.816581435e-07,red,#ff0000
+1,3,filled-square,,0,1997.667868546,2.607918196e-07,red,#ff0000
+1,3,filled-square,,0,1997.667868546,2.509579849e-07,red,#ff0000
+1,3,filled-square,,0,1998.163727689,3.521818484e-07,red,#ff0000
+1,3,filled-square,,0,1998.333320161,2.509817873e-07,red,#ff0000
+1,3,filled-square,,0,1998.417891765,2.509817873e-07,red,#ff0000
+1,3,filled-square,,0,1998.659889381,2.509817873e-07,red,#ff0000
+1,3,filled-square,,0,1998.744609984,2.509817873e-07,red,#ff0000
+1,3,filled-square,,0,1998.829181588,2.509817873e-07,red,#ff0000
+1,3,filled-square,,0,1998.829181588,2.608416687e-07,red,#ff0000
+1,3,filled-square,,0,1998.91390219,2.817386976e-07,red,#ff0000
+1,3,filled-square,,0,1998.91390219,2.510059543e-07,red,#ff0000
+1,3,filled-square,,0,1999.167914983,2.510059543e-07,red,#ff0000
+1,3,filled-square,,0,1999.167914983,2.510059543e-07,red,#ff0000
+1,3,filled-square,,0,1999.325192013,2.415407701e-07,red,#ff0000
+1,3,filled-square,,0,1999.663925409,2.202304255e-07,red,#ff0000
+1,3,filled-square,,0,1999.833368896,1.802696276e-07,red,#ff0000
+1,3,filled-square,,0,1999.918089484,1.802696276e-07,red,#ff0000
+1,3,filled-square,,0,2000.002661103,2.510297612e-07,red,#ff0000
+1,3,filled-square,,0,2000.1600871,1.802869875e-07,red,#ff0000
+1,3,filled-square,,0,2000.414099909,1.802869875e-07,red,#ff0000
+1,3,filled-square,,0,2000.752835603,1.802869875e-07,red,#ff0000
+1,3,filled-square,,0,2000.752984586,1.304743173e-07,red,#ff0000
+1,3,filled-square,,0,2000.909959053,2.510777443e-07,red,#ff0000
+1,3,filled-square,,0,2000.910110319,1.803040852e-07,red,#ff0000
+1,3,filled-square,,0,2001.079553807,1.30486691e-07,red,#ff0000
+1,3,filled-square,,0,2001.164123128,1.803040852e-07,red,#ff0000
+1,3,filled-square,,0,2001.41813822,1.803040852e-07,red,#ff0000
+1,3,filled-square,,0,2001.41813822,1.803040852e-07,red,#ff0000
+1,3,filled-square,,0,2001.502858822,1.803214484e-07,red,#ff0000
+1,3,filled-square,,0,2001.575412951,1.803214484e-07,red,#ff0000
+1,3,filled-square,,0,2001.744705157,1.803214484e-07,red,#ff0000
+1,3,filled-square,,0,2002.083440851,1.803214484e-07,red,#ff0000
+1,3,filled-square,,0,2002.083589834,1.304992568e-07,red,#ff0000
+1,3,filled-square,,0,2002.325587451,1.304992568e-07,red,#ff0000
+1,3,filled-square,,0,2002.410156772,1.305118238e-07,red,#ff0000
+1,3,filled-square,,0,2002.494879657,1.305118238e-07,red,#ff0000
+1,3,filled-square,,0,2002.579448978,1.803385495e-07,red,#ff0000
+1,3,filled-square,,0,2003.160182274,1.305242011e-07,red,#ff0000
+1,3,filled-square,,0,2003.329623478,1.305242011e-07,red,#ff0000
+1,3,filled-square,,0,2003.752930776,1.305367705e-07,red,#ff0000
+1,3,filled-square,,0,2004.502953995,1.305491502e-07,red,#ff0000
+1,3,filled-square,,0,2004.502953995,1.305491502e-07,red,#ff0000
+1,3,filled-square,,0,2004.503102979,9.020625133e-08,red,#ff0000
+1,3,filled-square,,0,2004.660228726,1.803903901e-07,red,#ff0000
+1,3,filled-square,,0,2004.914392801,1.305491502e-07,red,#ff0000
+1,3,filled-square,,0,2005.168556892,9.021480617e-08,red,#ff0000
+1,3,filled-square,,0,2005.495123814,9.02234938e-08,red,#ff0000
+1,3,filled-square,,0,2005.579846715,9.02234938e-08,red,#ff0000
+1,3,filled-square,,0,2005.66441602,9.02234938e-08,red,#ff0000
+1,3,filled-square,,0,2006.003151714,9.02234938e-08,red,#ff0000
+1,3,filled-square,,0,2006.003151714,9.02234938e-08,red,#ff0000
+1,3,filled-square,,0,2006.075705843,9.02234938e-08,red,#ff0000
+1,3,filled-square,,0,2006.075854842,6.529505498e-08,red,#ff0000
+1,3,filled-square,,0,2006.075854842,6.529505498e-08,red,#ff0000
+1,3,filled-square,,0,2006.075854842,6.529505498e-08,red,#ff0000
+1,3,filled-square,,0,2006.075854842,6.529505498e-08,red,#ff0000
+1,3,filled-square,,0,2006.414590521,6.530134286e-08,red,#ff0000
+1,3,filled-square,,0,2006.499311123,6.530134286e-08,red,#ff0000
+1,3,filled-square,,0,2006.499311123,6.530134286e-08,red,#ff0000
+1,3,filled-square,,0,2006.499311123,6.530134286e-08,red,#ff0000
+1,3,filled-square,,0,2006.583882727,9.023218228e-08,red,#ff0000
+1,3,filled-square,,0,2006.584034008,6.530134286e-08,red,#ff0000
+1,3,filled-square,,0,2006.584034008,6.530134286e-08,red,#ff0000
+1,3,filled-square,,0,2006.584034008,6.530134286e-08,red,#ff0000
+1,3,filled-square,,0,2006.668454346,9.023218228e-08,red,#ff0000
+1,3,filled-square,,0,2006.668603329,6.530134286e-08,red,#ff0000
+1,3,filled-square,,0,2006.668603329,6.530134286e-08,red,#ff0000
+1,3,filled-square,,0,2006.668603329,6.530134286e-08,red,#ff0000
+1,3,filled-square,,0,2006.825880344,6.530134286e-08,red,#ff0000
+1,3,filled-square,,0,2006.910600946,6.530134286e-08,red,#ff0000
+1,3,filled-square,,0,2006.910600946,6.530134286e-08,red,#ff0000
+1,3,filled-square,,0,2006.910600946,6.530134286e-08,red,#ff0000
+1,3,filled-square,,0,2006.995321533,6.530134286e-08,red,#ff0000
+1,3,filled-square,,0,2007.079893152,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.079893152,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.079893152,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.079893152,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.164464756,9.024073957e-08,red,#ff0000
+1,3,filled-square,,0,2007.164464756,9.024073957e-08,red,#ff0000
+1,3,filled-square,,0,2007.164613754,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.24933664,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.334057227,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.334057227,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.334057227,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.418628846,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.418628846,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.503349434,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.503349434,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.575903562,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.575903562,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.575903562,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.575903562,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.575903562,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.660475181,9.024942971e-08,red,#ff0000
+1,3,filled-square,,0,2007.660475181,9.024942971e-08,red,#ff0000
+1,3,filled-square,,0,2007.660624165,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.660624165,6.530753581e-08,red,#ff0000
+1,3,filled-square,,0,2007.74534705,6.531382489e-08,red,#ff0000
+1,3,filled-square,,0,2007.74534705,6.531382489e-08,red,#ff0000
+1,3,filled-square,,0,2007.74534705,6.531382489e-08,red,#ff0000
+1,3,filled-square,,0,2007.829916371,6.531382489e-08,red,#ff0000
+1,3,filled-square,,0,2007.829916371,9.024942971e-08,red,#ff0000
+1,3,filled-square,,0,2007.829916371,6.531382489e-08,red,#ff0000
+1,3,filled-square,,0,2007.830067653,4.513024632e-08,red,#ff0000
+1,3,filled-square,,0,2007.91478824,4.513024632e-08,red,#ff0000
+1,3,filled-square,,0,2007.91478824,4.513024632e-08,red,#ff0000
+1,3,filled-square,,0,2007.91478824,4.513024632e-08,red,#ff0000
+1,3,filled-square,,0,2007.91478824,4.513024632e-08,red,#ff0000
+1,3,filled-square,,0,2007.91478824,4.513024632e-08,red,#ff0000
+1,3,filled-square,,0,2007.91478824,4.513024632e-08,red,#ff0000
+1,3,filled-square,,0,2007.999359859,6.531382489e-08,red,#ff0000
+1,3,filled-square,,0,2007.999359859,6.531382489e-08,red,#ff0000
+1,3,filled-square,,0,2008.084080446,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.084080446,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.084080446,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.084080446,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.168803347,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.253372652,6.531382489e-08,red,#ff0000
+1,3,filled-square,,0,2008.253523934,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.253523934,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.253523934,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.253523934,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.253523934,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.253523934,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.325926796,6.531382489e-08,red,#ff0000
+1,3,filled-square,,0,2008.325926796,6.531382489e-08,red,#ff0000
+1,3,filled-square,,0,2008.325926796,6.531382489e-08,red,#ff0000
+1,3,filled-square,,0,2008.326078063,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.326078063,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.410647383,6.532001902e-08,red,#ff0000
+1,3,filled-square,,0,2008.495370269,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.495370269,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.579941888,6.532001902e-08,red,#ff0000
+1,3,filled-square,,0,2008.580090871,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.580090871,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.664811474,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.664811474,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.664811474,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.664811474,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.664811474,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.664811474,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.664811474,4.513452631e-08,red,#ff0000
+1,3,filled-square,,0,2008.749534359,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2008.749534359,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2008.749534359,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2008.749534359,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2008.83410368,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2008.83410368,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2008.918826565,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2008.918826565,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2008.918826565,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2008.918826565,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2009.003398169,6.532001902e-08,red,#ff0000
+1,3,filled-square,,0,2009.076101297,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2009.076101297,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2009.076101297,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2009.076101297,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2009.160821884,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2009.160821884,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2009.160821884,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2009.160821884,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2009.245393503,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2009.245393503,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2009.245393503,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2009.245393503,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2009.33011409,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2009.33011409,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2009.33011409,4.513887274e-08,red,#ff0000
+1,3,filled-square,,0,2009.414836976,4.514315355e-08,red,#ff0000
+1,3,filled-square,,0,2009.414836976,4.514315355e-08,red,#ff0000
+1,3,filled-square,,0,2009.414836976,4.514315355e-08,red,#ff0000
+1,3,filled-square,,0,2009.414836976,4.514315355e-08,red,#ff0000
+1,3,filled-square,,0,2009.414836976,4.514315355e-08,red,#ff0000
+1,3,filled-square,,0,2009.414836976,4.514315355e-08,red,#ff0000
+1,3,filled-square,,0,2009.499557578,4.514315355e-08,red,#ff0000
+1,3,filled-square,,0,2009.668849784,4.514315355e-08,red,#ff0000
+1,3,filled-square,,0,2009.668849784,4.514315355e-08,red,#ff0000
+1,3,filled-square,,0,2009.668849784,4.514315355e-08,red,#ff0000
+1,3,filled-square,,0,2009.753570386,4.514315355e-08,red,#ff0000
+1,3,filled-square,,0,2009.753570386,4.514315355e-08,red,#ff0000
+1,3,filled-square,,0,2009.753570386,4.514315355e-08,red,#ff0000
+1,3,filled-square,,0,2009.753570386,4.514315355e-08,red,#ff0000
+1,3,filled-square,,0,2009.753570386,4.514315355e-08,red,#ff0000
+1,3,filled-square,,0,2009.910845103,4.514315355e-08,red,#ff0000
+1,3,filled-square,,0,2010.080139607,4.514750081e-08,red,#ff0000
+1,3,filled-square,,0,2010.08028859,3.217119027e-08,red,#ff0000
+1,3,filled-square,,0,2010.08028859,3.217119027e-08,red,#ff0000
+1,3,filled-square,,0,2010.08028859,3.217119027e-08,red,#ff0000
+1,3,filled-square,,0,2010.08028859,3.217119027e-08,red,#ff0000
+1,3,filled-square,,0,2010.08028859,3.217119027e-08,red,#ff0000
+1,3,filled-square,,0,2010.164860209,4.514750081e-08,red,#ff0000
+1,3,filled-square,,0,2010.249580797,3.217119027e-08,red,#ff0000
+1,3,filled-square,,0,2010.249580797,3.217119027e-08,red,#ff0000
+1,3,filled-square,,0,2010.334301399,3.217428834e-08,red,#ff0000
+1,3,filled-square,,0,2010.419024285,3.217428834e-08,red,#ff0000
+1,3,filled-square,,0,2010.66087062,3.217428834e-08,red,#ff0000
+1,3,filled-square,,0,2010.745442224,4.515178244e-08,red,#ff0000
+1,3,filled-square,,0,2010.745591222,3.217428834e-08,red,#ff0000
+1,3,filled-square,,0,2011.084326916,3.217733994e-08,red,#ff0000
+1,4,filled-square,,0,1985.825606954,0.016488683324,red,#ff0000
+1,4,filled-square,,0,1986.079683637,0.03747549246,red,#ff0000
+1,4,filled-square,,0,1987.168391773,0.028224877045,red,#ff0000
+1,4,filled-square,,0,1988.329650595,0.03477179734,red,#ff0000
+1,4,filled-square,,0,1988.499084811,0.07139356371,red,#ff0000
+1,4,filled-square,,0,1989.333716264,0.04341370409,red,#ff0000
+1,4,filled-square,,0,1989.333716264,0.025979397658,red,#ff0000
+1,4,filled-square,,0,1990.410481901,0.04318222276,red,#ff0000
+1,4,filled-square,,0,1990.495124368,0.04691459532,red,#ff0000
+1,4,filled-square,,0,1991.07582842,0.03658466066,red,#ff0000
+1,4,filled-square,,0,1991.499190037,0.05263105135,red,#ff0000
+1,4,filled-square,,0,1991.499190037,0.017770767539,red,#ff0000
+1,4,filled-square,,0,1992.503255706,0.07044336731,red,#ff0000
+1,4,filled-square,,0,1992.503255706,0.05552324767,red,#ff0000
+1,4,filled-square,,0,1992.66044886,0.07632769805,red,#ff0000
+1,4,filled-square,,0,1992.829883075,0.12823358302,red,#ff0000
+1,4,filled-square,,0,1992.914525543,0.08052207915,red,#ff0000
+1,4,filled-square,,0,1993.253244693,0.03367299281,red,#ff0000
+1,4,filled-square,,0,1993.253244693,0.04423370434,red,#ff0000
+1,4,filled-square,,0,1993.325795379,0.05377046239,red,#ff0000
+1,4,filled-square,,0,1993.749306277,0.026470097845,red,#ff0000
+1,4,filled-square,,0,1994.245218581,0.0471660843,red,#ff0000
+1,4,filled-square,,0,1994.245218581,0.05449396292,red,#ff0000
+1,4,filled-square,,0,1994.499295264,0.2009728363,red,#ff0000
+1,4,filled-square,,0,1994.499295264,0.06363714064,red,#ff0000
+1,4,filled-square,,0,1994.499295264,0.03890454018,red,#ff0000
+1,4,filled-square,,0,1994.499295264,0.04329780873,red,#ff0000
+1,4,filled-square,,0,1994.583937731,0.026328959613,red,#ff0000
+1,4,filled-square,,0,1994.753371946,0.1538110783,red,#ff0000
+1,4,filled-square,,0,1994.753371946,0.17071747991,red,#ff0000
+1,4,filled-square,,0,1994.753371946,0.18747311749,red,#ff0000
+1,4,filled-square,,0,1994.995207567,0.07139356371,red,#ff0000
+1,4,filled-square,,0,1995.164641783,0.02397656812,red,#ff0000
+1,4,filled-square,,0,1995.164641783,0.03523966414,red,#ff0000
+1,4,filled-square,,0,1995.24928425,0.05597029983,red,#ff0000
+1,4,filled-square,,0,1995.503360933,0.020807953836,red,#ff0000
+1,4,filled-square,,0,1995.503360933,0.04629172386,red,#ff0000
+1,4,filled-square,,0,1995.503360933,0.05179364796,red,#ff0000
+1,4,filled-square,,0,1995.503360933,0.05348375896,red,#ff0000
+1,4,filled-square,,0,1995.575911619,0.09632519473,red,#ff0000
+1,4,filled-square,,0,1995.745196553,0.14271427254,red,#ff0000
+1,4,filled-square,,0,1995.829988302,0.14815637597,red,#ff0000
+1,4,filled-square,,0,1995.829988302,0.26328959613,red,#ff0000
+1,4,filled-square,,0,1995.829988302,0.03571382624,red,#ff0000
+1,4,filled-square,,0,1996.168707452,0.05718200235,red,#ff0000
+1,4,filled-square,,0,1996.253349919,0.04376325479,red,#ff0000
+1,4,filled-square,,0,1996.410543072,0.06876885452,red,#ff0000
+1,4,filled-square,,0,1996.495334821,0.15797808984,red,#ff0000
+1,4,filled-square,,0,1996.495334821,0.18898258003,red,#ff0000
+1,4,filled-square,,0,1996.749262222,0.06821957633,red,#ff0000
+1,4,filled-square,,0,1996.749262222,0.05795140636,red,#ff0000
+1,4,filled-square,,0,1997.075889591,0.05207129144,red,#ff0000
+1,4,filled-square,,0,1997.245323807,0.24824415666,red,#ff0000
+1,4,filled-square,,0,1997.329966274,0.10835149072,red,#ff0000
+1,4,filled-square,,0,1997.329966274,0.08337221246,red,#ff0000
+1,4,filled-square,,0,1997.414608742,0.06588744574,red,#ff0000
+1,4,filled-square,,0,1997.414608742,0.10577586205,red,#ff0000
+1,4,filled-square,,0,1997.49940049,0.05642095149,red,#ff0000
+1,4,filled-square,,0,1997.668685424,0.11930056286,red,#ff0000
+1,4,filled-square,,0,1997.668685424,0.17026173986,red,#ff0000
+1,4,filled-square,,0,1998.079955261,0.18203483448,red,#ff0000
+1,4,filled-square,,0,1998.164747009,0.25497794025,red,#ff0000
+1,4,filled-square,,0,1998.164747009,0.28989538406,red,#ff0000
+1,4,filled-square,,0,1998.164747009,0.30257317263,red,#ff0000
+1,4,filled-square,,0,1998.164747009,0.3183481353,red,#ff0000
+1,4,filled-square,,0,1998.334031943,0.13969472752,red,#ff0000
+1,4,filled-square,,0,1998.418674411,0.14081949656,red,#ff0000
+1,4,filled-square,,0,1998.660659312,0.11553442383,red,#ff0000
+1,4,filled-square,,0,1998.74530178,0.08985485243,red,#ff0000
+1,4,filled-square,,0,1998.830093528,0.11930056286,red,#ff0000
+1,4,filled-square,,0,1998.914735995,0.16800122415,red,#ff0000
+1,4,filled-square,,0,1998.914735995,0.19776866612,red,#ff0000
+1,4,filled-square,,0,1998.914735995,0.13100971529,red,#ff0000
+1,4,filled-square,,0,1999.168812678,0.12653106296,red,#ff0000
+1,4,filled-square,,0,1999.168812678,0.21892797851,red,#ff0000
+1,4,filled-square,,0,1999.326005832,0.20807953836,red,#ff0000
+1,4,filled-square,,0,1999.410648299,0.16665934621,red,#ff0000
+1,4,filled-square,,0,1999.664724982,0.07235418929,red,#ff0000
+1,4,filled-square,,0,1999.834159197,0.15095974298,red,#ff0000
+1,4,filled-square,,0,2000.003444132,0.3331486218,red,#ff0000
+1,4,filled-square,,0,2000.003444132,0.3477179734,red,#ff0000
+1,4,filled-square,,0,2000.003444132,0.4754584775,red,#ff0000
+1,4,filled-square,,0,2000.160786566,0.21031636754,red,#ff0000
+1,4,filled-square,,0,2000.245429033,0.24429438761,red,#ff0000
+1,4,filled-square,,0,2000.414713968,0.4082359566,red,#ff0000
+1,4,filled-square,,0,2000.753433118,0.16053229085,red,#ff0000
+1,4,filled-square,,0,2000.910775553,0.11339265753,red,#ff0000
+1,4,filled-square,,0,2000.910775553,0.26611992657,red,#ff0000
+1,4,filled-square,,0,2001.080060487,0.4306694535,red,#ff0000
+1,4,filled-square,,0,2001.164852235,0.5193228416,red,#ff0000
+1,4,filled-square,,0,2001.418779637,0.13710055518,red,#ff0000
+1,4,filled-square,,0,2001.418779637,0.4329780873,red,#ff0000
+1,4,filled-square,,0,2001.503571385,0.4666444729,red,#ff0000
+1,4,filled-square,,0,2001.503571385,0.5334098101,red,#ff0000
+1,4,filled-square,,0,2001.503571385,0.624574413,red,#ff0000
+1,4,filled-square,,0,2001.576122072,0.21717933277,red,#ff0000
+1,4,filled-square,,0,2001.745407006,0.3304876603,red,#ff0000
+1,4,filled-square,,0,2002.084126156,0.3149623294,red,#ff0000
+1,4,filled-square,,0,2002.084126156,0.4352990966,red,#ff0000
+1,4,filled-square,,0,2002.326111058,0.4567712208,red,#ff0000
+1,4,filled-square,,0,2002.410753525,0.4691459532,red,#ff0000
+1,4,filled-square,,0,2002.495545274,0.7293675782,red,#ff0000
+1,4,filled-square,,0,2002.580187741,0.3091133859,red,#ff0000
+1,4,filled-square,,0,2002.918906891,0.5567186689,red,#ff0000
+1,4,filled-square,,0,2003.160891793,0.7352401697,red,#ff0000
+1,4,filled-square,,0,2003.330176727,0.4604489696,red,#ff0000
+1,4,filled-square,,0,2003.753538344,0.4604489696,red,#ff0000
+1,4,filled-square,,0,2004.503676612,0.4604489696,red,#ff0000
+1,4,filled-square,,0,2004.503676612,0.25703092606,red,#ff0000
+1,4,filled-square,,0,2004.503676612,1.027074804,red,#ff0000
+1,4,filled-square,,0,2004.660869765,0.3149623294,red,#ff0000
+1,4,filled-square,,0,2004.914946448,0.30095985625,red,#ff0000
+1,4,filled-square,,0,2005.169023131,0.8073761281,red,#ff0000
+1,4,filled-square,,0,2005.495501219,0.9033652566,red,#ff0000
+1,4,filled-square,,0,2005.580292967,0.1905041962,red,#ff0000
+1,4,filled-square,,0,2005.664935434,0.1998946547,red,#ff0000
+1,4,filled-square,,0,2006.003654584,0.8517432879,red,#ff0000
+1,4,filled-square,,0,2006.003654584,0.4604489696,red,#ff0000
+1,4,filled-square,,0,2006.07620527,0.5522719841,red,#ff0000
+1,4,filled-square,,0,2006.07620527,0.3440198033,red,#ff0000
+1,4,filled-square,,0,2006.07620527,0.5857437677,red,#ff0000
+1,4,filled-square,,0,2006.07620527,0.5857437677,red,#ff0000
+1,4,filled-square,,0,2006.07620527,0.8030712087,red,#ff0000
+1,4,filled-square,,0,2006.07620527,0.8030712087,red,#ff0000
+1,4,filled-square,,0,2006.414924421,0.8030712087,red,#ff0000
+1,4,filled-square,,0,2006.499566888,0.5151748488,red,#ff0000
+1,4,filled-square,,0,2006.499566888,0.3440198033,red,#ff0000
+1,4,filled-square,,0,2006.499566888,0.4543207288,red,#ff0000
+1,4,filled-square,,0,2006.499566888,0.5597029983,red,#ff0000
+1,4,filled-square,,0,2006.584358636,0.5687710863,red,#ff0000
+1,4,filled-square,,0,2006.584358636,0.5857437677,red,#ff0000
+1,4,filled-square,,0,2006.584358636,0.4543207288,red,#ff0000
+1,4,filled-square,,0,2006.584358636,0.5249054976,red,#ff0000
+1,4,filled-square,,0,2006.584358636,0.5857437677,red,#ff0000
+1,4,filled-square,,0,2006.669001103,0.4482888443,red,#ff0000
+1,4,filled-square,,0,2006.669001103,0.4126244424,red,#ff0000
+1,4,filled-square,,0,2006.669001103,0.23785059826,red,#ff0000
+1,4,filled-square,,0,2006.669001103,0.9082078093,red,#ff0000
+1,4,filled-square,,0,2006.669001103,0.21834353779,red,#ff0000
+1,4,filled-square,,0,2006.669001103,0.344940642,red,#ff0000
+1,4,filled-square,,0,2006.826194257,0.5857437677,red,#ff0000
+1,4,filled-square,,0,2006.910986005,0.27999436189,red,#ff0000
+1,4,filled-square,,0,2006.910986005,0.27999436189,red,#ff0000
+1,4,filled-square,,0,2006.910986005,0.4192957837,red,#ff0000
+1,4,filled-square,,0,2006.995628472,0.27999436189,red,#ff0000
+1,4,filled-square,,0,2007.08027094,0.5857437677,red,#ff0000
+1,4,filled-square,,0,2007.08027094,0.3668258692,red,#ff0000
+1,4,filled-square,,0,2007.08027094,0.5857437677,red,#ff0000
+1,4,filled-square,,0,2007.08027094,0.3668258692,red,#ff0000
+1,4,filled-square,,0,2007.164913407,0.5687710863,red,#ff0000
+1,4,filled-square,,0,2007.164913407,0.4126244424,red,#ff0000
+1,4,filled-square,,0,2007.164913407,0.5449396292,red,#ff0000
+1,4,filled-square,,0,2007.249705155,0.17488019986,red,#ff0000
+1,4,filled-square,,0,2007.334347622,0.3668258692,red,#ff0000
+1,4,filled-square,,0,2007.334347622,0.4543207288,red,#ff0000
+1,4,filled-square,,0,2007.334347622,0.5249054976,red,#ff0000
+1,4,filled-square,,0,2007.41899009,0.4691459532,red,#ff0000
+1,4,filled-square,,0,2007.41899009,0.24494829104,red,#ff0000
+1,4,filled-square,,0,2007.503632557,0.2462613535,red,#ff0000
+1,4,filled-square,,0,2007.503632557,0.8449401498,red,#ff0000
+1,4,filled-square,,0,2007.576332524,0.5857437677,red,#ff0000
+1,4,filled-square,,0,2007.576332524,0.4543207288,red,#ff0000
+1,4,filled-square,,0,2007.576332524,0.4543207288,red,#ff0000
+1,4,filled-square,,0,2007.576332524,0.3322592626,red,#ff0000
+1,4,filled-square,,0,2007.576332524,0.24560394477,red,#ff0000
+1,4,filled-square,,0,2007.660974991,0.5434848818,red,#ff0000
+1,4,filled-square,,0,2007.660974991,0.4126244424,red,#ff0000
+1,4,filled-square,,0,2007.660974991,0.5449396292,red,#ff0000
+1,4,filled-square,,0,2007.660974991,0.3074651972,red,#ff0000
+1,4,filled-square,,0,2007.745617459,0.3331486218,red,#ff0000
+1,4,filled-square,,0,2007.745617459,0.26328959613,red,#ff0000
+1,4,filled-square,,0,2007.745617459,0.24494829104,red,#ff0000
+1,4,filled-square,,0,2007.830259926,0.5857437677,red,#ff0000
+1,4,filled-square,,0,2007.830259926,0.1744133472,red,#ff0000
+1,4,filled-square,,0,2007.830259926,0.4543207288,red,#ff0000
+1,4,filled-square,,0,2007.830259926,0.7471275851,red,#ff0000
+1,4,filled-square,,0,2007.915051674,0.6080798531,red,#ff0000
+1,4,filled-square,,0,2007.915051674,0.6080798531,red,#ff0000
+1,4,filled-square,,0,2007.915051674,0.3737544949,red,#ff0000
+1,4,filled-square,,0,2007.915051674,0.7471275851,red,#ff0000
+1,4,filled-square,,0,2007.915051674,0.5612011568,red,#ff0000
+1,4,filled-square,,0,2007.915051674,0.5612011568,red,#ff0000
+1,4,filled-square,,0,2007.915051674,0.7006776415,red,#ff0000
+1,4,filled-square,,0,2007.999694142,0.21659241215,red,#ff0000
+1,4,filled-square,,0,2007.999694142,0.8449401498,red,#ff0000
+1,4,filled-square,,0,2008.084336609,0.6080798531,red,#ff0000
+1,4,filled-square,,0,2008.084336609,0.326972744,red,#ff0000
+1,4,filled-square,,0,2008.084336609,0.4115229179,red,#ff0000
+1,4,filled-square,,0,2008.084336609,0.6080798531,red,#ff0000
+1,4,filled-square,,0,2008.168979076,0.18697264731,red,#ff0000
+1,4,filled-square,,0,2008.253770824,0.3331486218,red,#ff0000
+1,4,filled-square,,0,2008.253770824,0.5795140636,red,#ff0000
+1,4,filled-square,,0,2008.253770824,0.4435210481,red,#ff0000
+1,4,filled-square,,0,2008.253770824,0.6346725766,red,#ff0000
+1,4,filled-square,,0,2008.253770824,0.3737544949,red,#ff0000
+1,4,filled-square,,0,2008.253770824,0.23344134621,red,#ff0000
+1,4,filled-square,,0,2008.253770824,0.5795140636,red,#ff0000
+1,4,filled-square,,0,2008.253770824,0.4435210481,red,#ff0000
+1,4,filled-square,,0,2008.326321511,0.3331486218,red,#ff0000
+1,4,filled-square,,0,2008.326321511,0.4170601038,red,#ff0000
+1,4,filled-square,,0,2008.326321511,0.3358310083,red,#ff0000
+1,4,filled-square,,0,2008.326321511,0.07694479902,red,#ff0000
+1,4,filled-square,,0,2008.326321511,0.7924090653,red,#ff0000
+1,4,filled-square,,0,2008.410963978,0.24494829104,red,#ff0000
+1,4,filled-square,,0,2008.495606445,0.1538110783,red,#ff0000
+1,4,filled-square,,0,2008.495606445,0.23344134621,red,#ff0000
+1,4,filled-square,,0,2008.580398193,0.4411561995,red,#ff0000
+1,4,filled-square,,0,2008.580398193,0.4949265935,red,#ff0000
+1,4,filled-square,,0,2008.580398193,0.22971952084,red,#ff0000
+1,4,filled-square,,0,2008.580398193,0.326972744,red,#ff0000
+1,4,filled-square,,0,2008.580398193,0.6080798531,red,#ff0000
+1,4,filled-square,,0,2008.665040661,0.7924090653,red,#ff0000
+1,4,filled-square,,0,2008.665040661,0.6080798531,red,#ff0000
+1,4,filled-square,,0,2008.665040661,0.5795140636,red,#ff0000
+1,4,filled-square,,0,2008.665040661,0.5795140636,red,#ff0000
+1,4,filled-square,,0,2008.665040661,0.4435210481,red,#ff0000
+1,4,filled-square,,0,2008.665040661,0.21031636754,red,#ff0000
+1,4,filled-square,,0,2008.665040661,0.7924090653,red,#ff0000
+1,4,filled-square,,0,2008.749683128,0.1538110783,red,#ff0000
+1,4,filled-square,,0,2008.749683128,0.09353096121,red,#ff0000
+1,4,filled-square,,0,2008.749683128,0.7471275851,red,#ff0000
+1,4,filled-square,,0,2008.749683128,0.5612011568,red,#ff0000
+1,4,filled-square,,0,2008.834325595,0.6080798531,red,#ff0000
+1,4,filled-square,,0,2008.834325595,0.4936053587,red,#ff0000
+1,4,filled-square,,0,2008.919117343,0.5795140636,red,#ff0000
+1,4,filled-square,,0,2008.919117343,0.4936053587,red,#ff0000
+1,4,filled-square,,0,2008.919117343,0.4936053587,red,#ff0000
+1,4,filled-square,,0,2008.919117343,0.7924090653,red,#ff0000
+1,4,filled-square,,0,2009.003759811,0.3331486218,red,#ff0000
+1,4,filled-square,,0,2009.076310497,0.4844389614,red,#ff0000
+1,4,filled-square,,0,2009.076310497,0.4844389614,red,#ff0000
+1,4,filled-square,,0,2009.076310497,0.7924090653,red,#ff0000
+1,4,filled-square,,0,2009.076310497,0.4204181139,red,#ff0000
+1,4,filled-square,,0,2009.160952964,0.367807753,red,#ff0000
+1,4,filled-square,,0,2009.160952964,0.09606804913,red,#ff0000
+1,4,filled-square,,0,2009.160952964,0.303383071,red,#ff0000
+1,4,filled-square,,0,2009.160952964,0.4435210481,red,#ff0000
+1,4,filled-square,,0,2009.245744712,0.3041951373,red,#ff0000
+1,4,filled-square,,0,2009.245744712,0.3041951373,red,#ff0000
+1,4,filled-square,,0,2009.245744712,0.2278846797,red,#ff0000
+1,4,filled-square,,0,2009.245744712,0.4936053587,red,#ff0000
+1,4,filled-square,,0,2009.245744712,0.4936053587,red,#ff0000
+1,4,filled-square,,0,2009.245744712,0.3609774544,red,#ff0000
+1,4,filled-square,,0,2009.33038718,0.326972744,red,#ff0000
+1,4,filled-square,,0,2009.33038718,0.5795140636,red,#ff0000
+1,4,filled-square,,0,2009.33038718,0.05137995602,red,#ff0000
+1,4,filled-square,,0,2009.415029647,0.367807753,red,#ff0000
+1,4,filled-square,,0,2009.415029647,0.7924090653,red,#ff0000
+1,4,filled-square,,0,2009.415029647,0.4936053587,red,#ff0000
+1,4,filled-square,,0,2009.415029647,0.4936053587,red,#ff0000
+1,4,filled-square,,0,2009.415029647,0.4936053587,red,#ff0000
+1,4,filled-square,,0,2009.415029647,0.09353096121,red,#ff0000
+1,4,filled-square,,0,2009.499672114,0.3322592626,red,#ff0000
+1,4,filled-square,,0,2009.66910633,0.4844389614,red,#ff0000
+1,4,filled-square,,0,2009.66910633,0.7924090653,red,#ff0000
+1,4,filled-square,,0,2009.66910633,0.4936053587,red,#ff0000
+1,4,filled-square,,0,2009.66910633,0.4936053587,red,#ff0000
+1,4,filled-square,,0,2009.753748797,0.09353096121,red,#ff0000
+1,4,filled-square,,0,2009.753748797,0.3209113539,red,#ff0000
+1,4,filled-square,,0,2009.753748797,0.15217521366,red,#ff0000
+1,4,filled-square,,0,2009.753748797,0.3209113539,red,#ff0000
+1,4,filled-square,,0,2009.753748797,0.15217521366,red,#ff0000
+1,4,filled-square,,0,2009.753748797,0.3209113539,red,#ff0000
+1,4,filled-square,,0,2009.911091232,0.4936053587,red,#ff0000
+1,4,filled-square,,0,2010.080376166,0.4318222276,red,#ff0000
+1,4,filled-square,,0,2010.080376166,0.9009536715,red,#ff0000
+1,4,filled-square,,0,2010.080376166,0.9009536715,red,#ff0000
+1,4,filled-square,,0,2010.080376166,1.0748605372,red,#ff0000
+1,4,filled-square,,0,2010.080376166,0.9009536715,red,#ff0000
+1,4,filled-square,,0,2010.080376166,0.4318222276,red,#ff0000
+1,4,filled-square,,0,2010.080376166,0.4318222276,red,#ff0000
+1,4,filled-square,,0,2010.080376166,0.9009536715,red,#ff0000
+1,4,filled-square,,0,2010.080376166,0.3041951373,red,#ff0000
+1,4,filled-square,,0,2010.165018633,0.3523966414,red,#ff0000
+1,4,filled-square,,0,2010.249810382,0.5235042324,red,#ff0000
+1,4,filled-square,,0,2010.249810382,0.3697794122,red,#ff0000
+1,4,filled-square,,0,2010.334452849,0.9009536715,red,#ff0000
+1,4,filled-square,,0,2010.419095316,0.9009536715,red,#ff0000
+1,4,filled-square,,0,2010.661080218,0.9009536715,red,#ff0000
+1,4,filled-square,,0,2010.745722685,0.4318222276,red,#ff0000
+1,4,filled-square,,0,2010.745722685,0.4318222276,red,#ff0000
+1,4,filled-square,,0,2011.084441835,0.4399785078,red,#ff0000
+1,4,filled-square,,0,2012.415134873,0.27188116398,red,#ff0000
+1,4,filled-square,,0,2012.753854023,0.5795140636,red,#ff0000
+1,4,filled-square,,0,2012.753854023,0.5841800913,red,#ff0000
+1,4,filled-square,,0,2013.080481392,0.5936251567,red,#ff0000
+1,4,filled-square,,0,2013.50384301,0.5002469928,red,#ff0000
+1,5,filled-square,,0,1985.828146482,16.008338175,blue,#0424fd
+1,5,plus,,0,1986.082809384,16.00955142,lime,#2cff14
+1,5,filled-circle,,1,1986.69496447,2500.154703,blue,#062dfd
+1,5,filled-thin-diamond,,1,1986.699060416,1277.2002813,mediumspringgreen,#0cf1bb
+1,5,filled-triangle,,1,1986.699060533,1784.7674887,dodgerblue,#1171fc
+1,5,plus,,1,1986.699060694,652.6788485,lime,#2cff14
+1,5,filled-square,,1,1986.699060928,3496.184202,blue,#0424fd
+1,5,filled-triangle,,1,1986.703009868,913.0091019,limegreen,#21ff49
+1,5,filled-square,,0,1987.170794063,20.002794878,blue,#0424fd
+1,5,plus,,0,1987.497569531,49.99490278,lime,#2cff14
+1,5,filled-square,,0,1988.331915809,25.070883123,blue,#0424fd
+1,5,plus,,0,1988.501885339,40.01268879,lime,#2cff14
+1,5,filled-square,,0,1989.335939451,33.04168691,blue,#0424fd
+1,5,filled-square,,0,1989.335939451,25.070883123,blue,#0424fd
+1,5,filled-square,,0,1990.412368643,33.04168691,blue,#0424fd
+1,5,plus,,0,1990.497645209,40.01878073,lime,#2cff14
+1,5,plus,,0,1991.07791507,33.04419735,lime,#2cff14
+1,5,filled-square,,0,1991.500938564,49.99301378,blue,#0424fd
+1,5,filled-triangle,,0,1991.505035255,49.99302535,limegreen,#21ff49
+1,5,plus,,0,1992.082230864,33.04920928,lime,#2cff14
+1,5,plus,,0,1992.505546949,100.00381306,lime,#2cff14
+1,5,filled-triangle,,0,1992.50891135,40.01118621,limegreen,#21ff49
+1,5,filled-triangle,,0,1992.50891135,49.99302535,limegreen,#21ff49
+1,5,filled-triangle,,0,1992.50891135,60.15572982,limegreen,#21ff49
+1,5,filled-square,,0,1992.662206583,66.09260857,blue,#0424fd
+1,5,filled-thin-diamond,,0,1992.831591618,99.9981051,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1992.831591618,124.94525347,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1992.831591618,150.35017433,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1992.831591618,166.22570279,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1992.831591618,175.33269046,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1992.831591618,190.23272528,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1992.831591618,200.02411216,mediumspringgreen,#0cf1bb
+1,5,plus,,0,1992.916723388,200.03552967,lime,#2cff14
+1,5,plus,,0,1992.916723388,175.34269923,lime,#2cff14
+1,5,plus,,0,1992.916723388,150.35875642,lime,#2cff14
+1,5,plus,,0,1992.916723388,100.00381306,lime,#2cff14
+1,5,plus,,0,1993.086109197,100.01898098,lime,#2cff14
+1,5,open-circle,,0,1993.250519385,40.02179531,blue,#062dfd
+1,5,filled-circle,,0,1993.250811772,40.02485355,blue,#062dfd
+1,5,filled-square,,0,1993.254908185,60.15801926,blue,#0424fd
+1,5,filled-square,,0,1993.254908185,66.09260857,blue,#0424fd
+1,5,filled-triangle,,0,1993.327459981,66.02495355,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1993.327459981,75.08621424,dodgerblue,#1171fc
+1,5,plus,,0,1993.496845936,72.16501839,lime,#2cff14
+1,5,plus,,0,1993.666669207,100.00381306,lime,#2cff14
+1,5,filled-triangle,,0,1993.750776051,79.9485574,dodgerblue,#1171fc
+1,5,filled-square,,0,1994.246644824,100,blue,#0424fd
+1,5,plus,,0,1994.24693683,93.0421915,lime,#2cff14
+1,5,plus,,0,1994.247084143,133.04390239,lime,#2cff14
+1,5,plus,,0,1994.247229217,133.04390239,lime,#2cff14
+1,5,plus,,0,1994.331630847,66.09761486,lime,#2cff14
+1,5,plus,,0,1994.416615026,200.03552967,lime,#2cff14
+1,5,filled-thin-diamond,,0,1994.500721753,225.34529891,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1994.500721753,233.2605592,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1994.500721753,266.1098911,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1994.500721753,275.4570099,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1994.500721753,300.7423001,mediumspringgreen,#0cf1bb
+1,5,plus,,0,1994.500869344,124.95238543,lime,#2cff14
+1,5,plus,,0,1994.500869344,100.00381306,lime,#2cff14
+1,5,plus,,0,1994.501014418,75.16884787,lime,#2cff14
+1,5,plus,,0,1994.50116173,150.35875642,lime,#2cff14
+1,5,plus,,0,1994.501306819,119.96817906,lime,#2cff14
+1,5,plus,,0,1994.501454117,85.22922052,lime,#2cff14
+1,5,plus,,0,1994.501454117,70.16465407,lime,#2cff14
+1,5,plus,,0,1994.501454117,60.1671482,lime,#2cff14
+1,5,filled-square,,0,1994.585415038,100,blue,#0424fd
+1,5,filled-thin-diamond,,0,1994.754799341,249.92536978,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1994.754799341,266.1098911,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1994.754799341,291.4535197,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1994.754799341,300.7423001,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1994.754799341,333.546477,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1994.754799341,350.7143031,mediumspringgreen,#0cf1bb
+1,5,filled-triangle,,0,1994.996590102,99.89382058,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1995.165975911,66.02495355,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1995.165975911,66.02495355,dodgerblue,#1171fc
+1,5,filled-square,,0,1995.250668465,119.95455367,blue,#0424fd
+1,5,filled-square,,0,1995.504599852,133.03886033,blue,#0424fd
+1,5,filled-triangle,,0,1995.504600203,119.82721071,dodgerblue,#1171fc
+1,5,plus,,0,1995.505330227,110.23241451,lime,#2cff14
+1,5,plus,,0,1995.505330227,119.97727671,lime,#2cff14
+1,5,filled-triangle,,0,1995.508694627,75.16602509,limegreen,#21ff49
+1,5,filled-triangle,,0,1995.508694627,90.16503571,limegreen,#21ff49
+1,5,filled-triangle,,0,1995.57715235,132.89764682,dodgerblue,#1171fc
+1,5,plus,,0,1995.577737284,249.93963569,lime,#2cff14
+1,5,plus,,0,1995.577882373,239.95177505,lime,#2cff14
+1,5,plus,,0,1995.661991616,150.35875642,lime,#2cff14
+1,5,filled-thin-diamond,,0,1995.746535804,231.07627492,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1995.746535804,233.2605592,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1995.746535804,99.06170895,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1995.831229821,351.8204492,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1995.831229821,374.5891209,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1995.831229821,400.1042667,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1995.831229821,432.7411235,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1995.831229821,436.831676,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1995.831229821,466.5864747,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1995.831229821,479.9431053,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1995.831229821,499.9207632,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1995.831229821,533.9728765,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1995.831229821,599.6774928,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1995.831229821,612.9954592,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1995.831229821,768.3385049,mediumspringgreen,#0cf1bb
+1,5,filled-triangle,,0,1995.831229952,99.89382058,dodgerblue,#1171fc
+1,5,plus,,0,1995.831814887,118.10322502,lime,#2cff14
+1,5,plus,,0,1995.831814887,101.27512687,lime,#2cff14
+1,5,filled-square,,0,1995.915921892,200.02794878,blue,#0424fd
+1,5,plus,,0,1995.916506665,180.36899775,lime,#2cff14
+1,5,plus,,0,1995.916506665,160.10162541,lime,#2cff14
+1,5,filled-triangle,,0,1995.919871066,142.98762509,limegreen,#21ff49
+1,5,filled-triangle,,0,1995.919871066,167.27267925,limegreen,#21ff49
+1,5,filled-triangle,,0,1995.919871066,200.02790249,limegreen,#21ff49
+1,5,filled-triangle,,0,1995.919871066,248.36112875,limegreen,#21ff49
+1,5,filled-triangle,,0,1995.919871066,296.0614378,limegreen,#21ff49
+1,5,plus,,0,1996.085600088,249.93963569,lime,#2cff14
+1,5,plus,,0,1996.085600088,200.03552967,lime,#2cff14
+1,5,plus,,0,1996.085600088,180.36210675,lime,#2cff14
+1,5,plus,,0,1996.085600088,150.35875642,lime,#2cff14
+1,5,plus,,0,1996.085892474,249.93963569,lime,#2cff14
+1,5,plus,,0,1996.085892474,200.03552967,lime,#2cff14
+1,5,plus,,0,1996.085892474,196.30674921,lime,#2cff14
+1,5,plus,,0,1996.085892474,195.0818547,lime,#2cff14
+1,5,plus,,0,1996.085892474,180.36899775,lime,#2cff14
+1,5,plus,,0,1996.170584253,119.97727671,lime,#2cff14
+1,5,open-circle,,0,1996.250449975,90.10007857,blue,#062dfd
+1,5,open-circle,,0,1996.250449975,75.1118303,blue,#062dfd
+1,5,filled-circle,,0,1996.250597272,75.1118303,blue,#062dfd
+1,5,filled-circle,,0,1996.250597272,90.10007857,blue,#062dfd
+1,5,filled-triangle,,0,1996.411789962,199.81562999,dodgerblue,#1171fc
+1,5,filled-square,,0,1996.496482764,166.22887726,blue,#0424fd
+1,5,filled-square,,0,1996.496482764,200.02794878,blue,#0424fd
+1,5,filled-triangle,,0,1996.581175772,166.05235183,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1996.581175772,199.81562999,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1996.581175772,225.11042485,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1996.581175772,233.01743519,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1996.581175772,249.66473137,dodgerblue,#1171fc
+1,5,plus,,0,1996.751146501,180.36899775,lime,#2cff14
+1,5,plus,,0,1996.751146501,160.10162541,lime,#2cff14
+1,5,plus,,0,1996.751146501,132.21872401,lime,#2cff14
+1,5,plus,,0,1996.751146501,169.93982153,lime,#2cff14
+1,5,filled-triangle,,0,1996.835106047,76.99580525,dodgerblue,#1171fc
+1,5,filled-square,,0,1997.077043637,200.02794878,blue,#0424fd
+1,5,filled-thin-diamond,,0,1997.246429666,533.9728765,mediumspringgreen,#0cf1bb
+1,5,open-circle,,0,1997.330976092,233.33588037,blue,#062dfd
+1,5,filled-circle,,0,1997.331121167,233.34465986,blue,#062dfd
+1,5,filled-triangle,,0,1997.331121591,300.4288409,dodgerblue,#1171fc
+1,5,filled-square,,0,1997.415813852,300.7366595,blue,#0424fd
+1,5,plus,,0,1997.416398304,188.49070196,lime,#2cff14
+1,5,filled-square,,0,1997.500506406,233.25616746,blue,#0424fd
+1,5,filled-triangle,,0,1997.669745883,265.8323754,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1997.669745883,300.4288409,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1997.669745883,319.883652,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1997.669745883,332.1512292,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1997.669745883,350.3487588,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1997.669745883,360.3779385,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1997.669745883,375.3784719,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1997.826989808,159.91951525,dodgerblue,#1171fc
+1,5,plus,,0,1997.826989969,225.34968277,lime,#2cff14
+1,5,plus,,0,1997.826989969,200.02800342,lime,#2cff14
+1,5,plus,,0,1997.826989969,180.35532071,lime,#2cff14
+1,5,filled-square,,0,1998.081067279,333.5401718,blue,#0424fd
+1,5,filled-thin-diamond,,0,1998.165759072,466.5864747,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1998.165759072,499.9207632,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1998.165759072,525.6519701,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,1998.165759072,575.7137256,mediumspringgreen,#0cf1bb
+1,5,open-circle,,0,1998.330903861,300.5313326,blue,#062dfd
+1,5,filled-circle,,0,1998.331048936,300.5313326,blue,#062dfd
+1,5,open-circle,,0,1998.41954398,333.6539874,blue,#062dfd
+1,5,filled-circle,,0,1998.419691292,333.6667351,blue,#062dfd
+1,5,plus,,0,1998.420421711,360.8156829,lime,#2cff14
+1,5,filled-square,,0,1998.661628151,300.7366595,blue,#0424fd
+1,5,plus,,0,1998.746906371,441.002658,lime,#2cff14
+1,5,filled-triangle,,0,1998.83101323,199.81562999,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1998.83101323,222.30132632,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1998.83101323,375.3784719,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1998.83101323,399.6870135,dodgerblue,#1171fc
+1,5,filled-triangle,,0,1998.83101323,199.81562999,dodgerblue,#1171fc
+1,5,open-circle,,0,1998.911463871,499.5697862,blue,#062dfd
+1,5,open-circle,,0,1998.911463871,400.2332319,blue,#062dfd
+1,5,filled-circle,,0,1998.911611183,400.2485219,blue,#062dfd
+1,5,filled-circle,,0,1998.911611183,499.5697862,blue,#062dfd
+1,5,filled-thin-diamond,,0,1998.915704891,599.6774928,mediumspringgreen,#0cf1bb
+1,5,plus,,0,1998.915705169,360.760965,lime,#2cff14
+1,5,plus,,0,1998.915705169,350.7209237,lime,#2cff14
+1,5,plus,,0,1998.915705169,300.7481507,lime,#2cff14
+1,5,plus,,0,1998.915705169,270.3274315,lime,#2cff14
+1,5,open-circle,,0,1999.169492037,450.9162512,blue,#062dfd
+1,5,filled-circle,,0,1999.169637112,450.9162512,blue,#062dfd
+1,5,filled-square,,0,1999.1696372,499.9301378,blue,#0424fd
+1,5,plus,,0,1999.327613693,272.0660425,lime,#2cff14
+1,5,plus,,0,1999.412305486,450.8306124,lime,#2cff14
+1,5,plus,,0,1999.665798301,499.9490108,lime,#2cff14
+1,5,filled-square,,0,1999.834890626,733.0180515,blue,#0424fd
+1,5,open-circle,,0,1999.919290544,751.0900169,blue,#062dfd
+1,5,open-circle,,0,1999.919290544,599.2342787,blue,#062dfd
+1,5,filled-circle,,0,1999.919582931,599.2568255,blue,#062dfd
+1,5,filled-circle,,0,1999.919582931,751.1182774,blue,#062dfd
+1,5,filled-thin-diamond,,0,2000.004275002,616.8443809,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,2000.004275002,667.1864065,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,2000.004275002,701.5268714,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,2000.004275002,730.7275416,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,2000.004275002,751.645982,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,2000.004275002,833.6330626,mediumspringgreen,#0cf1bb
+1,5,plus,,0,2000.0774122,551.0223301,lime,#2cff14
+1,5,plus,,0,2000.0774122,499.968112,lime,#2cff14
+1,5,plus,,0,2000.0774122,441.002658,lime,#2cff14
+1,5,plus,,0,2000.162106231,450.847837,lime,#2cff14
+1,5,filled-square,,0,2000.246212666,1000,blue,#0424fd
+1,5,open-circle,,0,2000.411210435,1000.3033396,blue,#062dfd
+1,5,filled-circle,,0,2000.411502822,1000.3415538,blue,#062dfd
+1,5,plus,,0,2000.584837528,400.1118196,lime,#2cff14
+1,5,filled-triangle,,0,2000.758170288,599.6888563,limegreen,#21ff49
+1,5,filled-triangle,,0,2000.758170288,751.6602253,limegreen,#21ff49
+1,5,filled-triangle,,0,2000.758170288,901.6503263,limegreen,#21ff49
+1,5,filled-square,,0,2000.911466092,1498.8034872,blue,#0424fd
+1,5,plus,,0,2000.912052051,552.7599231,lime,#2cff14
+1,5,filled-triangle,,0,2001.080705599,998.9381754,dodgerblue,#1171fc
+1,5,filled-thin-diamond,,0,2001.16539726,833.6330626,mediumspringgreen,#0cf1bb
+1,5,filled-square,,0,2001.41947514,800.305071,blue,#0424fd
+1,5,plus,,0,2001.420059914,751.7171724,lime,#2cff14
+1,5,open-circle,,0,2001.499780546,1397.8037218,blue,#062dfd
+1,5,filled-circle,,0,2001.500072933,1397.8563156,blue,#062dfd
+1,5,filled-thin-diamond,,0,2001.504166641,999.9810168,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,2001.504166641,1003.1349338,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,2001.504166641,1226.1619594,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,2001.504166641,1249.4524921,mediumspringgreen,#0cf1bb
+1,5,plus,,0,2001.576866378,733.0456543,lime,#2cff14
+1,5,filled-square,,0,2001.746104626,2000.2036059,blue,#0424fd
+1,5,filled-square,,0,2002.084728567,2204.5376323,blue,#0424fd
+1,5,filled-thin-diamond,,0,2002.084728889,999.9810168,mediumspringgreen,#0cf1bb
+1,5,filled-thin-diamond,,0,2002.084728889,1151.5880898,mediumspringgreen,#0cf1bb
+1,5,filled-square,,0,2002.326665499,2399.4263318,blue,#0424fd
+1,5,filled-square,,0,2002.411358053,2530.7868473,blue,#0424fd
+1,5,open-circle,,0,2002.491809396,1804.1693544,blue,#062dfd
+1,5,filled-circle,,0,2002.491954471,1804.1693544,blue,#062dfd
+1,5,filled-square,,0,2002.580596886,1000,blue,#0424fd
+1,5,filled-square,,0,2002.919367101,2998.025872,blue,#0424fd
+1,5,open-circle,,0,2003.161156852,2168.7034056,blue,#062dfd
+1,5,filled-circle,,0,2003.161304165,2168.7034056,blue,#062dfd
+1,5,open-circle,,0,2003.330397573,1804.1693544,blue,#062dfd
+1,5,filled-circle,,0,2003.330542647,1804.1693544,blue,#062dfd
+1,5,open-circle,,0,2003.749763079,1998.8379058,blue,#062dfd
+1,5,filled-circle,,0,2003.749910391,1998.8379058,blue,#062dfd
+1,5,open-circle,,0,2004.499563824,2601.3596251,blue,#062dfd
+1,5,filled-circle,,0,2004.499856211,2601.4575038,blue,#062dfd
+1,5,filled-triangle,,0,2004.503804961,1900.3444277,dodgerblue,#1171fc
+1,5,filled-square,,0,2004.503805341,3607.610034,blue,#0424fd
+1,5,filled-thin-diamond,,0,2004.661048769,1301.4602697,mediumspringgreen,#0cf1bb
+1,5,filled-square,,0,2004.91512738,1600.8338175,blue,#0424fd
+1,5,filled-square,,0,2005.169058768,3734.185269,blue,#0424fd
+1,5,open-circle,,0,2005.410704147,2205.2074099,blue,#062dfd
+1,5,filled-circle,,0,2005.410996534,2205.2903914,blue,#062dfd
+1,5,open-circle,,0,2005.491445361,2798.968981,blue,#062dfd
+1,5,filled-circle,,0,2005.491737748,2799.07592,blue,#062dfd
+1,5,filled-triangle,,0,2005.584329864,1398.8648987,limegreen,#21ff49
+1,5,filled-circle,,0,2005.660978483,2205.2903914,blue,#062dfd
+1,5,open-circle,,0,2005.660978483,2205.2903914,blue,#062dfd
+1,5,filled-square,,0,2006.003697301,3805.11454,blue,#0424fd
+1,5,filled-square,,0,2006.003697301,2661.048082,blue,#0424fd
+1,5,open-circle,,0,2006.072007609,2601.3596251,blue,#062dfd
+1,5,filled-circle,,0,2006.072299996,2601.4575038,blue,#062dfd
+1,5,filled-square,,0,2006.076249126,1832.0330621,blue,#0424fd
+1,5,filled-square,,0,2006.076249126,2170.2667389,blue,#0424fd
+1,5,filled-square,,0,2006.076249126,2798.120094,blue,#0424fd
+1,5,filled-square,,0,2006.076249126,2998.025872,blue,#0424fd
+1,5,filled-square,,0,2006.076249126,3202.115049,blue,#0424fd
+1,5,filled-square,,0,2006.076249126,3398.756265,blue,#0424fd
+1,5,filled-square,,0,2006.415019341,3607.610034,blue,#0424fd
+1,5,open-circle,,0,2006.499272035,2601.3596251,blue,#062dfd
+1,5,filled-square,,0,2006.499565621,2332.5616746,blue,#0424fd
+1,5,filled-square,,0,2006.499565621,1600.8338175,blue,#0424fd
+1,5,filled-square,,0,2006.499565621,1860.9628746,blue,#0424fd
+1,5,filled-square,,0,2006.499565621,2000.2036059,blue,#0424fd
+1,5,filled-square,,0,2006.499565621,2332.5616746,blue,#0424fd
+1,5,filled-square,,0,2006.499565621,2661.048082,blue,#0424fd
+1,5,filled-square,,0,2006.499565621,2998.025872,blue,#0424fd
+1,5,filled-circle,,0,2006.499711734,2601.4575038,blue,#062dfd
+1,5,open-circle,,0,2006.580015487,2798.968981,blue,#062dfd
+1,5,filled-circle,,0,2006.580307874,2799.07592,blue,#062dfd
+1,5,filled-square,,0,2006.584258174,1860.9628746,blue,#0424fd
+1,5,filled-square,,0,2006.584258174,2136.4475569,blue,#0424fd
+1,5,filled-square,,0,2006.584258174,2399.4263318,blue,#0424fd
+1,5,filled-square,,0,2006.584258174,2661.048082,blue,#0424fd
+1,5,filled-square,,0,2006.584258174,2932.891742,blue,#0424fd
+1,5,filled-square,,0,2006.584258174,3398.756265,blue,#0424fd
+1,5,open-circle,,0,2006.668805156,2799.07592,blue,#062dfd
+1,5,open-circle,,0,2006.668805156,2601.4575038,blue,#062dfd
+1,5,open-circle,,0,2006.668805156,2397.6975707,blue,#062dfd
+1,5,open-circle,,0,2006.668805156,2205.2903914,blue,#062dfd
+1,5,open-circle,,0,2006.668805156,1998.8379058,blue,#062dfd
+1,5,open-circle,,0,2006.668805156,1804.1693544,blue,#062dfd
+1,5,open-circle,,0,2006.668805156,2601.4575038,blue,#062dfd
+1,5,filled-circle,,0,2006.668950231,2601.4575038,blue,#062dfd
+1,5,filled-circle,,0,2006.668950231,1804.1693544,blue,#062dfd
+1,5,filled-circle,,0,2006.668950231,1998.8379058,blue,#062dfd
+1,5,filled-circle,,0,2006.668950231,2205.2903914,blue,#062dfd
+1,5,filled-circle,,0,2006.668950231,2397.6975707,blue,#062dfd
+1,5,filled-circle,,0,2006.668950231,2601.4575038,blue,#062dfd
+1,5,filled-circle,,0,2006.668950231,2799.07592,blue,#062dfd
+1,5,filled-square,,0,2006.668950728,2170.2667389,blue,#0424fd
+1,5,filled-square,,0,2006.668950728,1667.4678407,blue,#0424fd
+1,5,filled-square,,0,2006.668950728,2000.2036059,blue,#0424fd
+1,5,filled-square,,0,2006.668950728,2332.5616746,blue,#0424fd
+1,5,filled-square,,0,2006.668950728,2669.440176,blue,#0424fd
+1,5,filled-square,,0,2006.668950728,2603.3337802,blue,#0424fd
+1,5,filled-square,,0,2006.668950728,2998.025872,blue,#0424fd
+1,5,filled-square,,0,2006.668950728,3202.115049,blue,#0424fd
+1,5,filled-square,,0,2006.668950728,3398.756265,blue,#0424fd
+1,5,filled-square,,0,2006.826195107,2998.025872,blue,#0424fd
+1,5,filled-square,,0,2006.91088766,1600.8338175,blue,#0424fd
+1,5,filled-square,,0,2006.91088766,1860.9628746,blue,#0424fd
+1,5,filled-square,,0,2006.91088766,2332.5616746,blue,#0424fd
+1,5,filled-square,,0,2006.91088766,2661.048082,blue,#0424fd
+1,5,filled-square,,0,2006.995580214,2000.2036059,blue,#0424fd
+1,5,filled-square,,0,2007.080272768,1803.5529813,blue,#0424fd
+1,5,filled-square,,0,2007.080272768,2399.4263318,blue,#0424fd
+1,5,filled-square,,0,2007.080272768,1860.9628746,blue,#0424fd
+1,5,filled-square,,0,2007.080272768,2129.7310666,blue,#0424fd
+1,5,filled-square,,0,2007.080272768,2129.7310666,blue,#0424fd
+1,5,filled-square,,0,2007.080272768,2399.4263318,blue,#0424fd
+1,5,open-circle,,0,2007.160577735,3100.977495,blue,#062dfd
+1,5,open-circle,,0,2007.160722809,2799.07592,blue,#062dfd
+1,5,open-circle,,0,2007.160722809,2799.07592,blue,#062dfd
+1,5,filled-circle,,0,2007.160870122,3101.095972,blue,#062dfd
+1,5,filled-circle,,0,2007.160870122,2799.07592,blue,#062dfd
+1,5,filled-circle,,0,2007.160870122,2799.07592,blue,#062dfd
+1,5,filled-square,,0,2007.249511601,1860.9628746,blue,#0424fd
+1,5,open-circle,,0,2007.330108619,2999.050018,blue,#062dfd
+1,5,filled-circle,,0,2007.330253693,2999.050018,blue,#062dfd
+1,5,filled-square,,0,2007.334204155,2669.440176,blue,#0424fd
+1,5,filled-square,,0,2007.334204155,2932.891742,blue,#0424fd
+1,5,filled-square,,0,2007.334204155,2998.025872,blue,#0424fd
+1,5,filled-triangle,,0,2007.41889646,3503.487482,dodgerblue,#1171fc
+1,5,filled-triangle,,0,2007.41889646,3801.219099,dodgerblue,#1171fc
+1,5,filled-triangle,,0,2007.41889646,4202.591177,dodgerblue,#1171fc
+1,5,filled-square,,0,2007.418896708,2399.4263318,blue,#0424fd
+1,5,filled-circle,,0,2007.499494414,1998.8379058,blue,#062dfd
+1,5,filled-square,,0,2007.503589262,1600.8338175,blue,#0424fd
+1,5,filled-square,,0,2007.503589262,1803.5529813,blue,#0424fd
+1,5,filled-square,,0,2007.576141087,2204.5376323,blue,#0424fd
+1,5,filled-square,,0,2007.576141087,2669.440176,blue,#0424fd
+1,5,filled-square,,0,2007.576141087,2998.025872,blue,#0424fd
+1,5,filled-square,,0,2007.576141087,2998.025872,blue,#0424fd
+1,5,filled-square,,0,2007.576141087,2661.048082,blue,#0424fd
+1,5,filled-triangle,,0,2007.580237047,1398.8648987,limegreen,#21ff49
+1,5,open-circle,,0,2007.660541605,1601.3805823,blue,#062dfd
+1,5,open-circle,,0,2007.660541605,3199.807303,blue,#062dfd
+1,5,open-circle,,0,2007.660686694,2999.050018,blue,#062dfd
+1,5,open-circle,,0,2007.660686694,2999.050018,blue,#062dfd
+1,5,filled-square,,0,2007.66083364,2798.120094,blue,#0424fd
+1,5,filled-circle,,0,2007.660833992,3199.929556,blue,#062dfd
+1,5,filled-circle,,0,2007.660833992,1601.4408358,blue,#062dfd
+1,5,filled-circle,,0,2007.660833992,2999.050018,blue,#062dfd
+1,5,filled-circle,,0,2007.660833992,2999.050018,blue,#062dfd
+1,5,open-circle,,0,2007.741285057,1998.8379058,blue,#062dfd
+1,5,open-circle,,0,2007.741285057,1998.8379058,blue,#062dfd
+1,5,filled-circle,,0,2007.741430132,1998.8379058,blue,#062dfd
+1,5,filled-circle,,0,2007.741430132,1998.8379058,blue,#062dfd
+1,5,filled-square,,0,2007.745526194,2603.3337802,blue,#0424fd
+1,5,filled-square,,0,2007.830218748,2399.4263318,blue,#0424fd
+1,5,filled-square,,0,2007.830218748,1398.8645644,blue,#0424fd
+1,5,filled-square,,0,2007.830218748,1600.8338175,blue,#0424fd
+1,5,filled-square,,0,2007.830218748,1667.4678407,blue,#0424fd
+1,5,filled-square,,0,2007.830218748,2399.4263318,blue,#0424fd
+1,5,filled-square,,0,2007.830218748,2332.5616746,blue,#0424fd
+1,5,filled-square,,0,2007.830218748,2661.048082,blue,#0424fd
+1,5,filled-square,,0,2007.830218748,2998.025872,blue,#0424fd
+1,5,filled-square,,0,2007.830218748,3335.401718,blue,#0424fd
+1,5,filled-square,,0,2007.914765028,2998.025872,blue,#0424fd
+1,5,filled-square,,0,2007.914765028,1860.9628746,blue,#0424fd
+1,5,filled-square,,0,2007.914765028,2000.2036059,blue,#0424fd
+1,5,filled-square,,0,2007.914765028,2332.5616746,blue,#0424fd
+1,5,filled-square,,0,2007.914765028,2499.3014269,blue,#0424fd
+1,5,filled-square,,0,2007.914765028,2661.048082,blue,#0424fd
+1,5,filled-square,,0,2007.914765028,2833.369939,blue,#0424fd
+1,5,filled-square,,0,2007.914765028,2998.025872,blue,#0424fd
+1,5,filled-square,,0,2007.914765028,3398.756265,blue,#0424fd
+1,5,filled-square,,0,2007.914765028,2998.025872,blue,#0424fd
+1,5,filled-square,,0,2007.914765028,3162.157697,blue,#0424fd
+1,5,filled-square,,0,2007.914765028,2998.025872,blue,#0424fd
+1,5,filled-square,,0,2007.914765028,3202.115049,blue,#0424fd
+1,5,filled-square,,0,2007.999457581,2129.7310666,blue,#0424fd
+1,5,filled-square,,0,2007.999457581,2204.5376323,blue,#0424fd
+1,5,filled-square,,0,2008.084150135,2661.048082,blue,#0424fd
+1,5,filled-square,,0,2008.084150135,2998.025872,blue,#0424fd
+1,5,filled-square,,0,2008.084150135,3162.157697,blue,#0424fd
+1,5,filled-square,,0,2008.084150135,2603.3337802,blue,#0424fd
+1,5,filled-square,,0,2008.084150135,2798.120094,blue,#0424fd
+1,5,filled-square,,0,2008.084150135,2998.025872,blue,#0424fd
+1,5,filled-square,,0,2008.168842688,2136.4475569,blue,#0424fd
+1,5,filled-circle,,0,2008.249440233,2397.6975707,blue,#062dfd
+1,5,open-circle,,0,2008.249440233,2397.6975707,blue,#062dfd
+1,5,filled-square,,0,2008.253535242,2499.3014269,blue,#0424fd
+1,5,filled-square,,0,2008.253535242,2661.048082,blue,#0424fd
+1,5,filled-square,,0,2008.253535242,2833.369939,blue,#0424fd
+1,5,filled-square,,0,2008.253535242,3202.115049,blue,#0424fd
+1,5,filled-square,,0,2008.253535242,2998.025872,blue,#0424fd
+1,5,filled-square,,0,2008.253535242,2332.5616746,blue,#0424fd
+1,5,filled-square,,0,2008.253535242,2499.3014269,blue,#0424fd
+1,5,filled-square,,0,2008.253535242,2499.3014269,blue,#0424fd
+1,5,filled-square,,0,2008.253535242,2661.048082,blue,#0424fd
+1,5,filled-square,,0,2008.253535242,2833.369939,blue,#0424fd
+1,5,filled-square,,0,2008.253535242,2998.025872,blue,#0424fd
+1,5,open-circle,,0,2008.321845067,2304.3293418,blue,#062dfd
+1,5,open-circle,,0,2008.321845067,2304.3293418,blue,#062dfd
+1,5,open-circle,,0,2008.321845067,2205.2903914,blue,#062dfd
+1,5,open-circle,,0,2008.321845067,2101.7192329,blue,#062dfd
+1,5,filled-circle,,0,2008.32199238,2101.7192329,blue,#062dfd
+1,5,filled-circle,,0,2008.32199238,2205.2903914,blue,#062dfd
+1,5,filled-circle,,0,2008.32199238,2304.3293418,blue,#062dfd
+1,5,filled-circle,,0,2008.32199238,2304.3293418,blue,#062dfd
+1,5,filled-circle,,0,2008.32199238,2500.154703,blue,#062dfd
+1,5,filled-circle,,0,2008.32199238,2397.6975707,blue,#062dfd
+1,5,open-circle,,0,2008.32199238,2397.6975707,blue,#062dfd
+1,5,open-circle,,0,2008.32199238,2500.154703,blue,#062dfd
+1,5,filled-square,,0,2008.326087067,1330.3886033,blue,#0424fd
+1,5,filled-square,,0,2008.326087067,1600.8338175,blue,#0424fd
+1,5,filled-square,,0,2008.326087067,2530.7868473,blue,#0424fd
+1,5,filled-square,,0,2008.410779621,1803.5529813,blue,#0424fd
+1,5,filled-square,,0,2008.495472174,1600.8338175,blue,#0424fd
+1,5,filled-square,,0,2008.495472174,1600.8338175,blue,#0424fd
+1,5,filled-square,,0,2008.495472174,2267.646355,blue,#0424fd
+1,5,filled-square,,0,2008.495472174,2399.4263318,blue,#0424fd
+1,5,open-circle,,0,2008.580018308,1998.8379058,blue,#062dfd
+1,5,open-circle,,0,2008.580018308,2601.4575038,blue,#062dfd
+1,5,open-circle,,0,2008.580018308,2500.154703,blue,#062dfd
+1,5,filled-square,,0,2008.580018454,2530.7868473,blue,#0424fd
+1,5,filled-square,,0,2008.580018454,3162.157697,blue,#0424fd
+1,5,filled-circle,,0,2008.58016562,2500.154703,blue,#062dfd
+1,5,filled-circle,,0,2008.58016562,2601.4575038,blue,#062dfd
+1,5,filled-circle,,0,2008.58016562,1998.8379058,blue,#062dfd
+1,5,plus,,0,2008.580748741,2754.934551,lime,#2cff14
+1,5,plus,,0,2008.580748741,2523.3099355,lime,#2cff14
+1,5,filled-square,,0,2008.664711008,2661.048082,blue,#0424fd
+1,5,filled-square,,0,2008.664711008,3335.401718,blue,#0424fd
+1,5,filled-square,,0,2008.664711008,2332.5616746,blue,#0424fd
+1,5,filled-square,,0,2008.664711008,2669.440176,blue,#0424fd
+1,5,filled-square,,0,2008.664711008,2998.025872,blue,#0424fd
+1,5,filled-square,,0,2008.664711008,2530.7868473,blue,#0424fd
+1,5,filled-square,,0,2008.664711008,2499.3014269,blue,#0424fd
+1,5,filled-square,,0,2008.749403561,1600.8338175,blue,#0424fd
+1,5,filled-square,,0,2008.749403561,1398.8645644,blue,#0424fd
+1,5,filled-square,,0,2008.749403561,3507.077,blue,#0424fd
+1,5,filled-square,,0,2008.749403561,3335.401718,blue,#0424fd
+1,5,open-circle,,0,2008.829855168,2101.7192329,blue,#062dfd
+1,5,filled-circle,,0,2008.830147555,2101.7192329,blue,#062dfd
+1,5,filled-square,,0,2008.834096115,2798.120094,blue,#0424fd
+1,5,filled-square,,0,2008.834096115,3463.445592,blue,#0424fd
+1,5,open-circle,,0,2008.918495302,2701.326921,blue,#062dfd
+1,5,filled-circle,,0,2008.918787689,2701.326921,blue,#062dfd
+1,5,filled-square,,0,2008.918788669,2499.3014269,blue,#0424fd
+1,5,filled-square,,0,2008.918788669,2932.891742,blue,#0424fd
+1,5,filled-square,,0,2008.918788669,3202.115049,blue,#0424fd
+1,5,filled-square,,0,2008.918788669,3463.445592,blue,#0424fd
+1,5,filled-square,,0,2008.918788669,2603.3337802,blue,#0424fd
+1,5,open-circle,,0,2008.99923874,2500.154703,blue,#062dfd
+1,5,filled-circle,,0,2008.999386052,2500.154703,blue,#062dfd
+1,5,filled-circle,,0,2009.071938199,2799.07592,blue,#062dfd
+1,5,filled-circle,,0,2009.071938199,2999.050018,blue,#062dfd
+1,5,open-circle,,0,2009.071938199,2999.050018,blue,#062dfd
+1,5,open-circle,,0,2009.071938199,2799.07592,blue,#062dfd
+1,5,filled-square,,0,2009.076033047,2932.891742,blue,#0424fd
+1,5,filled-square,,0,2009.076033047,2998.025872,blue,#0424fd
+1,5,open-circle,,0,2009.160578332,2601.4575038,blue,#062dfd
+1,5,open-circle,,0,2009.160578332,2500.154703,blue,#062dfd
+1,5,open-circle,,0,2009.160578332,2799.07592,blue,#062dfd
+1,5,open-circle,,0,2009.160578332,2601.4575038,blue,#062dfd
+1,5,filled-square,,0,2009.160725601,1667.4678407,blue,#0424fd
+1,5,filled-square,,0,2009.160725601,2833.369939,blue,#0424fd
+1,5,filled-square,,0,2009.160725601,3162.157697,blue,#0424fd
+1,5,filled-circle,,0,2009.16072563,2601.4575038,blue,#062dfd
+1,5,filled-circle,,0,2009.16072563,2799.07592,blue,#062dfd
+1,5,filled-circle,,0,2009.16072563,2500.154703,blue,#062dfd
+1,5,filled-circle,,0,2009.16072563,2601.4575038,blue,#062dfd
+1,5,filled-square,,0,2009.245418155,1860.9628746,blue,#0424fd
+1,5,filled-square,,0,2009.245418155,2000.2036059,blue,#0424fd
+1,5,filled-square,,0,2009.245418155,2129.7310666,blue,#0424fd
+1,5,filled-square,,0,2009.245418155,2260.5174065,blue,#0424fd
+1,5,filled-square,,0,2009.245418155,2399.4263318,blue,#0424fd
+1,5,filled-square,,0,2009.245418155,2530.7868473,blue,#0424fd
+1,5,filled-square,,0,2009.245418155,2260.5174065,blue,#0424fd
+1,5,filled-square,,0,2009.245418155,2399.4263318,blue,#0424fd
+1,5,filled-square,,0,2009.245418155,2530.7868473,blue,#0424fd
+1,5,filled-square,,0,2009.245418155,2932.891742,blue,#0424fd
+1,5,filled-square,,0,2009.245418155,3202.115049,blue,#0424fd
+1,5,filled-square,,0,2009.245418155,3463.445592,blue,#0424fd
+1,5,filled-square,,0,2009.245418155,3607.610034,blue,#0424fd
+1,5,filled-square,,0,2009.245418155,3463.445592,blue,#0424fd
+1,5,filled-square,,0,2009.245418155,2669.440176,blue,#0424fd
+1,5,filled-square,,0,2009.245418155,2798.120094,blue,#0424fd
+1,5,filled-square,,0,2009.245418155,3335.401718,blue,#0424fd
+1,5,open-circle,,0,2009.329819053,2906.420824,blue,#062dfd
+1,5,filled-circle,,0,2009.329964127,2906.420824,blue,#062dfd
+1,5,filled-square,,0,2009.329964434,3064.606511,blue,#0424fd
+1,5,filled-square,,0,2009.329964434,2661.048082,blue,#0424fd
+1,5,filled-square,,0,2009.329964434,1398.8645644,blue,#0424fd
+1,5,open-circle,,0,2009.410560267,2799.07592,blue,#062dfd
+1,5,filled-circle,,0,2009.41070758,2799.07592,blue,#062dfd
+1,5,filled-square,,0,2009.414656988,3064.606511,blue,#0424fd
+1,5,filled-square,,0,2009.414656988,3335.401718,blue,#0424fd
+1,5,filled-square,,0,2009.414656988,3607.610034,blue,#0424fd
+1,5,filled-square,,0,2009.414656988,3335.401718,blue,#0424fd
+1,5,filled-square,,0,2009.414656988,1301.4850155,blue,#0424fd
+1,5,open-circle,,0,2009.499202624,2601.4575038,blue,#062dfd
+1,5,filled-circle,,0,2009.499349937,2601.4575038,blue,#062dfd
+1,5,filled-circle,,0,2009.579946077,2799.07592,blue,#062dfd
+1,5,open-circle,,0,2009.579946077,2799.07592,blue,#062dfd
+1,5,open-circle,,0,2009.668588434,3199.929556,blue,#062dfd
+1,5,filled-square,,0,2009.668734649,2399.4263318,blue,#0424fd
+1,5,filled-square,,0,2009.668734649,2499.3014269,blue,#0424fd
+1,5,filled-square,,0,2009.668734649,3335.401718,blue,#0424fd
+1,5,filled-square,,0,2009.668734649,3335.401718,blue,#0424fd
+1,5,filled-circle,,0,2009.668735731,3199.929556,blue,#062dfd
+1,5,filled-square,,0,2009.753427203,1199.5455367,blue,#0424fd
+1,5,filled-square,,0,2009.753427203,3202.115049,blue,#0424fd
+1,5,filled-square,,0,2009.753427203,2798.120094,blue,#0424fd
+1,5,filled-square,,0,2009.753427203,3463.445592,blue,#0424fd
+1,5,filled-square,,0,2009.753427203,3607.610034,blue,#0424fd
+1,5,filled-square,,0,2009.753427203,3202.115049,blue,#0424fd
+1,5,filled-square,,0,2009.753427203,2798.120094,blue,#0424fd
+1,5,filled-square,,0,2009.753427203,2932.891742,blue,#0424fd
+1,5,filled-square,,0,2009.753427203,3202.115049,blue,#0424fd
+1,5,filled-square,,0,2009.753427203,3463.445592,blue,#0424fd
+1,5,filled-square,,0,2009.753427203,3607.610034,blue,#0424fd
+1,5,filled-square,,0,2009.753427203,3734.185269,blue,#0424fd
+1,5,filled-square,,0,2009.910671581,3463.445592,blue,#0424fd
+1,5,filled-square,,0,2009.995217861,1667.4678407,blue,#0424fd
+1,5,filled-square,,0,2009.995217861,1667.4678407,blue,#0424fd
+1,5,filled-square,,0,2010.079910415,2129.7310666,blue,#0424fd
+1,5,filled-square,,0,2010.079910415,2932.891742,blue,#0424fd
+1,5,filled-square,,0,2010.079910415,3064.606511,blue,#0424fd
+1,5,filled-square,,0,2010.079910415,3463.445592,blue,#0424fd
+1,5,filled-square,,0,2010.079910415,3607.610034,blue,#0424fd
+1,5,filled-square,,0,2010.079910415,3734.185269,blue,#0424fd
+1,5,filled-square,,0,2010.079910415,2399.4263318,blue,#0424fd
+1,5,filled-square,,0,2010.079910415,2530.7868473,blue,#0424fd
+1,5,filled-square,,0,2010.079910415,2798.120094,blue,#0424fd
+1,5,filled-square,,0,2010.079910415,2260.5174065,blue,#0424fd
+1,5,filled-triangle,,0,2010.164602149,3547.75705,dodgerblue,#1171fc
+1,5,filled-triangle,,0,2010.164602149,3695.4305,dodgerblue,#1171fc
+1,5,filled-square,,0,2010.164602968,2932.891742,blue,#0424fd
+1,5,filled-square,,0,2010.249295522,3607.610034,blue,#0424fd
+1,5,filled-square,,0,2010.249295522,2399.4263318,blue,#0424fd
+1,5,filled-square,,0,2010.249295522,2530.7868473,blue,#0424fd
+1,5,filled-square,,0,2010.249295522,2669.440176,blue,#0424fd
+1,5,filled-square,,0,2010.249295522,2530.7868473,blue,#0424fd
+1,5,filled-square,,0,2010.249295522,1860.9628746,blue,#0424fd
+1,5,filled-square,,0,2010.249295522,2399.4263318,blue,#0424fd
+1,5,filled-square,,0,2010.249295522,2798.120094,blue,#0424fd
+1,5,filled-square,,0,2010.249295522,3607.610034,blue,#0424fd
+1,5,filled-square,,0,2010.249295522,2669.440176,blue,#0424fd
+1,5,filled-square,,0,2010.249295522,2798.120094,blue,#0424fd
+1,5,filled-square,,0,2010.249295522,3064.606511,blue,#0424fd
+1,5,filled-square,,0,2010.249295522,2932.891742,blue,#0424fd
+1,5,filled-square,,0,2010.249295522,3463.445592,blue,#0424fd
+1,5,filled-square,,0,2010.249295522,3335.401718,blue,#0424fd
+1,5,filled-square,,0,2010.333988076,3877.391083,blue,#0424fd
+1,5,filled-square,,0,2010.333988076,1803.5529813,blue,#0424fd
+1,5,filled-square,,0,2010.418680629,3202.115049,blue,#0424fd
+1,5,filled-square,,0,2010.660617561,3335.401718,blue,#0424fd
+1,5,filled-square,,0,2010.745163841,1301.4850155,blue,#0424fd
+1,5,filled-square,,0,2010.745163841,2530.7868473,blue,#0424fd
+1,5,filled-square,,0,2010.745163841,2798.120094,blue,#0424fd
+1,5,filled-square,,0,2010.745163841,3202.115049,blue,#0424fd
+1,5,filled-square,,0,2010.914548948,1301.4850155,blue,#0424fd
+1,5,filled-square,,0,2011.083934056,3805.11454,blue,#0424fd
+1,5,filled-square,,0,2012.414440909,2798.120094,blue,#0424fd
+1,5,filled-square,,0,2012.75306485,2998.025872,blue,#0424fd
+1,5,filled-square,,0,2012.75306485,3398.756265,blue,#0424fd
+1,5,filled-square,,0,2013.079694336,2000.2036059,blue,#0424fd
+1,5,filled-square,,0,2013.50301083,3507.077,blue,#0424fd
+1,6,filled-square,,0,1985.82721873,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1986.085120795,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1987.16320811,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1987.491112164,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1988.334820349,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1988.498914081,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1989.31909933,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1990.42070958,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1990.490994978,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1991.076801098,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1991.498796895,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1991.498796895,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1992.084603015,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1992.506315403,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1992.506315403,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1992.670409134,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1992.834502866,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1992.904788264,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1993.068881996,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1993.256215254,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1993.256215254,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1993.326784061,3.6041133047,blue,#0424fd
+1,6,filled-square,,0,1993.490594384,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1993.654688115,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1993.748496449,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1994.240494235,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1994.240494235,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1994.240494235,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1994.240494235,3.9999916019,blue,#0424fd
+1,6,filled-square,,0,1994.334302569,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1994.404587967,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1994.4983963,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1994.4983963,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1994.4983963,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1994.4983963,5.0000167954,blue,#0424fd
+1,6,filled-square,,0,1994.4983963,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1994.4983963,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1994.568681698,3.3750178455,blue,#0424fd
+1,6,filled-square,,0,1994.756298366,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1994.990677495,2.4999538115,blue,#0424fd
+1,6,filled-square,,0,1995.154487818,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1995.154487818,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1995.248296152,3.4999790051,blue,#0424fd
+1,6,filled-square,,0,1995.506198217,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1995.506198217,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1995.506198217,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1995.506198217,2.4860972313,blue,#0424fd
+1,6,filled-square,,0,1995.506198217,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1995.576483615,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1995.576483615,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1995.576483615,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1995.670291949,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1995.740577347,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1995.83438568,2.4999538115,blue,#0424fd
+1,6,filled-square,,0,1995.83438568,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1995.904671078,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1995.904671078,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1996.068481401,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1996.068481401,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1996.162289735,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1996.256098068,3.520805865,blue,#0424fd
+1,6,filled-square,,0,1996.4201918,2.4999538115,blue,#0424fd
+1,6,filled-square,,0,1996.490477198,2.8055543892,blue,#0424fd
+1,6,filled-square,,0,1996.584285532,2.4999538115,blue,#0424fd
+1,6,filled-square,,0,1996.748379263,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1996.748379263,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1997.076283318,2.8055543892,blue,#0424fd
+1,6,filled-square,,0,1997.240377049,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1997.334185383,3.2499727067,blue,#0424fd
+1,6,filled-square,,0,1997.334185383,2.4999538115,blue,#0424fd
+1,6,filled-square,,0,1997.404470781,2.9028023884,blue,#0424fd
+1,6,filled-square,,0,1997.404470781,2.4027897916,blue,#0424fd
+1,6,filled-square,,0,1997.498279115,2.8055543892,blue,#0424fd
+1,6,filled-square,,0,1997.662372846,2.6041720904,blue,#0424fd
+1,6,filled-square,,0,1997.662372846,1.9027771948,blue,#0424fd
+1,6,filled-square,,0,1997.826183169,3.520805865,blue,#0424fd
+1,6,filled-square,,0,1998.084085234,2.000025194,blue,#0424fd
+1,6,filled-square,,0,1998.154370632,2.2014074928,blue,#0424fd
+1,6,filled-square,,0,1998.318464364,2.2014074928,blue,#0424fd
+1,6,filled-square,,0,1998.412272698,2.4027897916,blue,#0424fd
+1,6,filled-square,,0,1998.412272698,2.6041720904,blue,#0424fd
+1,6,filled-square,,0,1998.669891354,2.000025194,blue,#0424fd
+1,6,filled-square,,0,1998.740176752,2.000025194,blue,#0424fd
+1,6,filled-square,,0,1998.833985086,2.6041720904,blue,#0424fd
+1,6,filled-square,,0,1998.833985086,2.4999538115,blue,#0424fd
+1,6,filled-square,,0,1998.904270484,2.4027897916,blue,#0424fd
+1,6,filled-square,,0,1998.904270484,2.4999538115,blue,#0424fd
+1,6,filled-square,,0,1998.904270484,2.4999538115,blue,#0424fd
+1,6,filled-square,,0,1999.162172549,2.4027897916,blue,#0424fd
+1,6,filled-square,,0,1999.162172549,2.000025194,blue,#0424fd
+1,6,filled-square,,0,1999.326266281,3.305566986,blue,#0424fd
+1,6,filled-square,,0,1999.419791205,1.9027771948,blue,#0424fd
+1,6,filled-square,,0,1999.654170335,1.8055291956,blue,#0424fd
+1,6,filled-square,,0,1999.818264067,1.6527708964,blue,#0424fd
+1,6,filled-square,,0,1999.9120724,1.8055291956,blue,#0424fd
+1,6,filled-square,,0,2000.005880734,2.000025194,blue,#0424fd
+1,6,filled-square,,0,2000.169974466,2.2014074928,blue,#0424fd
+1,6,filled-square,,0,2000.240259864,1.701394896,blue,#0424fd
+1,6,filled-square,,0,2000.404070186,1.8055291956,blue,#0424fd
+1,6,filled-square,,0,2000.568163918,1.8055291956,blue,#0424fd
+1,6,filled-square,,0,2000.755780585,1.6041468968,blue,#0424fd
+1,6,filled-square,,0,2000.755780585,1.701394896,blue,#0424fd
+1,6,filled-square,,0,2000.919874317,2.000025194,blue,#0424fd
+1,6,filled-square,,0,2000.919874317,1.6735977564,blue,#0424fd
+1,6,filled-square,,0,2001.154253447,1.701394896,blue,#0424fd
+1,6,filled-square,,0,2001.411872103,1.6527708964,blue,#0424fd
+1,6,filled-square,,0,2001.411872103,1.6527708964,blue,#0424fd
+1,6,filled-square,,0,2001.505680437,1.8055291956,blue,#0424fd
+1,6,filled-square,,0,2001.505680437,1.701394896,blue,#0424fd
+1,6,filled-square,,0,2001.575965835,1.8055291956,blue,#0424fd
+1,6,filled-square,,0,2001.740059566,1.6666274766,blue,#0424fd
+1,6,filled-square,,0,2002.06824703,1.5000125972,blue,#0424fd
+1,6,filled-square,,0,2002.06824703,1.402764598,blue,#0424fd
+1,6,filled-square,,0,2002.325865686,1.3957943183,blue,#0424fd
+1,6,filled-square,,0,2002.41967402,1.3957943183,blue,#0424fd
+1,6,filled-square,,0,2002.489959418,1.5000125972,blue,#0424fd
+1,6,filled-square,,0,2002.583767751,1.5000125972,blue,#0424fd
+1,6,filled-square,,0,2002.911955215,1.5000125972,blue,#0424fd
+1,6,filled-square,,0,2003.169573871,1.5000125972,blue,#0424fd
+1,6,filled-square,,0,2003.333667603,1.5555228973,blue,#0424fd
+1,6,filled-square,,0,2003.755379991,1.4513885976,blue,#0424fd
+1,6,filled-square,,0,2004.505563251,1.5000125972,blue,#0424fd
+1,6,filled-square,,0,2004.505563251,1.2013822992,blue,#0424fd
+1,6,filled-square,,0,2004.505563251,1.3124868786,blue,#0424fd
+1,6,filled-square,,0,2004.669373574,1.5000125972,blue,#0424fd
+1,6,filled-square,,0,2004.903752703,1.2013822992,blue,#0424fd
+1,6,filled-square,,0,2005.161654769,1.5000125972,blue,#0424fd
+1,6,filled-square,,0,2005.489842232,1.402764598,blue,#0424fd
+1,6,filled-square,,0,2005.583367157,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2005.653652555,1.2013822992,blue,#0424fd
+1,6,filled-square,,0,2006.005362954,1.3055165989,blue,#0424fd
+1,6,filled-square,,0,2006.005362954,1.3055165989,blue,#0424fd
+1,6,filled-square,,0,2006.075648352,1.3264274381,blue,#0424fd
+1,6,filled-square,,0,2006.075648352,1.2360657393,blue,#0424fd
+1,6,filled-square,,0,2006.075648352,1.2708331587,blue,#0424fd
+1,6,filled-square,,0,2006.075648352,1.2708331587,blue,#0424fd
+1,6,filled-square,,0,2006.075648352,1.2708331587,blue,#0424fd
+1,6,filled-square,,0,2006.403835815,1.2708331587,blue,#0424fd
+1,6,filled-square,,0,2006.49736074,1.2500062988,blue,#0424fd
+1,6,filled-square,,0,2006.49736074,1.2360657393,blue,#0424fd
+1,6,filled-square,,0,2006.49736074,1.2500062988,blue,#0424fd
+1,6,filled-square,,0,2006.567929547,1.3542245777,blue,#0424fd
+1,6,filled-square,,0,2006.567929547,1.1805554393,blue,#0424fd
+1,6,filled-square,,0,2006.567929547,1.1805554393,blue,#0424fd
+1,6,filled-square,,0,2006.567929547,1.2708331587,blue,#0424fd
+1,6,filled-square,,0,2006.661454471,1.3264274381,blue,#0424fd
+1,6,filled-square,,0,2006.661454471,1.3264274381,blue,#0424fd
+1,6,filled-square,,0,2006.661454471,1.3542245777,blue,#0424fd
+1,6,filled-square,,0,2006.661454471,1.1735851596,blue,#0424fd
+1,6,filled-square,,0,2006.661454471,1.3402840183,blue,#0424fd
+1,6,filled-square,,0,2006.661454471,1.2360657393,blue,#0424fd
+1,6,filled-square,,0,2006.825548203,1.2708331587,blue,#0424fd
+1,6,filled-square,,0,2006.919356537,1.2500062988,blue,#0424fd
+1,6,filled-square,,0,2006.919356537,1.2500062988,blue,#0424fd
+1,6,filled-square,,0,2006.919356537,1.2500062988,blue,#0424fd
+1,6,filled-square,,0,2006.989641935,1.2500062988,blue,#0424fd
+1,6,filled-square,,0,2007.083450268,1.1805554393,blue,#0424fd
+1,6,filled-square,,0,2007.083450268,1.1805554393,blue,#0424fd
+1,6,filled-square,,0,2007.083450268,1.1805554393,blue,#0424fd
+1,6,filled-square,,0,2007.083450268,1.1805554393,blue,#0424fd
+1,6,filled-square,,0,2007.153735666,1.3264274381,blue,#0424fd
+1,6,filled-square,,0,2007.153735666,1.3264274381,blue,#0424fd
+1,6,filled-square,,0,2007.153735666,1.3819377381,blue,#0424fd
+1,6,filled-square,,0,2007.247544,1.1805554393,blue,#0424fd
+1,6,filled-square,,0,2007.317829398,1.3542245777,blue,#0424fd
+1,6,filled-square,,0,2007.317829398,1.1805554393,blue,#0424fd
+1,6,filled-square,,0,2007.317829398,1.2430360191,blue,#0424fd
+1,6,filled-square,,0,2007.317829398,1.2500062988,blue,#0424fd
+1,6,filled-square,,0,2007.411354323,1.0000000004,blue,#0424fd
+1,6,filled-square,,0,2007.411354323,1.1735851596,blue,#0424fd
+1,6,filled-square,,0,2007.505162656,1.12496116,blue,#0424fd
+1,6,filled-square,,0,2007.505162656,1.1805554393,blue,#0424fd
+1,6,filled-square,,0,2007.505162656,1.2430360191,blue,#0424fd
+1,6,filled-square,,0,2007.575448054,1.1805554393,blue,#0424fd
+1,6,filled-square,,0,2007.575448054,1.1805554393,blue,#0424fd
+1,6,filled-square,,0,2007.575448054,1.2430360191,blue,#0424fd
+1,6,filled-square,,0,2007.575448054,1.2430360191,blue,#0424fd
+1,6,filled-square,,0,2007.575448054,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2007.669256388,1.3819377381,blue,#0424fd
+1,6,filled-square,,0,2007.669256388,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2007.669256388,1.3264274381,blue,#0424fd
+1,6,filled-square,,0,2007.669256388,1.3819377381,blue,#0424fd
+1,6,filled-square,,0,2007.669256388,1.2430360191,blue,#0424fd
+1,6,filled-square,,0,2007.739541786,1.2013822992,blue,#0424fd
+1,6,filled-square,,0,2007.739541786,1.2013822992,blue,#0424fd
+1,6,filled-square,,0,2007.739541786,1.1666988591,blue,#0424fd
+1,6,filled-square,,0,2007.83335012,1.1805554393,blue,#0424fd
+1,6,filled-square,,0,2007.83335012,1.1805554393,blue,#0424fd
+1,6,filled-square,,0,2007.83335012,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2007.83335012,1.1805554393,blue,#0424fd
+1,6,filled-square,,0,2007.83335012,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2007.83335012,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2007.903635518,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2007.903635518,1.0833074401,blue,#0424fd
+1,6,filled-square,,0,2007.903635518,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2007.903635518,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2007.903635518,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2007.903635518,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2007.997443851,1.12496116,blue,#0424fd
+1,6,filled-square,,0,2007.997443851,1.1805554393,blue,#0424fd
+1,6,filled-square,,0,2008.067729249,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.067729249,1.12496116,blue,#0424fd
+1,6,filled-square,,0,2008.067729249,1.1458719992,blue,#0424fd
+1,6,filled-square,,0,2008.067729249,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.161537583,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2008.255062508,1.2013822992,blue,#0424fd
+1,6,filled-square,,0,2008.255062508,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.255062508,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.255062508,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.255062508,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2008.255062508,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2008.255062508,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.325347906,1.2013822992,blue,#0424fd
+1,6,filled-square,,0,2008.325347906,1.2013822992,blue,#0424fd
+1,6,filled-square,,0,2008.325347906,1.2360657393,blue,#0424fd
+1,6,filled-square,,0,2008.325347906,0.9305491409,blue,#0424fd
+1,6,filled-square,,0,2008.325347906,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.419156239,1.0416537203,blue,#0424fd
+1,6,filled-square,,0,2008.489441637,1.0346834405,blue,#0424fd
+1,6,filled-square,,0,2008.489441637,0.9305491409,blue,#0424fd
+1,6,filled-square,,0,2008.489441637,1.12496116,blue,#0424fd
+1,6,filled-square,,0,2008.489441637,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2008.583249971,1.2500062988,blue,#0424fd
+1,6,filled-square,,0,2008.583249971,1.2708331587,blue,#0424fd
+1,6,filled-square,,0,2008.583249971,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2008.583249971,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.583249971,1.3611108782,blue,#0424fd
+1,6,filled-square,,0,2008.653535369,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.653535369,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.653535369,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.653535369,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.653535369,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.653535369,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.653535369,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.747343703,1.0346834405,blue,#0424fd
+1,6,filled-square,,0,2008.747343703,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2008.747343703,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2008.747343703,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2008.817629101,1.0208268603,blue,#0424fd
+1,6,filled-square,,0,2008.817629101,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.817629101,1.0902777199,blue,#0424fd
+1,6,filled-square,,0,2008.911437434,1.3542245777,blue,#0424fd
+1,6,filled-square,,0,2008.911437434,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2008.911437434,1.0902777199,blue,#0424fd
+1,6,filled-square,,0,2008.911437434,1.0902777199,blue,#0424fd
+1,6,filled-square,,0,2008.911437434,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2009.004962359,1.1944120195,blue,#0424fd
+1,6,filled-square,,0,2009.075531166,1.1527582996,blue,#0424fd
+1,6,filled-square,,0,2009.075531166,1.1527582996,blue,#0424fd
+1,6,filled-square,,0,2009.075531166,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2009.075531166,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2009.169056091,1.1527582996,blue,#0424fd
+1,6,filled-square,,0,2009.169056091,1.0346834405,blue,#0424fd
+1,6,filled-square,,0,2009.169056091,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2009.169056091,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2009.239341489,1.0555942797,blue,#0424fd
+1,6,filled-square,,0,2009.239341489,1.0555942797,blue,#0424fd
+1,6,filled-square,,0,2009.239341489,1.0555942797,blue,#0424fd
+1,6,filled-square,,0,2009.239341489,1.0138565806,blue,#0424fd
+1,6,filled-square,,0,2009.239341489,1.0902777199,blue,#0424fd
+1,6,filled-square,,0,2009.239341489,1.0902777199,blue,#0424fd
+1,6,filled-square,,0,2009.239341489,1.0555942797,blue,#0424fd
+1,6,filled-square,,0,2009.239341489,1.0555942797,blue,#0424fd
+1,6,filled-square,,0,2009.333149822,1.3264274381,blue,#0424fd
+1,6,filled-square,,0,2009.333149822,1.1319314397,blue,#0424fd
+1,6,filled-square,,0,2009.333149822,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2009.333149822,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2009.40343522,1.1458719992,blue,#0424fd
+1,6,filled-square,,0,2009.40343522,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2009.40343522,1.0902777199,blue,#0424fd
+1,6,filled-square,,0,2009.40343522,1.0902777199,blue,#0424fd
+1,6,filled-square,,0,2009.40343522,1.0902777199,blue,#0424fd
+1,6,filled-square,,0,2009.40343522,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2009.497243554,1.3055165989,blue,#0424fd
+1,6,filled-square,,0,2009.567528952,1.3055165989,blue,#0424fd
+1,6,filled-square,,0,2009.661337286,1.12496116,blue,#0424fd
+1,6,filled-square,,0,2009.661337286,1.1111045798,blue,#0424fd
+1,6,filled-square,,0,2009.661337286,1.0902777199,blue,#0424fd
+1,6,filled-square,,0,2009.661337286,1.0555942797,blue,#0424fd
+1,6,filled-square,,0,2009.755145619,1.1041343001,blue,#0424fd
+1,6,filled-square,,0,2009.755145619,1.0833074401,blue,#0424fd
+1,6,filled-square,,0,2009.755145619,1.0208268603,blue,#0424fd
+1,6,filled-square,,0,2009.755145619,1.0208268603,blue,#0424fd
+1,6,filled-square,,0,2009.755145619,1.0555942797,blue,#0424fd
+1,6,filled-square,,0,2009.755145619,1.0208268603,blue,#0424fd
+1,6,filled-square,,0,2009.755145619,1.0555942797,blue,#0424fd
+1,6,filled-square,,0,2009.755145619,1.0208268603,blue,#0424fd
+1,6,filled-square,,0,2009.918955942,1.0138565806,blue,#0424fd
+1,6,filled-square,,0,2010.083049674,1.0902777199,blue,#0424fd
+1,6,filled-square,,0,2010.083049674,1.0208268603,blue,#0424fd
+1,6,filled-square,,0,2010.083049674,1.0208268603,blue,#0424fd
+1,6,filled-square,,0,2010.083049674,1.0208268603,blue,#0424fd
+1,6,filled-square,,0,2010.083049674,1.0902777199,blue,#0424fd
+1,6,filled-square,,0,2010.083049674,1.0208268603,blue,#0424fd
+1,6,filled-square,,0,2010.083049674,1.0555942797,blue,#0424fd
+1,6,filled-square,,0,2010.153335072,1.2500062988,blue,#0424fd
+1,6,filled-square,,0,2010.247143405,1.0902777199,blue,#0424fd
+1,6,filled-square,,0,2010.247143405,1.0555942797,blue,#0424fd
+1,6,filled-square,,0,2010.247143405,1.0208268603,blue,#0424fd
+1,6,filled-square,,0,2010.247143405,1.0555942797,blue,#0424fd
+1,6,filled-square,,0,2010.247143405,1.0902777199,blue,#0424fd
+1,6,filled-square,,0,2010.247143405,1.0555942797,blue,#0424fd
+1,6,filled-square,,0,2010.317428803,1.0208268603,blue,#0424fd
+1,6,filled-square,,0,2010.317428803,0.9930297207,blue,#0424fd
+1,6,filled-square,,0,2010.411237137,1.0208268603,blue,#0424fd
+1,6,filled-square,,0,2010.669139202,1.0208268603,blue,#0424fd
+1,6,filled-square,,0,2010.7394246,0.8264148413,blue,#0424fd
+1,6,filled-square,,0,2010.7394246,1.0902777199,blue,#0424fd
+1,6,filled-square,,0,2010.7394246,1.0902777199,blue,#0424fd
+1,6,filled-square,,0,2010.903234923,0.9930297207,blue,#0424fd
+1,6,filled-square,,0,2012.403318035,0.9722028608,blue,#0424fd
+1,6,filled-square,,0,2013.082932488,0.9722028608,blue,#0424fd
+1,7,filled-triangle,85–90,0,1.0003521367,2.7453692049,mediumblue,#0000d4
+1,7,filled-triangle,85–90,0,1.2685337992,2.8239628334,navy,#000081
+1,7,filled-triangle,85–90,0,1.3063993058,2.5824380858,blue,#001fff
+1,7,filled-triangle,85–90,1,1.3682307989,82.09531162,navy,#000081
+1,7,filled-thin-diamond,95–00,1,1.3682307989,52.70562506,yellow,#f6ff09
+1,7,filled-square,00–05,1,1.3682308656,42.24687003,red,#e80000
+1,7,filled-circle,90–95,1,1.3682468457,65.77065291,turquoise,#39ffc6
+1,7,filled-triangle,85–90,0,1.7533785325,2.4063667097,dodgerblue,#005dff
+1,7,filled-triangle,85–90,0,3.0732529741,2.0553778647,dodgerblue,#005dff
+1,7,filled-circle,90–95,0,4.1508322269,1.7740539022,deepskyblue,#00a1ff
+1,7,filled-circle,90–95,0,5.043398586,1.6687680271,aqua,#00e4ff
+1,7,filled-circle,90–95,0,6.508400199,1.8771311389,turquoise,#2fffd0
+1,7,filled-circle,90–95,0,6.67472624,2.9724474151,lightgreen,#92ff6d
+1,7,filled-thin-diamond,95–00,0,6.759318229,2.950779525,greenyellow,#ccff33
+1,7,filled-thin-diamond,95–00,0,8.201364408,3.886123185,yellow,#e0ff1f
+1,7,filled-circle,90–95,0,8.34047092,3.1649979816,mediumaquamarine,#59ffa6
+1,7,filled-circle,90–95,0,8.352095822,8.692437665,turquoise,#3effc1
+1,7,filled-circle,90–95,0,9.084739351,2.9033473598,mediumaquamarine,#59ffa6
+1,7,filled-thin-diamond,95–00,0,9.225756894,10.664358408,gold,#ffde00
+1,7,filled-circle,90–95,0,9.421740934,15.434544207,turquoise,#39ffc6
+1,7,filled-circle,90–95,0,9.635414913,12.217582635,greenyellow,#c2ff3d
+1,7,filled-thin-diamond,95–00,0,9.826408124,4.433475535,gold,#ffcf00
+1,7,filled-thin-diamond,95–00,0,10.183827524,8.059778168,gold,#ffde00
+1,7,filled-circle,90–95,0,10.48063456,13.807878746,turquoise,#39ffc6
+1,7,filled-circle,90–95,0,10.778456645,6.741568604,turquoise,#3effc1
+1,7,filled-circle,90–95,0,11.147187835,6.502702577,turquoise,#3effc1
+1,7,filled-circle,90–95,0,11.288593804,2.4278928427,turquoise,#54ffab
+1,7,filled-circle,90–95,0,12.539528779,2.1822560558,turquoise,#54ffab
+1,7,filled-circle,90–95,0,13.262311355,10.912640535,turquoise,#39ffc6
+1,7,filled-circle,90–95,0,13.639178729,10.64206918,turquoise,#39ffc6
+1,7,filled-circle,90–95,0,14.066207328,2.1214662256,turquoise,#25ffda
+1,7,filled-circle,90–95,0,14.165170376,11.277974393,greenyellow,#a2ff5d
+1,7,filled-circle,90–95,0,14.670185069,9.870203995,turquoise,#39ffc6
+1,7,filled-circle,90–95,0,15.045090381,10.592123653,greenyellow,#a2ff5d
+1,7,filled-circle,90–95,0,15.823513102,0.9990867963,greenyellow,#a7ff58
+1,7,filled-circle,90–95,0,15.934472858,3.94858456,greenyellow,#a2ff5d
+1,7,filled-circle,90–95,0,16.82948425,9.475803039,greenyellow,#a2ff5d
+1,7,filled-thin-diamond,95–00,0,17.043164694,10.765167831,yellow,#fbff04
+1,7,filled-circle,90–95,0,17.356397979,4.178007806,turquoise,#3effc1
+1,7,filled-circle,90–95,0,17.429480501,9.154321918,greenyellow,#a2ff5d
+1,7,filled-circle,90–95,0,17.725315181,8.997694799,greenyellow,#a2ff5d
+1,7,filled-thin-diamond,95–00,0,18.000449362,1.1511934336,greenyellow,#d1ff2e
+1,7,filled-circle,90–95,0,19.606963458,7.407032455,turquoise,#39ffc6
+1,7,filled-circle,90–95,0,21.059245938,6.880526842,turquoise,#39ffc6
+1,7,filled-thin-diamond,95–00,0,21.567114085,12.57404279,darkorange,#ff7b00
+1,7,filled-circle,90–95,0,24.500077256,9.068363328,greenyellow,#b1ff4e
+1,7,filled-circle,90–95,0,26.425594826,8.410638444,greenyellow,#b1ff4e
+1,7,filled-thin-diamond,95–00,0,26.892529349,9.729230043,yellow,#f6ff09
+1,7,filled-thin-diamond,95–00,0,26.949403011,8.960009234,orangered,#ff2d00
+1,7,filled-circle,90–95,0,28.945877412,8.530177578,greenyellow,#b1ff4e
+1,7,filled-circle,90–95,0,29.560442464,8.344880343,greenyellow,#b1ff4e
+1,7,filled-thin-diamond,95–00,0,30.188407544,2.40450158,gold,#ffcf00
+1,7,filled-thin-diamond,95–00,0,33.322615328,9.281900603,red,#ff0d00
+1,7,filled-square,00–05,0,33.816691178,74.3123196,darkred,#a90000
+1,7,filled-circle,90–95,0,34.293800851,7.911487078,greenyellow,#b1ff4e
+1,7,filled-thin-diamond,95–00,0,34.607706265,10.664358408,orangered,#ff3700
+1,7,filled-square,00–05,0,34.973568975,22.805114367,red,#e80000
+1,7,filled-circle,90–95,0,36.321909656,7.45357592,greenyellow,#b1ff4e
+1,7,filled-square,00–05,0,37.093504405,24.531058706,darkred,#a40000
+1,7,filled-square,00–05,0,37.643488506,31.480564681,darkred,#b90000
+1,7,filled-square,00–05,0,40.772937402,19.942399935,darkred,#a90000
+1,7,filled-square,00–05,0,41.990978731,27.789053769,darkred,#a40000
+1,7,filled-square,00–05,0,42.078803167,9.547742755,red,#f30000
+1,7,filled-square,00–05,0,45.1966148,25.834556435,darkred,#a40000
+1,7,filled-thin-diamond,95–00,0,47.53506766,9.752269041,yellow,#f6ff09
+1,7,filled-thin-diamond,95–00,0,49.57497925,11.152197605,orangered,#ff5200
+1,7,filled-square,00–05,0,51.59572624,56.69376196,maroon,#800000
+1,7,filled-square,00–05,0,59.39792065,11.744636493,firebrick,#c90000
+1,7,filled-square,00–05,0,59.77278182,48.99801529,maroon,#800000
+1,7,filled-thin-diamond,95–00,0,61.94835922,12.84323061,darkorange,#ff7600
+1,7,filled-square,00–05,0,63.26361413,21.60387527,darkred,#a40000
+1,7,filled-thin-diamond,95–00,0,64.60680044,14.277745956,red,#ff0300
+1,7,filled-thin-diamond,95–00,0,69.39380624,13.621279949,darkorange,#ff7600
+1,7,filled-thin-diamond,95–00,0,74.84762567,13.304628058,darkorange,#ff7600
+1,7,filled-thin-diamond,95–00,0,76.76040129,12.51503006,red,#ff0300
+1,7,filled-thin-diamond,95–00,0,78.55592505,11.552844085,darkorange,#ff7600
+1,7,filled-thin-diamond,95–00,0,95.71430542,13.750395422,red,#ff0300
+1,8,filled-triangle,85–90,0,1.0003517624,2.7453293539,silver,#bfbfbf
+1,8,filled-triangle,85–90,0,1.0003517624,6.572813507,mediumblue,#0000d4
+1,8,filled-triangle,85–90,0,1.268515655,2.8239470383,silver,#bfbfbf
+1,8,filled-triangle,85–90,0,1.268515655,9.623045261,navy,#000081
+1,8,filled-triangle,85–90,0,1.3064140158,2.5824422234,silver,#bfbfbf
+1,8,filled-triangle,85–90,0,1.3064140158,5.509366447,blue,#001fff
+1,8,filled-triangle,85–90,1,1.3596453035,80.94496804,navy,#000081
+1,8,filled-thin-diamond,95–00,1,1.3596453035,48.76734525,yellow,#f6ff09
+1,8,filled-square,00–05,1,1.3596455513,37.91166774,red,#e80000
+1,8,filled-circle,90–95,1,1.3599387671,62.91016391,turquoise,#39ffc6
+1,8,filled-triangle,85–90,0,1.7533856584,2.4063768393,silver,#bfbfbf
+1,8,filled-triangle,85–90,0,1.7533856584,4.585497761,dodgerblue,#005dff
+1,8,filled-triangle,85–90,0,3.0732802099,3.0881203762,silver,#bfbfbf
+1,8,filled-triangle,85–90,0,3.0732802099,22.984947351,dodgerblue,#005dff
+1,8,filled-circle,90–95,0,4.1488586942,1.7759149266,silver,#bfbfbf
+1,8,filled-circle,90–95,0,4.1488586942,16.528838341,deepskyblue,#00a1ff
+1,8,filled-circle,90–95,0,5.048041851,1.6705003808,silver,#bfbfbf
+1,8,filled-circle,90–95,0,5.048041851,9.41138864,aqua,#00e4ff
+1,8,filled-circle,90–95,0,6.505381572,1.8790846559,silver,#bfbfbf
+1,8,filled-circle,90–95,0,6.505381572,7.894815474,turquoise,#2fffd0
+1,8,filled-circle,90–95,0,6.671527936,2.9709149482,silver,#bfbfbf
+1,8,filled-circle,90–95,0,6.671527936,9.545193906,lightgreen,#92ff6d
+1,8,filled-thin-diamond,95–00,0,6.75942642,2.9507308053,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,6.75942642,9.844132262,greenyellow,#ccff33
+1,8,filled-thin-diamond,95–00,0,8.201362339,3.886047749,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,8.201362339,4.802697389,yellow,#e0ff1f
+1,8,filled-circle,90–95,0,8.336552019,3.16823843,silver,#bfbfbf
+1,8,filled-circle,90–95,0,8.336552019,13.692649992,mediumaquamarine,#59ffa6
+1,8,filled-circle,90–95,0,8.359964895,8.687748769,silver,#bfbfbf
+1,8,filled-circle,90–95,0,8.359964895,19.215672265,turquoise,#3effc1
+1,8,filled-circle,90–95,0,9.093191637,2.9018031874,silver,#bfbfbf
+1,8,filled-circle,90–95,0,9.093191637,12.580596209,mediumaquamarine,#59ffa6
+1,8,filled-thin-diamond,95–00,0,9.225814349,10.664376144,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,9.225814349,27.078864965,gold,#ffde00
+1,8,filled-circle,90–95,0,9.417312813,15.426348038,silver,#bfbfbf
+1,8,filled-circle,90–95,0,9.417312813,22.692163849,turquoise,#39ffc6
+1,8,filled-circle,90–95,0,9.644410764,12.230356837,silver,#bfbfbf
+1,8,filled-circle,90–95,0,9.644410764,15.282121423,greenyellow,#c2ff3d
+1,8,filled-thin-diamond,95–00,0,9.826443761,4.433420714,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,9.826443761,7.457354082,gold,#ffcf00
+1,8,filled-thin-diamond,95–00,0,10.183780298,8.059666742,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,10.183780298,31.628859848,gold,#ffde00
+1,8,filled-circle,90–95,0,10.490292292,13.822249406,silver,#bfbfbf
+1,8,filled-circle,90–95,0,10.490292292,20.363658306,turquoise,#39ffc6
+1,8,filled-circle,90–95,0,10.773437116,6.738090555,silver,#bfbfbf
+1,8,filled-circle,90–95,0,10.773437116,14.903399726,turquoise,#3effc1
+1,8,filled-circle,90–95,0,11.141947364,6.50949547,silver,#bfbfbf
+1,8,filled-circle,90–95,0,11.141947364,14.375007088,turquoise,#3effc1
+1,8,filled-circle,90–95,0,11.283332075,2.4266343802,silver,#bfbfbf
+1,8,filled-circle,90–95,0,11.283332075,9.352465401,turquoise,#54ffab
+1,8,filled-circle,90–95,0,12.533714963,2.184478921,silver,#bfbfbf
+1,8,filled-circle,90–95,0,12.533714963,8.432520205,turquoise,#54ffab
+1,8,filled-circle,90–95,0,13.274704211,10.923937092,silver,#bfbfbf
+1,8,filled-circle,90–95,0,13.274704211,16.094148584,turquoise,#39ffc6
+1,8,filled-circle,90–95,0,13.633008454,10.636362402,silver,#bfbfbf
+1,8,filled-circle,90–95,0,13.633008454,15.694878992,turquoise,#39ffc6
+1,8,filled-circle,90–95,0,14.079401962,2.1236637966,silver,#bfbfbf
+1,8,filled-circle,90–95,0,14.079401962,14.625231037,turquoise,#25ffda
+1,8,filled-circle,90–95,0,14.158606284,11.289967041,silver,#bfbfbf
+1,8,filled-circle,90–95,0,14.158606284,15.572363106,greenyellow,#a2ff5d
+1,8,filled-circle,90–95,0,14.684031788,9.865026106,silver,#bfbfbf
+1,8,filled-circle,90–95,0,14.684031788,14.556705117,turquoise,#39ffc6
+1,8,filled-circle,90–95,0,15.05905952,10.586521843,silver,#bfbfbf
+1,8,filled-circle,90–95,0,15.05905952,14.648410596,greenyellow,#a2ff5d
+1,8,filled-circle,90–95,0,15.838094122,1.000125607,silver,#bfbfbf
+1,8,filled-circle,90–95,0,15.838094122,3.77684711,greenyellow,#a7ff58
+1,8,filled-circle,90–95,0,15.927186206,3.952631657,silver,#bfbfbf
+1,8,filled-circle,90–95,0,15.927186206,11.46831867,greenyellow,#a2ff5d
+1,8,filled-circle,90–95,0,16.821553688,9.485432933,silver,#bfbfbf
+1,8,filled-circle,90–95,0,16.821553688,13.12485048,greenyellow,#a2ff5d
+1,8,filled-thin-diamond,95–00,0,17.043180439,10.765026726,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,17.043180439,24.820954505,yellow,#fbff04
+1,8,filled-circle,90–95,0,17.372771046,4.182255234,silver,#bfbfbf
+1,8,filled-circle,90–95,0,17.372771046,9.235976774,turquoise,#3effc1
+1,8,filled-circle,90–95,0,17.445807497,9.149378917,silver,#bfbfbf
+1,8,filled-circle,90–95,0,17.445807497,12.639824755,greenyellow,#a2ff5d
+1,8,filled-circle,90–95,0,17.741880516,9.006847269,silver,#bfbfbf
+1,8,filled-circle,90–95,0,17.741880516,12.423564139,greenyellow,#a2ff5d
+1,8,filled-thin-diamond,95–00,0,18.000642939,1.1511803579,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,18.000642939,3.5956367636,greenyellow,#d1ff2e
+1,8,filled-circle,90–95,0,19.624998319,7.403112431,silver,#bfbfbf
+1,8,filled-circle,90–95,0,19.624998319,10.889686865,turquoise,#39ffc6
+1,8,filled-circle,90–95,0,21.07876931,6.88765712,silver,#bfbfbf
+1,8,filled-circle,90–95,0,21.07876931,10.147529764,turquoise,#39ffc6
+1,8,filled-thin-diamond,95–00,0,21.566908989,12.573842449,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,21.566908989,19.616383582,darkorange,#ff7b00
+1,8,filled-circle,90–95,0,24.522841082,9.063593014,silver,#bfbfbf
+1,8,filled-circle,90–95,0,24.522841082,16.528838341,greenyellow,#b1ff4e
+1,8,filled-circle,90–95,0,26.450165042,8.406308624,silver,#bfbfbf
+1,8,filled-circle,90–95,0,26.450165042,15.33018673,greenyellow,#b1ff4e
+1,8,filled-thin-diamond,95–00,0,26.892607127,9.729086998,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,26.892607127,13.025536849,yellow,#f6ff09
+1,8,filled-thin-diamond,95–00,0,26.949397493,8.959833481,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,26.949397493,11.021415566,orangered,#ff2d00
+1,8,filled-circle,90–95,0,28.931863955,8.525824288,silver,#bfbfbf
+1,8,filled-circle,90–95,0,28.931863955,14.833163469,greenyellow,#b1ff4e
+1,8,filled-circle,90–95,0,29.546562954,8.353681465,silver,#bfbfbf
+1,8,filled-circle,90–95,0,29.546562954,14.511064936,greenyellow,#b1ff4e
+1,8,filled-thin-diamond,95–00,0,30.188795862,2.4044615988,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,30.188795862,10.465332199,gold,#ffcf00
+1,8,filled-thin-diamond,95–00,0,33.322656555,9.281947683,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,33.322656555,10.198037814,red,#ff0d00
+1,8,filled-square,00–05,0,33.816764728,74.3118004,silver,#bfbfbf
+1,8,filled-square,00–05,0,33.816764728,74.66365269,darkred,#a90000
+1,8,filled-circle,90–95,0,34.326432396,7.907327962,silver,#bfbfbf
+1,8,filled-circle,90–95,0,34.326432396,13.24907577,greenyellow,#b1ff4e
+1,8,filled-thin-diamond,95–00,0,34.608178657,10.664376144,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,34.608178657,15.036382334,orangered,#ff3700
+1,8,filled-square,00–05,0,34.973482413,22.805116129,silver,#bfbfbf
+1,8,filled-square,00–05,0,34.973482413,23.29318317,red,#e80000
+1,8,filled-circle,90–95,0,36.305287182,7.461359634,silver,#bfbfbf
+1,8,filled-circle,90–95,0,36.305287182,12.482053356,greenyellow,#b1ff4e
+1,8,filled-square,00–05,0,37.093534276,24.530883606,silver,#bfbfbf
+1,8,filled-square,00–05,0,37.093534276,24.996777295,darkred,#a40000
+1,8,filled-square,00–05,0,37.643556823,31.480650603,silver,#bfbfbf
+1,8,filled-square,00–05,0,37.643556823,31.703646517,darkred,#b90000
+1,8,filled-square,00–05,0,40.77374042,19.942325102,silver,#bfbfbf
+1,8,filled-square,00–05,0,40.77374042,23.735570293,darkred,#a90000
+1,8,filled-square,00–05,0,41.99088389,27.789353641,silver,#bfbfbf
+1,8,filled-square,00–05,0,41.99088389,27.986201934,darkred,#a40000
+1,8,filled-square,00–05,0,42.07956061,9.547754353,silver,#bfbfbf
+1,8,filled-square,00–05,0,42.07956061,10.270276608,red,#f30000
+1,8,filled-square,00–05,0,45.19670661,25.834350165,silver,#bfbfbf
+1,8,filled-square,00–05,0,45.19670661,26.017350022,darkred,#a40000
+1,8,filled-thin-diamond,95–00,0,47.53480799,9.752091836,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,47.53480799,11.634492198,yellow,#f6ff09
+1,8,filled-thin-diamond,95–00,0,49.57617443,11.151737877,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,49.57617443,20.369119545,orangered,#ff5200
+1,8,filled-square,00–05,0,51.59622164,56.69316752,silver,#bfbfbf
+1,8,filled-square,00–05,0,51.59622164,59.00784592,maroon,#800000
+1,8,filled-square,00–05,0,59.39814836,11.744610998,silver,#bfbfbf
+1,8,filled-square,00–05,0,59.39814836,19.432981842,firebrick,#c90000
+1,8,filled-square,00–05,0,59.77382328,48.99693514,silver,#bfbfbf
+1,8,filled-square,00–05,0,59.77382328,50.63868692,maroon,#800000
+1,8,filled-thin-diamond,95–00,0,61.94895823,12.842943901,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,61.94895823,14.790628139,darkorange,#ff7600
+1,8,filled-square,00–05,0,63.26364227,21.603405301,silver,#bfbfbf
+1,8,filled-square,00–05,0,63.26364227,21.756434893,darkred,#a40000
+1,8,filled-thin-diamond,95–00,0,64.60777571,14.277724565,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,64.60777571,15.214185675,red,#ff0300
+1,8,filled-thin-diamond,95–00,0,69.3937588,13.621171736,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,69.3937588,15.321956882,darkorange,#ff7600
+1,8,filled-thin-diamond,95–00,0,74.84759609,13.304305323,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,74.84759609,14.895398994,darkorange,#ff7600
+1,8,filled-thin-diamond,95–00,0,76.76104446,12.514928226,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,76.76104446,13.304305323,red,#ff0300
+1,8,filled-thin-diamond,95–00,0,78.5555906,11.55265779,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,78.5555906,13.056336281,darkorange,#ff7600
+1,8,filled-thin-diamond,95–00,0,95.71625934,13.750094617,silver,#bfbfbf
+1,8,filled-thin-diamond,95–00,0,95.71625934,14.378862256,red,#ff0300

@@ -45,8 +45,9 @@ How it works
     frame; its data x values are then read from the axis running down the
     page and its y values from the axis running across (--rotation adds
     the detected angle as a column).
-    Graphs are numbered through the document (top to bottom, left to right
-    on each page).  The title centred above a graph (or, failing that, a
+    Graphs with points are numbered 1, 2, 3 ... through the document (top
+    to bottom, left to right on each page); one with no points takes no
+    number (its -meta record has none).  The title centred above a graph (or, failing that, a
     sub-caption below it such as "(a). ..." or "Fig. 2 ...") is found too: it
     helps to recognise turned graphs, and --debug shows it, but it is not
     part of the output.
@@ -109,6 +110,9 @@ Error bars (--errbars)
   Grid lines, axes, ticks outside the plot and the strokes of '+' markers
   are not bars; where points share an x, each bar goes to the marker its
   pieces meet at, else to the one nearest its middle.
+  The vertices of lines without markers get vertical bars only when the
+  bar is capped: a vertical stroke through the vertex with a short
+  horizontal stroke centred on each end (a drop line or a step is not).
 
 Special axes and graphs
 -----------------------
@@ -130,7 +134,9 @@ Special axes and graphs
     ticks, spans the same stretch).
   * Lattice / small-multiple panels sharing long frame lines, inset graphs
     (assigned by drawing order), bar charts and histograms (one point per
-    bar top) and line charts without markers (one point per vertex).
+    bar top), stem plots (one point per stem, at its free end), box plots
+    (five points per box: whisker ends, quartiles, median; outliers as
+    markers) and line charts without markers (one point per vertex).
   * All detected markers are reported, also those whose values lie beyond
     the axis ranges (often clipped out of view by the plot); a marker
     belongs to the graph it was clipped to.  Markers flattened into clipped
@@ -155,11 +161,16 @@ Package layout (in pipeline order)
     fonts, interpreter                      executing a page's drawing operators
     occlusion, text, outlined_text          the page's text, as it is seen
     axes, labels, scales                    tick marks, tick labels, value mappings
-    graphs, titles                          plot boxes, panels, insets, titles
-    symbols, fragments, charts              markers, rebuilt markers, bars, lines
+    graphs, titles, nongraphs               plot boxes, panels, insets, titles; tables
+                                            and text pages that are no graphs
+    symbols, fragments, image_marks,        markers, rebuilt markers, markers drawn as
+    strays, charts                          images, shapes that are no markers, boxes, bars, stems, lines
+    datalabels                              text printed beside points
+    errbars, twin                           error bars, graphs with two scales
     legend                                  legend keys and series names
+    rows, meta, tools, styles               output rows, -meta records, drawing tool
     pipeline, cli                           putting it together; command line
-    geometry, colours, context              shared helpers and page state
+    geometry, grouping, colours, context    shared helpers and page state
 """
 
 from .pipeline import extract  # noqa: F401

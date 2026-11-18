@@ -5,10 +5,12 @@ semi-transparent layers.
 """
 
 import collections
+import colorsys
 import math
 
 from .geometry import (
-    bbox_of, bezier_point, circumcircle, flatten_subpath, point_in_polys)
+    bbox_of, bezier_point, circumcircle, flatten_subpath, is_polygon, point_in_polys,
+    subpath_bbox, vertices)
 
 
 def _cluster_centres(arcs, rr):
@@ -36,11 +38,9 @@ def _cluster_centres(arcs, rr):
 def _hue_family(c):
     """Colours of one series blended into darker shades share a hue: the
     hue in 24 steps, or 'grey' for colours without one."""
-    import colorsys
-    h, l, s = colorsys.rgb_to_hls(*c)
     if max(c) - min(c) < 0.08:
         return "grey"
-    return int(round(h * 24)) % 24
+    return int(round(colorsys.rgb_to_hls(*c)[0] * 24)) % 24
 
 
 def _stack_shade(c, base, deepest):
@@ -91,7 +91,7 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
             cur = sp["start"]
             # (round joins of a thick line drawn as an outline are arcs too;
             # their subpath runs far beyond the circle)
-            sb = bbox_of([cur] + [q for s in sp["segs"] for q in s[1:]])
+            sb = subpath_bbox(sp)
             extent = max(sb[2] - sb[0], sb[3] - sb[1])
             for s in sp["segs"]:
                 if s[0] == "c":
@@ -203,7 +203,7 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
     for c in fam_cols:
         ladders.setdefault(_hue_family(c), []).append(c)
     layer, lightest = {}, {}
-    for fam_key, cs in list(ladders.items()):
+    for cs in ladders.values():
         cs.sort(key=lambda c: -sum(c))
         # one marker alone: the colour with the most arcs, the darkest
         # aside (an opaque line or a saturated stack); lighter colours are
@@ -294,8 +294,8 @@ def rebuild_strip_discs(paths, symbols):
         piece = None
         if p["fill"] and not p["stroke"] and len(p["subpaths"]) == 1:
             sp = p["subpaths"][0]
-            if sp["segs"] and all(s[0] == "l" for s in sp["segs"]):
-                v = [sp["start"]] + [s[1] for s in sp["segs"]]
+            if is_polygon(sp):
+                v = vertices(sp)
                 b = bbox_of(v)
                 if 3 <= len(v) <= 5 and max(b[2] - b[0], b[3] - b[1]) <= 8:
                     piece = (p, v, b)
