@@ -1,0 +1,4 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,"Repeated Measures ANOVA Size Estimaiton, PSP Exercises Current effect: F(8,17184)=157.20, p<0.01 Vertical bars denote 0.95 confidence intervals",4,ANOVA repeated measures for size estimation accuracy – PSP exercises.,,,9,Exercise 2,Exercise 10,-80,40
+1,2,"Repeated Measures ANOVA Size Estimation, OOL Current effect: F(3,1896)=71.644, p<0.01 Vertical bars denote 0.95 confidence intevals",3,ANOVA repeated measures size estimation accuracy OO programming languages.,,,4,Level 0,Level 3,-40,15
+1,3,"Repeated Measures ANOVA Effort Estimation Current effect: F(3, 6420)=39.337, p<0.01 Vertical bars denote 0.95 confidence intervals",5,ANOVA repeated measures for effort estimation accuracy.,,,4,Level 0,Level 3,-25,-5

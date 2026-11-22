@@ -1,0 +1,7 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,N - Linear reg.,,,,MATLAB,90,0,250,0,250
+1,2,b - Linear reg.,,,,MATLAB,86,0,6,0,15
+1,3,d - Linear reg.,,,,MATLAB,95,0,0.5,0,0.5
+1,4,N - Wasserstein dist.,,,,MATLAB,86,0,250,0,250
+1,5,b - Wasserstein dist.,,,,MATLAB,56,0,6,0,15
+1,6,d - Wasserstein dist.,,,,MATLAB,97,0,0.5,0,0.5

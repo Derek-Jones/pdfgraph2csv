@@ -1,0 +1,9 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,commons−cli criterion5,2.9,Box plots of execution time and number of deleted lines for W-ORBS and variants of MOBS over 10 repeated runs.,,,162,1,6,250,1000
+1,2,commons−cli criterion5,2.9,Box plots of execution time and number of deleted lines for W-ORBS and variants of MOBS over 10 repeated runs.,,,189,1,6,2000,32000
+1,3,commons−csv criterion1,2.9,Box plots of execution time and number of deleted lines for W-ORBS and variants of MOBS over 10 repeated runs.,,,132,1,5,200,700
+1,4,commons−csv criterion1,2.9,Box plots of execution time and number of deleted lines for W-ORBS and variants of MOBS over 10 repeated runs.,,,130,1,5,2000,32000
+1,5,guava−escape criterion3,2.9,Box plots of execution time and number of deleted lines for W-ORBS and variants of MOBS over 10 repeated runs.,,,136,1,5,100,300
+1,6,guava−escape criterion3,2.9,Box plots of execution time and number of deleted lines for W-ORBS and variants of MOBS over 10 repeated runs.,,,165,1,5,1000,8000
+1,7,replace criterion1,2.9,Box plots of execution time and number of deleted lines for W-ORBS and variants of MOBS over 10 repeated runs.,,,164,1,6,40,160
+1,8,replace criterion1,2.9,Box plots of execution time and number of deleted lines for W-ORBS and variants of MOBS over 10 repeated runs.,,,172,1,6,1000,2000

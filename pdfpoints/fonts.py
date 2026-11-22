@@ -94,7 +94,8 @@ def _embedded_cmap(font, spec):
             new.use_cmap(CMapDB.get_cmap(base.group(1).decode("latin-1")))
         except (CMapDB.CMapNotFound, AssertionError):
             pass
-    unhex = lambda h: bytes.fromhex(re.sub(rb"\s", b"", h).decode("ascii"))
+    def unhex(h):
+        return bytes.fromhex(re.sub(rb"\s", b"", h).decode("ascii"))
     for kind, body in _CMAP_SECTION.findall(data):
         try:
             if kind == b"cidchar":
@@ -416,7 +417,7 @@ def _program_unicode(data, kind):
                     continue
                 for cp, name in sorted(table.cmap.items(), reverse=True):
                     g = index.get(name)
-                    if g is not None and 0x20 <= cp:
+                    if g is not None and cp >= 0x20:
                         out[g] = chr(cp)       # (the smallest code point wins)
     for g, name in enumerate(names):
         if g not in out and name and not name.startswith((".", "glyph", "cid")):
@@ -470,7 +471,7 @@ def _outlines(spec):
             cff = CFFFontSet()
             cff.decompile(io.BytesIO(st.get_data()), None)
             cs = cff[cff.fontNames[0]].CharStrings
-            for name in cs.keys():
+            for name in cs.keys():   # (a fontTools CharStrings: iterating it gives no names)  # noqa: SIM118
                 pen = RecordingPen()
                 cs[name].draw(pen)
                 out[name] = (tuple(op for op, _ in pen.value),

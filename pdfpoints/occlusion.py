@@ -14,12 +14,18 @@ from .geometry import rect_of
 def cover_rects(paths, images):
     """Opaque rectangles and images: [(bbox, drawing step)].  Images drawn
     with a mask (a translucent watermark) are not in `images`: they hide
-    nothing.  Boxes under 0.5 pt across are rules, not covers."""
+    nothing.  Boxes under 0.5 pt across are rules, not covers.  A box hides
+    only what lies within its clipping box (2305.15675v1-015: the bars of a
+    log-scale histogram run down to y = -13 826, clipped to the plot, over
+    the x tick labels below it)."""
     covers = [(b, i) for b, i in images]
     for p in paths:
         if p["fill"] and p.get("opaque", True):
+            clip = p.get("clip")
             for sp in p["subpaths"]:
                 b = rect_of(sp)
+                if b and clip:
+                    b = (max(b[0], clip[0]), max(b[1], clip[1]), min(b[2], clip[2]), min(b[3], clip[3]))
                 if b and b[2] - b[0] > 0.5 and b[3] - b[1] > 0.5:
                     covers.append((b, p["idx"]))
     return covers
@@ -64,7 +70,7 @@ def drop_hidden_glyphs(texts, covers):
             continue
         ux, uy = t["up"]
         keep = []
-        for c, a, e in t["glyphs"]:
+        for _c, a, e in t["glyphs"]:
             cx = (a[0] + e[0]) / 2 + 0.5 * ux
             cy = (a[1] + e[1]) / 2 + 0.5 * uy
             hid = ix.over(cx, cy, t["idx"])

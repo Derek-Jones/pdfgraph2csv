@@ -74,7 +74,7 @@ def _index(segs):
     page may hold tens of thousands of strokes and markers."""
     idx = {}
     for lo, hi, pos in segs:
-        idx.setdefault(int(math.floor(pos / _BUCKET)), []).append((lo, hi, pos))
+        idx.setdefault(math.floor(pos / _BUCKET), []).append((lo, hi, pos))
     return idx
 
 
@@ -100,7 +100,7 @@ def _chains(pieces, join):
     return [tuple(c) for c in chains]
 
 
-def find_error_bars(symbols, graphs, paths, graph_of):
+def find_error_bars(symbols, paths, graph_of):
     """{symbol index: {"v": (low, high) | None, "h": (low, high) | None}} in
     page coordinates, for the markers that have error bars.  `graph_of(s)`
     gives a symbol's graph.  A side without a bar ends at the marker's
@@ -122,8 +122,8 @@ def find_error_bars(symbols, graphs, paths, graph_of):
         for k, centre, along, span in (("v", s["cx"], s["cy"], y1 - y0),
                                        ("h", s["cy"], s["cx"], x1 - x0)):
             pieces = []
-            for b in range(int(math.floor((centre - tol) / _BUCKET)),
-                           int(math.floor((centre + tol) / _BUCKET)) + 1):
+            for b in range(math.floor((centre - tol) / _BUCKET),
+                           math.floor((centre + tol) / _BUCKET) + 1):
                 for lo, hi, pos in index[k].get(b, ()):
                     if abs(pos - centre) > tol:
                         continue
@@ -148,8 +148,7 @@ def find_error_bars(symbols, graphs, paths, graph_of):
                 # who owns the chain: a piece starting or ending at the
                 # marker's centre (Excel's halves), else the marker nearest
                 # its middle (a bar drawn in one piece)
-                score = min(min(abs(q - along) for q in knots[1:-1] or [math.inf]),
-                            abs((lo + hi) / 2 - along))
+                score = min(*(abs(q - along) for q in knots[1:-1] or [math.inf]), abs((lo + hi) / 2 - along))
                 key = (k, round(centre / tol), round(lo, 2), round(hi, 2))
                 claims.setdefault(key, []).append((score, si, (low, high)))
     out = {}
@@ -160,7 +159,7 @@ def find_error_bars(symbols, graphs, paths, graph_of):
         if bars[k] is None:
             bars[k] = ends
             if k == "v":
-                taken.add((symbols[si]["cx"],) + ends)
+                taken.add((symbols[si]["cx"], *ends))
     for si, ends in _vertex_bars(symbols, graph_of, index, taken).items():
         out.setdefault(si, {"v": None, "h": None})["v"] = ends
     return out
@@ -175,7 +174,7 @@ def _cap(index, x, y, width):
     """Length of the short horizontal stroke centred on (x, y) - an error
     bar's cap - or None."""
     best = None
-    for b in range(int(math.floor((y - _TOL) / _BUCKET)), int(math.floor((y + _TOL) / _BUCKET)) + 1):
+    for b in range(math.floor((y - _TOL) / _BUCKET), math.floor((y + _TOL) / _BUCKET) + 1):
         for lo, hi, pos in index["h"].get(b, ()):
             n = hi - lo
             if (abs(pos - y) <= _TOL and abs((lo + hi) / 2 - x) <= max(_TOL, 0.1 * n)
@@ -241,7 +240,7 @@ def _vertex_bars(symbols, graph_of, index, taken):
         x0, y0, x1, y1 = g["rect"]
         cx, cy = s["cx"], s["cy"]
         pieces = []
-        for b in range(int(math.floor((cx - _TOL) / _BUCKET)), int(math.floor((cx + _TOL) / _BUCKET)) + 1):
+        for b in range(math.floor((cx - _TOL) / _BUCKET), math.floor((cx + _TOL) / _BUCKET) + 1):
             for lo, hi, pos in index["v"].get(b, ()):
                 if abs(pos - cx) <= _TOL and hi >= y0 - 0.5 and lo <= y1 + 0.5:
                     pieces.append((lo, hi))

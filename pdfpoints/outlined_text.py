@@ -15,7 +15,8 @@ import re
 
 from .context import PAGE
 from .geometry import (
-    bbox_of, encloses, flatten_subpath, median, subpath_bbox, thin_rect_line, to_frame)
+    bbox_of, encloses, flatten_subpath, median, polygon_area, subpath_bbox, thin_rect_line,
+    to_frame)
 from .grouping import BoxGrid, DisjointSets
 from .occlusion import CoverIndex
 from .symbols import classify_subpath
@@ -309,7 +310,7 @@ def outlined_text(paths, blobs=None, covers=()):
     # way than any other (3576042-018: matplotlib's outlined "0.1" ... "0.8"
     # outvote "(b)" of a caption, read upside down as "191", so that the x
     # labels' "6" and "9" are read upright)
-    for word, (rot, q, text, wb) in readings:
+    for word, (rot, q, text, _wb) in readings:
         if n_real(word) == 2 and q >= 0.75 and parse_number(text) is not None and \
                 all(read(word, r)[1] <= q - 0.2 for r in (0, 90, -90, 180) if r != rot):
             votes[rot] += 1
@@ -317,6 +318,12 @@ def outlined_text(paths, blobs=None, covers=()):
     readings = [_exponent_minus(word, best, dashes) for word, best in readings]
     readings = _join_split_exponents(readings, read, dashes, page_rot)
     texts, used = [], set()
+    # an unreadable "word" made only of plain upright rectangles is the
+    # segments of bars standing side by side, not a label
+    # (Memory_systems_cacheDRAMdisk-051: the stacks of a bar chart offered
+    # as category labels beside its axis)
+    boxy = {(g[0], g[1]) for g in parts + markerlike
+            if _upright_rect(g[2], g[3])}
     used.update(_letter_dots(markerlike, stems, {m for word in words for g in word
                                                  for m in g["members"]}))
     # diamonds are never letters: one in a word that reads as no number is
@@ -348,11 +355,18 @@ def outlined_text(paths, blobs=None, covers=()):
             texts.append(_text_item(word, rot, text, wb))
         else:
             word = [gl for gl in word if not set(gl["members"]) <= diamonds]
-            if word and blobs is not None:
+            if word and blobs is not None and not all(
+                    all(m in boxy for m in gl["members"]) for gl in word):
                 blobs.extend(_blob_items(word))
         for gl in word:
             used.update(gl["members"])
     return texts, used
+
+
+def _upright_rect(poly, b):
+    """A contour that fills its bounding box: a plain upright rectangle."""
+    area = (b[2] - b[0]) * (b[3] - b[1])
+    return area > 0 and len(poly) >= 4 and abs(polygon_area(poly)) >= 0.98 * area
 
 
 def _crowded_words(shapes):
@@ -361,7 +375,7 @@ def _crowded_words(shapes):
     wiggle), but slivers of error bars and markers traced from a bitmap
     (hundreds of overlapping pieces) can read as '1' or '-1'."""
     if not shapes:
-        return lambda word: False
+        return lambda _word: False
     grid = BoxGrid(max(median(max(g[3][2] - g[3][0], g[3][3] - g[3][1]) for g in shapes), 1.0))
     for g in shapes:
         grid.add(((g[0], g[1]), g[3]), g[3])
@@ -390,7 +404,7 @@ def _split_unread(readings, read, markerlike_keys):
     up to 40 glyphs."""
     out = []
     for word, best in readings:
-        rot, q, text, wb = best
+        _rot, q, text, _wb = best
         if (q >= 0.75 and parse_number(text) is not None) or len(word) > 40 or len(word) < 2:
             out.append((word, best))
             continue
@@ -445,7 +459,7 @@ def _words_with_markerlike(words, markerlike_keys):
         single = rx1 - rx0 < 1.5 * big and ry1 - ry0 < 1.5 * big
         keep = []
         overlaps_any = _overlap_test(word)
-        real_ids = set(id(g) for g in real)
+        real_ids = {id(g) for g in real}
         for g in word:
             if id(g) in real_ids:
                 keep.append(g)
@@ -485,12 +499,6 @@ def _overlap_test(word):
         me = index[id(g)]
         return any(k != me and overlap(g["box"], word[k]["box"]) for k in grid.near(g["box"]))
     return test
-
-
-def _area(poly):
-    """Signed area of a polygon (shoelace)."""
-    return 0.5 * sum(poly[i][0] * poly[i - 1][1] - poly[i - 1][0] * poly[i][1]
-                     for i in range(len(poly)))
 
 
 def _glyph_parts(paths, covers):
@@ -540,18 +548,18 @@ def _glyph_parts(paths, covers):
         # cumulative-evol-hollywood-film-crews-007)
         if len(info) == 1 and all(g[0] == "l" for g in info[0][3]["segs"]):
             b = info[0][2]
-            if max(b[2] - b[0], b[3] - b[1]) >= 0.5 and abs(_area(info[0][1])) < 1e-4:
+            if max(b[2] - b[0], b[3] - b[1]) >= 0.5 and abs(polygon_area(info[0][1])) < 1e-4:
                 continue
         big = max(max(b[2] - b[0], b[3] - b[1]) for _, _, b, _ in info)
         if big > 30:                               # far larger than a glyph
             continue
         if all(classify_subpath(sp) is not None or thin_rect_line(sp) is not None
                for _, _, _, sp in info):
-            bar = len(info) == 1 and thin_rect_line(info[0][3]) is not None
-            if bar:
+            is_bar = len(info) == 1 and thin_rect_line(info[0][3]) is not None
+            if is_bar:
                 stems.append(info[0][2])
                 bars.append((p["idx"], info[0][0], info[0][1], info[0][2], p["fill_rgb"]))
-            if bar and big < 6:
+            if is_bar and big < 6:
                 dashes.append(_Dash(info[0][1], p["idx"]))  # maybe a minus sign
             elif all(classify_subpath(sp) is not None for _, _, _, sp in info):
                 # markers - or letters that look like them ('o', '.'): text
@@ -563,7 +571,7 @@ def _glyph_parts(paths, covers):
                 markerlike.extend((p["idx"], k, poly, b, p["fill_rgb"]) for k, poly, b, _ in info)
                 stems.extend(b for _, _, b, sp in info if thin_rect_line(sp) is not None)
             continue                               # markers / lines only
-        for k, poly, b, sp in info:
+        for k, poly, b, _sp in info:
             if cover_ix is not None:
                 hid = cover_ix.over((b[0] + b[2]) / 2, (b[1] + b[3]) / 2, p["idx"])
                 if hid:                            # painted over: not visible
@@ -594,7 +602,7 @@ def _glyph_parts(paths, covers):
             continue
         reach = 0.6 * h
 
-        def level(g):
+        def level(g, bar=bar, b=b, h=h):
             gb = g[3]
             gh = gb[3] - gb[1]
             return g[4] == bar[4] and 0.6 * h <= gh <= 1.4 * h and \
@@ -626,7 +634,7 @@ def _letter_dots(markerlike, stems, in_words):
     grid = BoxGrid(max(10 * median(min(s[2] - s[0], s[3] - s[1]) for s in stems), 1.0))
     for s in stems:
         grid.add(s, s)
-    for idx, k, poly, b, rgb in markerlike:
+    for idx, k, _poly, b, _rgb in markerlike:
         if (idx, k) in in_words:
             continue
         w, h = b[2] - b[0], b[3] - b[1]
@@ -718,7 +726,7 @@ def _group_words(glyphs, reach=0.45):
     boxes = [g["box"] for g in glyphs]
     rgbs = [g["rgb"] for g in glyphs]
     size = [max(b[2] - b[0], b[3] - b[1], 1e-6) for b in boxes]
-    klass = [int(math.floor(math.log2(s))) for s in size]
+    klass = [math.floor(math.log2(s)) for s in size]
     grids = {}
     for i in range(n):
         k = klass[i]

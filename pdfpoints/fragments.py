@@ -10,7 +10,7 @@ import math
 
 from .geometry import (
     bbox_of, bezier_point, circumcircle, flatten_subpath, is_polygon, point_in_polys,
-    subpath_bbox, vertices)
+    polygon_area, subpath_bbox, vertices)
 
 
 def _cluster_centres(arcs, rr):
@@ -40,7 +40,7 @@ def _hue_family(c):
     hue in 24 steps, or 'grey' for colours without one."""
     if max(c) - min(c) < 0.08:
         return "grey"
-    return int(round(colorsys.rgb_to_hls(*c)[0] * 24)) % 24
+    return round(colorsys.rgb_to_hls(*c)[0] * 24) % 24
 
 
 def _stack_shade(c, base, deepest):
@@ -49,7 +49,7 @@ def _stack_shade(c, base, deepest):
     1 - (1 - m)(1 - (1 - a)^n)), with `deepest` taken as the marker colour m
     itself (the saturated stack)?  Other shades in the hue are other things
     over a marker: an error bar's own transparency."""
-    if c == base or c == deepest:
+    if c in (base, deepest):
         return True
     k = max(range(3), key=lambda i: 1 - deepest[i])
     span = 1 - deepest[k]
@@ -67,7 +67,17 @@ def _stack_shade(c, base, deepest):
 
 def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
     """Return the symbol list with flattened-marker fragments replaced by
-    rebuilt circles (one entry per marker, stacked markers repeated)."""
+    rebuilt circles (one entry per marker, stacked markers repeated).
+
+    Each rebuilt circle carries "confidence", 0 to 1, that it is a data
+    point (the user asked for such a measure for reconstructed symbols):
+    the fraction of its outline found among the fragments' arcs (in 5
+    degree steps: a marker in plain view about 1, one mostly hidden under
+    others less); a further marker stacked at the same place, known only
+    from the blended colour, also divides by the number of markers whose
+    circles overlap where its colour was sampled (1 when the sample saw it
+    alone; its count otherwise inferred by subtracting its neighbours').
+    """
     # 0. fragments are filled curved shapes that are not markers themselves;
     #    without (enough of) them there is nothing to rebuild
     marker_paths = {s["idx"] for s in symbols}
@@ -77,7 +87,7 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
         return symbols
     # 1. every Bezier segment that is a good circular arc gives a centre
     #    and radius
-    arcs = []            # (cx, cy, r, path idx, colour)
+    arcs = []            # (cx, cy, r, path idx, colour, (start angle, sweep) in degrees)
     for p in paths:
         if not p["fill"] or p["fill_rgb"] is None:
             continue
@@ -103,7 +113,8 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
                             q1, q3 = bezier_point(p0, p1, p2, p3, .25), bezier_point(p0, p1, p2, p3, .75)
                             e = max(abs(math.hypot(q[0] - c[0], q[1] - c[1]) - c[2]) for q in (q1, q3))
                             if e < 0.01 * c[2] + 0.002 and chord > 0.3 * c[2]:
-                                arcs.append((c[0], c[1], c[2], p["idx"], p["fill_rgb"]))
+                                arcs.append((c[0], c[1], c[2], p["idx"], p["fill_rgb"],
+                                             _arc_span(c, p0, bezier_point(p0, p1, p2, p3, .5), p3)))
                 cur = s[-1]
     if len(arcs) < 40:
         return symbols
@@ -124,7 +135,7 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
             fam.append(r2)                       # concentric: same markers
     sel = [a for a in arcs if any(abs(a[2] - f) < 0.03 * f for f in fam)]
     cols = collections.Counter(a[4] for a in sel)
-    if len(set(a[3] for a in sel)) < 20:
+    if len({a[3] for a in sel}) < 20:
         return symbols                           # arcs from a few shapes only
     # 3. the marker centres
     r_out = max(fam)
@@ -260,7 +271,7 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
                         "saturates (%d+ layers): their counts are lower bounds" % (
                             len(sat), min(ladder_len[s[3]] for s in sat)))
     # drop the fragment pieces that find_symbols took for symbols
-    frag_paths = set(f[2] for f in frags) - keep_idx
+    frag_paths = {f[2] for f in frags} - keep_idx
     # (only those at a rebuilt marker: whole markers elsewhere on the page,
     # in a graph that was not flattened, stay)
     def at_rebuilt(s):
@@ -271,14 +282,50 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
     out = [s for s in symbols if s["idx"] not in frag_paths or not at_rebuilt(s)]
     default = max(fam_cols, key=sum)
     rebuilt_idx = min(frags[0][2], 0) - 1      # drawn "before" everything
+    outline = _outline_found(cents, sel, r_out)
     for i, k in enumerate(cents):
         # the colour of one marker of its series alone
         single = lightest[samples[i][3]] if samples[i] else default
-        for _ in range(m[i]):
+        # confidence (see the docstring): the outline found; a further
+        # marker stacked there also by its count's evidence
+        overlap = len(samples[i][1]) if samples[i] else 2
+        for n in range(m[i]):
+            conf = outline[i] if n == 0 else outline[i] / overlap
             out.append({"shape": "circle", "cx": k[0], "cy": k[1], "size": 2 * r_out,
-                        "filled": True, "rgb": single, "idx": rebuilt_idx, "rebuilt": True})
-    warnings.append("markers were flattened into fragments; %d circles rebuilt from their "
-                    "outlines (%d distinct positions)" % (sum(m), len(cents)))
+                        "filled": True, "rgb": single, "idx": rebuilt_idx, "rebuilt": True,
+                        "confidence": round(conf, 2)})
+    # (no warning: each rebuilt point carries its confidence instead - the
+    # user asked for the warning to go)
+    return out
+
+
+def _arc_span(c, p0, pm, p3):
+    """(start, sweep) in degrees of the arc from p0 through pm to p3 about
+    centre c."""
+    a0, am, a3 = (math.degrees(math.atan2(q[1] - c[1], q[0] - c[0])) for q in (p0, pm, p3))
+    d, dm = (a3 - a0) % 360, (am - a0) % 360
+    return (a0 % 360, d) if dm <= d else (a3 % 360, 360 - d)
+
+
+def _outline_found(cents, arcs, r):
+    """For each centre, the fraction of its circle's outline covered by the
+    arcs fitted there (centres within 0.12 pt; 72 steps of 5 degrees)."""
+    grid = {}
+    for a in arcs:
+        grid.setdefault((int(a[0] // r), int(a[1] // r)), []).append(a)
+    out = []
+    for k in cents:
+        gx, gy = int(k[0] // r), int(k[1] // r)
+        bins = set()
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for a in grid.get((gx + dx, gy + dy), ()):
+                    if math.hypot(a[0] - k[0], a[1] - k[1]) < 0.12:
+                        start, sweep = a[5]
+                        for b in range(72):
+                            if (b * 5 + 2.5 - start) % 360 <= sweep:
+                                bins.add(b)
+        out.append(len(bins) / 72.0)
     return out
 
 
@@ -314,7 +361,7 @@ def rebuild_strip_discs(paths, symbols):
         w, h = x1 - x0, y1 - y0
         if min(w, h) <= 0 or min(w, h) < 0.85 * max(w, h):
             continue
-        area = sum(abs(_shoelace(v)) for _, v, _ in run)
+        area = sum(abs(polygon_area(v)) for _, v, _ in run)
         if not 0.6 * w * h <= area <= 0.92 * w * h:
             continue
         first = run[0][0]
@@ -337,6 +384,3 @@ def _union(pieces):
 def _touch(a, b, tol=0.05):
     return a[0] - tol <= b[2] and b[0] - tol <= a[2] and a[1] - tol <= b[3] and b[1] - tol <= a[3]
 
-
-def _shoelace(v):
-    return sum(v[i][0] * v[(i + 1) % len(v)][1] - v[(i + 1) % len(v)][0] * v[i][1] for i in range(len(v))) / 2

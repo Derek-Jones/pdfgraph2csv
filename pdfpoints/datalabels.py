@@ -102,7 +102,7 @@ def _consistent(got, symbols, unsure):
     for ln, rs in unsure:
         fits = [(sc, r) for sc, r in rs if kinds.get(symbol_signature(symbols[r]), 0) >= 3
                 and r not in got]
-        if len(fits) == 1 or len(fits) > 1 and fits[0][0] < 0.6 * fits[1][0]:
+        if len(fits) == 1 or (len(fits) > 1 and fits[0][0] < 0.6 * fits[1][0]):
             got[fits[0][1]] = [ln]
     for k in list(got):
         if kinds[symbol_signature(symbols[k])] != 1 or len(got[k]) != 1:
@@ -197,7 +197,7 @@ def _attach_leftovers(got, cands):
             continue
         for k, lns in got.items():
             if any(_stacked(o, ln) or _stacked(ln, o) for o in lns) and \
-                    len(" ".join(o["text"] for o in lns + [ln]).split()) <= MAX_WORDS:
+                    len(" ".join(o["text"] for o in [*lns, ln]).split()) <= MAX_WORDS:
                 lns.append(ln)
                 placed[id(ln)] = k
                 break
@@ -217,8 +217,9 @@ def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
     # note boxes: not bars (a bar's value is often printed inside it) and
     # not square markers (charts print a point's id inside its marker)
     bar_tops = [(s["cx"], s["cy"]) for s in symbols if s["shape"] == "bar"]
+    # (and heat-map tiles: a cell's value printed in it, 2308.04785-006)
     marker_boxes = [(s["cx"], s["cy"], s["size"]) for s in symbols
-                    if s["shape"] == "square" and is_marker(s)]
+                    if s["shape"] in ("square", "tile") and is_marker(s)]
     small_boxes = [b for b in boxes if any(rect_area(b) < 0.5 * rect_area(g["rect"]) for g in graphs)
                    and not any(abs((b[0] + b[2]) / 2 - x) < 0.5 and
                                min(abs(b[3] - y), abs(b[1] - y)) < 0.5 for x, y in bar_tops)
@@ -246,7 +247,7 @@ def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
     marks = [k for k, s in enumerate(symbols) if is_marker(s)]
     if not cands or not marks:
         return
-    grid = BoxGrid(max(10.0, max(symbols[k]["size"] for k in marks)))
+    grid = BoxGrid(max(10.0, *(symbols[k]["size"] for k in marks)))
     for k in marks:
         s = symbols[k]
         h = s["size"] / 2

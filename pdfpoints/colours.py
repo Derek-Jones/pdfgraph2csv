@@ -52,7 +52,7 @@ def _color_name(rgb):
     # cached: pages with 100 000 markers use only a few colours
     if rgb is None:
         return "unknown", ""
-    c = tuple(max(0, min(255, int(round(v * 255)))) for v in rgb)
+    c = tuple(max(0, min(255, round(v * 255))) for v in rgb)
     hexs = "#%02x%02x%02x" % c
     best = min(_CSS_COLORS, key=lambda nc: sum((a - b) ** 2 for a, b in zip(c, nc[1])))
     return best[0], hexs

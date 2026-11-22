@@ -254,13 +254,78 @@ def _join_exponent_signs(texts):
     return out
 
 
+def _forwards(t):
+    """A piece whose glyphs are drawn last first (each glyph ends where the
+    one drawn before it begins: InDesign's slanted and turned labels in
+    Memory_systems_cacheDRAMdisk-051, "ety" for "yte") in reading order."""
+    gl = t.get("glyphs")
+    if not gl or len(gl) < 2 or len(gl) != len(t["text"].replace(" ", "")):
+        return t
+    s = max(t["size"], 1e-6)
+    gaps = [k for k, c in enumerate(t["text"].replace("  ", " ")) if c == " "]
+    k = 0
+    for a, b in zip(gl, gl[1:]):
+        k += 1
+        ux, uy = a[2][0] - a[1][0], a[2][1] - a[1][1]
+        n = math.hypot(ux, uy)
+        if n < 1e-6 or math.hypot(b[2][0] - b[1][0], b[2][1] - b[1][1]) < 1e-6:
+            return t
+        gx, gy = a[1][0] - b[2][0], a[1][1] - b[2][1]
+        along, across = (gx * ux + gy * uy) / n, abs(gx * uy - gy * ux) / n
+        spaced = k in gaps
+        if spaced:
+            k += 1
+        if across > 0.1 * s or not (-0.15 * s < along < (0.45 if spaced else 0.15) * s):
+            return t
+    t = dict(t)
+    t["glyphs"] = gl[::-1]
+    t["text"] = t["text"][::-1]
+    t["p0"], t["p1"] = gl[-1][1], gl[0][2]
+    return t
+
+
+def _goes_before(t, o):
+    """Piece t, drawn after o, ends where o begins on o's baseline (text set
+    last letter first; Memory_systems_cacheDRAMdisk-051).  Returns the text
+    to put between them ("" or a space for a word gap), or None."""
+    s = max(o["size"], 1e-6)
+    if abs(t["size"] - o["size"]) >= 0.05 * s or not t["text"].strip() or \
+            not o["text"].strip() or t["up"] != o["up"] and \
+            math.hypot(t["up"][0] - o["up"][0], t["up"][1] - o["up"][1]) > 0.01 * s:
+        return None
+    dx, dy = o["p1"][0] - o["p0"][0], o["p1"][1] - o["p0"][1]
+    tx, ty = t["p1"][0] - t["p0"][0], t["p1"][1] - t["p0"][1]
+    n, m = math.hypot(dx, dy), math.hypot(tx, ty)
+    if n < 1e-6 or m < 1e-6 or (dx * tx + dy * ty) / (n * m) < 0.99:
+        return None
+    gx, gy = o["p0"][0] - t["p1"][0], o["p0"][1] - t["p1"][1]
+    along = (gx * dx + gy * dy) / n
+    across = abs(gx * dy - gy * dx) / n
+    if across > 0.1 * s:
+        return None
+    if abs(along) < 0.15 * s:
+        return ""
+    if 0.15 * s <= along < 0.45 * s and t["text"][-1:] != " " and o["text"][:1] != " ":
+        return " "
+    return None
+
+
 def merge_texts(texts):
     """Join text pieces that continue each other on the same baseline."""
     out = []
-    texts = _join_exponent_signs(texts)
+    texts = [_forwards(t) for t in _join_exponent_signs(texts)]
     for t in texts:
         if out:
             o = out[-1]
+            before = _goes_before(t, o)
+            if before is not None:
+                o = dict(o)
+                o["text"] = t["text"] + before + o["text"]
+                o["p0"] = t["p0"]
+                if "glyphs" in o and "glyphs" in t:
+                    o["glyphs"] = t["glyphs"] + o["glyphs"]
+                out[-1] = o
+                continue
             d = math.hypot(t["p0"][0] - o["p1"][0], t["p0"][1] - o["p1"][1])
             # mathtext spaces a multiplication sign: "3 × 10^1" (matplotlib's
             # log-axis labels)
@@ -332,6 +397,33 @@ def merge_texts(texts):
     return out
 
 
+def split_numbers(t):
+    """A level text of two or more numbers set as one string with spaces
+    ("12.8 25.6": Memory_systems_cacheDRAMdisk-051's last two category
+    labels, close together) as one item per number, placed by its glyphs;
+    any other text as itself.  Returns a list."""
+    words = t["text"].split()
+    gl = t.get("glyphs")
+    if len(words) < 2 or t.get("rotated") or not gl or \
+            any(parse_number(w) is None for w in words) or \
+            len([g for g in gl if not g[0].isspace()]) != sum(len(w) for w in words):
+        return [t]
+    gl = [g for g in gl if not g[0].isspace()]
+    out, k = [], 0
+    up = t["up"]
+    for w in words:
+        part = gl[k:k + len(w)]
+        k += len(w)
+        p0, p1 = part[0][1], part[-1][2]
+        xs = [p0[0], p1[0], p0[0] + up[0], p1[0] + up[0]]
+        ys = [p0[1], p1[1], p0[1] + up[1], p1[1] + up[1]]
+        u = dict(t, text=w, p0=p0, p1=p1, glyphs=part, value=parse_number(w),
+                 bbox=(min(xs), min(ys), max(xs), max(ys)))
+        u["center"] = ((u["bbox"][0] + u["bbox"][2]) / 2, (u["bbox"][1] + u["bbox"][3]) / 2)
+        out.append(u)
+    return out
+
+
 def is_number(t):
     """A numeric label (a date such as "May 2020" may also be a title or a
     legend label)."""
@@ -365,6 +457,33 @@ def attach_vector_minus(texts, paths):
                 bars.append((x0, y0, x1, y1))
             elif h > 0 and h > 2.5 * w:
                 uprights.add((round((x0 + x1) / 2, 1), round((y0 + y1) / 2, 1)))
+    # only dashes that could be a number's minus sign are looked at
+    # further (2305.15675v1-015: 34 000 dashes, each compared with every
+    # other and every axis line, took four minutes)
+    nums = [t for t in texts
+            if t["value"] is not None and not t["rotated"] and not t["text"].strip().startswith("-")]
+    cell = 8.0
+    near = {}
+    for t in nums:
+        s = t["size"] or 1.0
+        for gx in range(int((t["bbox"][0] - 0.5 * s) // cell), int((t["bbox"][0] + 0.1 * s) // cell) + 1):
+            near.setdefault((gx, int(t["p0"][1] // cell)), []).append(t)
+            near.setdefault((gx, int(t["p0"][1] // cell) + 1), []).append(t)
+
+    def may_be_minus(b):
+        x0, y0, x1, y1 = b
+        for t in near.get((int(x1 // cell), int(((y0 + y1) / 2) // cell)), ()):
+            s = t["size"] or 1.0
+            if (x1 - x0) < 0.9 * s and (y1 - y0) < 0.2 * s and \
+                    t["bbox"][0] - 0.5 * s <= x1 <= t["bbox"][0] + 0.1 * s and \
+                    t["p0"][1] + 0.1 * s <= (y0 + y1) / 2 <= t["p0"][1] + 0.55 * s:
+                return True
+        return False
+    by_height = {}
+    for b in bars:
+        by_height.setdefault(round(b[1], 1), []).append(b)
+    all_bars = bars
+    bars = [b for b in bars if may_be_minus(b)]
     # the cross bar of a '+' marker is no minus sign
     bars = [b for b in bars
             if (round((b[0] + b[2]) / 2, 1), round((b[1] + b[3]) / 2, 1)) not in uprights]
@@ -372,6 +491,17 @@ def attach_vector_minus(texts, paths):
     bars = [b for b in bars
             if not any(min(abs(b[0] - lx), abs(b[2] - lx)) <= 0.3 and ly0 - 0.5 <= b[1] <= ly1 + 0.5
                        for lx, ly0, ly1 in axis_lines)]
+    # nor a tick of a colour bar: ggplot marks each value on both edges of
+    # the bar, two dashes of one length at one height (Maj-Petr_PhD-077's
+    # "1e+06" read as "-1e+06")
+    def twinned(b):
+        return any(o is not b and abs(o[1] - b[1]) <= 0.05 and abs(o[3] - b[3]) <= 0.05 and
+                   abs((o[2] - o[0]) - (b[2] - b[0])) <= 0.05 and
+                   2.0 <= abs(o[0] - b[0]) <= 8.0
+                   for k in (round(b[1] - 0.1, 1), round(b[1], 1), round(b[1] + 0.1, 1))
+                   for o in by_height.get(k, ()))
+    bars = [b for b in bars if not twinned(b)]
+    del all_bars
     for t in texts:
         if t["value"] is None or t["rotated"] or t["text"].strip().startswith("-"):
             continue

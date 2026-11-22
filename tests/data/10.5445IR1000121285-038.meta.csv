@@ -1,0 +1,7 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,(a),2.10,The measured transfer characteristics of EGT with channel width (W)= 200 µm and channel length (L)= 10 µm to 100 µm. (VGS = -1 V to 1 V and VDS = 0.01 V to 1 V),matplotlib 3.0.3,matplotlib,289,-1,1,1e-10,0.001
+1,2,(b),2.10,The measured transfer characteristics of EGT with channel width (W)= 200 µm and channel length (L)= 10 µm to 100 µm. (VGS = -1 V to 1 V and VDS = 0.01 V to 1 V),matplotlib 3.0.3,matplotlib,290,-1,1,1e-10,0.001
+1,3,(c),2.10,The measured transfer characteristics of EGT with channel width (W)= 200 µm and channel length (L)= 10 µm to 100 µm. (VGS = -1 V to 1 V and VDS = 0.01 V to 1 V),matplotlib 3.0.3,matplotlib,291,-1,1,1e-10,0.001
+1,4,(d),2.10,The measured transfer characteristics of EGT with channel width (W)= 200 µm and channel length (L)= 10 µm to 100 µm. (VGS = -1 V to 1 V and VDS = 0.01 V to 1 V),matplotlib 3.0.3,matplotlib,289,-1,1,1e-10,0.0001
+1,5,(e),2.10,The measured transfer characteristics of EGT with channel width (W)= 200 µm and channel length (L)= 10 µm to 100 µm. (VGS = -1 V to 1 V and VDS = 0.01 V to 1 V),matplotlib 3.0.3,matplotlib,289,-1,1,1e-10,0.0001
+1,6,(f),2.10,The measured transfer characteristics of EGT with channel width (W)= 200 µm and channel length (L)= 10 µm to 100 µm. (VGS = -1 V to 1 V and VDS = 0.01 V to 1 V),matplotlib 3.0.3,matplotlib,254,-1,1,1e-11,0.0001

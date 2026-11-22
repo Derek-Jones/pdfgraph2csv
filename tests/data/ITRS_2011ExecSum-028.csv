@@ -2,9 +2,9 @@ page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
 1,1,filled-diamond,DRAM,0,2004.94874,30.92094,steelblue,#4f81bd
 1,1,filled-triangle,MPU,0,2004.94874,39.04681,darkkhaki,#9bbb59
 1,1,filled-square,Flash,0,2004.97927,25.02304,indianred,#c0504d
-1,1,filled-diamond,,1,2006.94929,34.94132,steelblue,#4f81bd
-1,1,filled-triangle,,1,2006.94929,42.03161,darkkhaki,#9bbb59
-1,1,filled-square,,1,2006.98854,32.0167,indianred,#c0504d
+1,1,filled-diamond,DRAM,0,2006.94929,34.94132,steelblue,#4f81bd
+1,1,filled-triangle,MPU,0,2006.94929,42.03161,darkkhaki,#9bbb59
+1,1,filled-square,Flash,0,2006.98854,32.0167,indianred,#c0504d
 1,1,filled-diamond,DRAM,0,2008.95046,35.94654,steelblue,#4f81bd
 1,1,filled-triangle,MPU,0,2008.95046,50.98621,darkkhaki,#9bbb59
 1,1,filled-square,Flash,0,2008.99906,34.05121,indianred,#c0504d

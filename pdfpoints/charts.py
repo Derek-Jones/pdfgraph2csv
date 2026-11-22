@@ -27,10 +27,13 @@ def find_bars(graph, paths):
     loose = []                      # rectangles off the baseline: stacked segments?
     seen = set()
     for p in paths:
-        if not p["fill"]:
+        thick = _thick_upright_strokes(p)
+        if not p["fill"] and not thick:
             continue
-        for sp in p["subpaths"]:
-            if any(s[0] != "l" for s in sp["segs"]) or len(sp["segs"]) not in (3, 4):
+        for sp in (thick if thick else p["subpaths"]):
+            if isinstance(sp, tuple):
+                bx0, by0, bx1, by1 = sp
+            elif any(s[0] != "l" for s in sp["segs"]) or len(sp["segs"]) not in (3, 4):
                 rb = _rounded_bar_box(sp)    # a bar with rounded corners?
                 if rb is None:
                     continue
@@ -47,12 +50,20 @@ def find_bars(graph, paths):
             if bw <= 0.3 or bw > 0.25 * w or bh <= 0 or \
                     not x0 - tol <= (bx0 + bx1) / 2 <= x1 + tol:
                 continue
-            for base in bases:
+            for base in (() if thick else bases):
                 # (a bar may rise above the plot box by a quarter of its
                 # height: a chart without a frame ends its box at the top
                 # grid line, and 3485513-020's tallest bars pass it)
+                clip = p.get("clip")
                 if abs(by0 - base) <= tol and by1 <= y1 + max(tol, 0.25 * h):
                     top = by1
+                elif base == y0 and by0 < y0 - tol and y0 + tol < by1 <= y1 + max(tol, 0.25 * h) and \
+                        clip and abs(clip[1] - y0) <= max(tol, 1.0):
+                    # (on a log axis a bar's foot, at 0, lies far below:
+                    # clipped at the plot's bottom, it stands there -
+                    # 2305.15675v1-015's histogram reaches y = -13 826)
+                    top = by1
+                    by0 = y0
                 elif abs(by1 - base) <= tol and by0 >= y0 - tol and base != y0:
                     top = by0                # a bar going down from zero
                 elif abs(by1 - base) <= tol and base == y0 and by0 >= y0 - 0.25 * h:
@@ -67,12 +78,12 @@ def find_bars(graph, paths):
                     continue                 # fill and outline of one bar
                 seen.add(key)
                 bars.append({"shape": "bar", "cx": (bx0 + bx1) / 2, "cy": top, "size": bw,
-                             "filled": True, "rgb": p["fill_rgb"], "idx": p["idx"],
+                             "filled": True, "rgb": _paint(p, thick), "idx": p["idx"],
                              "base": by0 if top == by1 else by1})
                 break
             else:
                 if by1 <= y1 + tol:
-                    loose.append((bx0, by0, bx1, by1, p))
+                    loose.append((bx0, by0, bx1, by1, p, _paint(p, thick)))
     _stack(bars, loose, tol, seen)
     if hanging and len(bars) >= 3:
         wm = median(b["size"] for b in bars)
@@ -82,7 +93,37 @@ def find_bars(graph, paths):
                 seen.add(key)
                 bars.append({"shape": "bar", "cx": cx, "cy": top, "size": bw,
                              "filled": True, "rgb": p["fill_rgb"], "idx": p["idx"]})
-    return _drop_bands(bars, y0, y1, tol)
+    return _drop_bands(bars, y1, tol)
+
+
+def _thick_upright_strokes(p):
+    """A bar drawn as a vertical line stroked as wide as the bar
+    (Memory_systems_cacheDRAMdisk-051: the black "CPU + DRAM" segment of
+    each stacked bar is a line 2.3 pt wide down the bar's centre): the
+    rectangle it paints, [(x0, y0, x1, y1)] for each such subpath.  Only
+    strokes of butt caps (the default) at least 0.5 pt wide, and only as a
+    segment of a stack on a filled bar (w21074-042's Excel line chart has
+    thick vertical strokes standing on its axis: no bars)."""
+    if not p["stroke"] or p["fill"]:
+        return []
+    style = p.get("style") or ()
+    lw = style[0] if style and isinstance(style[0], (int, float)) else 0.0
+    cap = style[1] if len(style) > 1 else None
+    if lw < 0.5 or cap not in (None, 0):
+        return []
+    out = []
+    for sp in p["subpaths"]:
+        if len(sp["segs"]) != 1 or sp["segs"][0][0] != "l":
+            continue
+        a, b = sp["start"], sp["segs"][0][-1]
+        if abs(a[0] - b[0]) <= 0.01 and abs(a[1] - b[1]) > 0.05:
+            x = (a[0] + b[0]) / 2
+            out.append((x - lw / 2, min(a[1], b[1]), x + lw / 2, max(a[1], b[1])))
+    return out
+
+
+def _paint(p, thick):
+    return p["stroke_rgb"] if thick else p["fill_rgb"]
 
 
 def _rounded_bar_box(sp):
@@ -116,7 +157,7 @@ def _rounded_bar_box(sp):
     corners = ((x0, y0), (x0, y1), (x1, y0), (x1, y1))
     prev = sp["start"]
     straight = 0.0
-    for s in segs + [("l", sp["start"])]:
+    for s in [*segs, ("l", sp["start"])]:
         q = s[-1]
         if s[0] == "l":
             if abs(q[0] - prev[0]) > 1e-3 and abs(q[1] - prev[1]) > 1e-3:
@@ -145,21 +186,24 @@ def _stack(bars, loose, tol, seen):
         for b in tops:
             bx0, bx1 = b["cx"] - b["size"] / 2, b["cx"] + b["size"] / 2
             for r in loose:
-                rx0, ry0, rx1, ry1, p = r
-                if abs(rx0 - bx0) <= tol and abs(rx1 - bx1) <= tol and abs(ry0 - b["cy"]) <= tol and ry1 > b["cy"] + tol:
+                rx0, ry0, rx1, ry1, p, rgb = r
+                # (a segment may be thin: Memory_systems_cacheDRAMdisk-051's
+                # 0.17 pt grey layers between the black and white ones)
+                if abs(rx0 - bx0) <= tol and abs(rx1 - bx1) <= tol and abs(ry0 - b["cy"]) <= tol and \
+                        ry1 > b["cy"] + 0.1:
                     key = (round(rx0, 2), round(rx1, 2), round(ry1, 2))
                     if key in seen:
                         continue
                     seen.add(key)
                     seg = {"shape": "bar", "cx": (rx0 + rx1) / 2, "cy": ry1, "size": rx1 - rx0,
-                           "filled": True, "rgb": p["fill_rgb"], "idx": p["idx"], "base": ry0}
+                           "filled": True, "rgb": rgb, "idx": p["idx"], "base": ry0}
                     bars.append(seg)
                     nxt.append(seg)
         loose = [r for r in loose if (round(r[0], 2), round(r[2], 2), round(r[3], 2)) not in seen]
         tops = nxt
 
 
-def _drop_bands(bars, y0, y1, tol):
+def _drop_bands(bars, y1, tol):
     """Bars that all run the full height of the plot box in one light
     colour are bands shading periods of the x axis (2204.07073-010: grey
     bands behind the years of some editions), not data: a bar chart's bars
@@ -493,7 +537,10 @@ def _box_rect(sp):
             return None
     xs = [p[0] for p in pts]
     ys = [p[1] for p in pts]
-    if max(xs) - min(xs) < 0.5:
+    # (0.5 pt across in one direction at least: a horizontal box may be
+    # shorter along x - 2305.15675v1-015's are 0.42 pt long, 9 pt thick;
+    # the thickness across is tested with the boxes)
+    if max(xs) - min(xs) < 0.5 and max(ys) - min(ys) < 0.5:
         return None
     return (min(xs), min(ys), max(xs), max(ys))
 
@@ -556,8 +603,15 @@ def find_boxes(graph, paths):
             elif abs(a[0] - b[0]) <= 0.01 and abs(a[1] - b[1]) > 0.01:
                 vs.append(((a[0] + b[0]) / 2, min(a[1], b[1]), max(a[1], b[1])))
     allr = [rp for lst in rects.values() for rp in lst]
-    out = _boxes_upright(allr, hs, vs, x1 - x0, tol)
-    if out:
+    # a box's values are read along its length: never along a category
+    # axis (Memory_systems_cacheDRAMdisk-051: the segments of stacked bars
+    # over category ticks, with hidden strokes across them, were taken for
+    # horizontal boxes)
+    def numeric(orient):
+        m = (graph.get(orient) or {}).get("map")
+        return m is None or m.get("kind") != "nominal"
+    out = _boxes_upright(allr, hs, vs, x1 - x0, tol) if numeric("y") else []
+    if out or not numeric("x"):
         return out
     # horizontal boxes: the same in the frame with x and y swapped
     sw = [((r[1], r[0], r[3], r[2]), p) for r, p in allr]
@@ -605,6 +659,15 @@ def _boxes_upright(rects, hs, vs, span, tol):
         if not meds:
             continue
         med = min(meds, key=lambda y: abs(y - (by0 + by1) / 2))
+        # a stroke along the centre line from end to end inside the box
+        # crosses the median: a square marker with a plus in it (R's pch
+        # 12: wp_21_1036-019), no box (whiskers lie outside a box)
+        # (within a tenth of the box's length of its ends: a whisker stub
+        # beside a box 0.25 pt long is no such stroke, 2305.15675v1-015)
+        end_tol = min(tol, 0.1 * (by1 - by0))
+        if any(abs(x - cx) <= tol and lo >= by0 - end_tol and hi <= by1 + end_tol and
+               hi - lo >= 0.9 * (by1 - by0) for x, lo, hi in vs):
+            continue
         low = [lo for x, lo, hi in vs if abs(x - cx) <= tol and abs(hi - by0) <= tol and lo < by0 - tol]
         high = [hi for x, lo, hi in vs if abs(x - cx) <= tol and abs(lo - by1) <= tol and hi > by1 + tol]
         found.append({"rect": r, "cx": cx, "w": bw, "med": med,

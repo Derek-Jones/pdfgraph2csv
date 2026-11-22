@@ -173,6 +173,6 @@ Package layout (in pipeline order)
     geometry, grouping, colours, context    shared helpers and page state
 """
 
-from .pipeline import extract  # noqa: F401
+from .pipeline import extract
 
 __all__ = ["extract"]

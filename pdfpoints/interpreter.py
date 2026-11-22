@@ -29,6 +29,8 @@ import decimal
 import math
 import sys
 
+import zlib
+
 import pikepdf
 from pdfminer.pdfdevice import PDFDevice
 from pdfminer.pdfinterp import PDFContentParser, PDFPageInterpreter
@@ -37,7 +39,11 @@ from pdfminer.psparser import LIT, PSEOF, PSKeyword, keyword_name, literal_name
 
 from .context import PAGE, SETTINGS
 from .fonts import DINGBAT_ANCHOR, DINGBAT_SYMBOLS, FontInfo, dingbat_code, register_fonts
-from .geometry import bbox_of, control_points, mapply, mmul
+from pdfminer.utils import apply_matrix_pt, mult_matrix
+
+from .colourbar import colour_strip, strip_pixels
+from .geometry import bbox_of, control_points
+from .image_marks import read_image
 from .tokenizer import Floats, coordinate_decimals, has_inline_image, operators
 from .tools import tool_name, xmp_creator_tool
 
@@ -57,15 +63,19 @@ class Interpreter:
         self.texts = []
         self.glyph_symbols = []
         self.image_marks = []
+        self.colour_strips = []  # one-pixel images: colour bars (colourbar.py)
         self.images = []
+        self.op_errors = {}      # (operator, exception type) -> [count, first message]
         self.order = 0
         self.fonts = {}          # id(pdfminer font) -> FontInfo
 
-    def run_page(self, page):
+    def run_page(self, page, ctm=None):
         """Execute a pdfminer PDFPage.  Page coordinates are the PDF's own
-        user space (the page's /Rotate and media box offset are not applied)."""
+        user space (the page's /Rotate and media box offset are not applied),
+        or that space mapped by `ctm` (a page drawn turned: see
+        pipeline.page_turn)."""
         interp = ContentInterpreter(self.doc.rsrcmgr, PDFDevice(self.doc.rsrcmgr), self)
-        interp.render_contents(page.resources, page.contents, ctm=IDENTITY)
+        interp.render_contents(page.resources, page.contents, ctm=ctm or IDENTITY)
 
     def record(self, kind, item):
         """Store a drawn object with the next drawing step number."""
@@ -188,9 +198,35 @@ class ContentInterpreter(PDFPageInterpreter):
             self._execute_pdfminer(valid)
             return
         for inst in instructions:
+            if isinstance(inst, pikepdf.ContentStreamInlineImage):
+                self._inline_image(inst.iimage)
+                continue
             if not isinstance(inst, pikepdf.ContentStreamInstruction):
-                continue                  # the inline image itself
+                continue
             self._run_operator(str(inst.operator), [_from_pikepdf(o) for o in inst.operands])
+
+    def _inline_image(self, ii):
+        """An inline image one pixel wide or tall - a colour bar's gradient
+        (ggplot, Maj-Petr_PhD-077) - is recorded as a colour strip: its
+        placement (ctm) and pixel colours (colourbar.py)."""
+        try:
+            w, h = int(ii.width), int(ii.height)
+            if min(w, h) != 1 or max(w, h) < 2 or int(ii.bits_per_component) != 8:
+                return
+            filters = [str(f) for f in (ii.filters or [])]
+            data = ii.read_raw_bytes()
+            if filters == ["/FlateDecode"]:
+                data = zlib.decompress(data)
+            elif filters:
+                return
+            parms = ii.decode_parms or []
+            parms = parms[0] if isinstance(parms, list) and parms else parms
+            predictor = int(parms.get("/Predictor", 1)) if hasattr(parms, "get") else 1
+        except Exception:
+            return
+        rgb = strip_pixels(bytes(data), w, h, predictor)
+        if rgb:
+            self.page.record("colour_strips", {"ctm": self.ctm, "w": w, "h": h, "rgb": rgb})
 
     def _execute_pdfminer(self, streams):
         try:
@@ -226,8 +262,14 @@ class ContentInterpreter(PDFPageInterpreter):
         self.operands = operands
         try:
             method(self, *operands[len(operands) - nargs:]) if nargs else method(self)
-        except Exception:
-            pass
+        except Exception as e:            # a malformed operator spoils only itself;
+            # counted, so that --debug shows them (a bug in a handler would
+            # otherwise pass unseen)
+            errs = self.page.op_errors
+            key = (name, type(e).__name__)
+            if key not in errs:
+                errs[key] = [0, str(e)[:80]]
+            errs[key][0] += 1
 
     # -- graphics state ----------------------------------------------------
     def do_q(self):
@@ -405,7 +447,7 @@ class ContentInterpreter(PDFPageInterpreter):
         th = ts.scaling / 100.0               # horizontal scaling
         lx, ly = ts.linematrix
         # text space -> page: the line matrix, advanced along the line
-        base = mmul(mmul((1, 0, 0, 1, lx, ly), ts.matrix), self.ctm)
+        base = mult_matrix(mult_matrix((1, 0, 0, 1, lx, ly), ts.matrix), self.ctm)
         pen = 0.0                             # current glyph origin, text space units
         pieces = []                           # [text, start, end, glyphs]
         last_end = None
@@ -439,14 +481,14 @@ class ContentInterpreter(PDFPageInterpreter):
                 pen += (w * fs + tc + (tw if (code == 32 and not font.two_byte) else 0)) * th
         size = math.hypot(base[2] * fs, base[3] * fs)
         for txt, s0, s1, gl in pieces:
-            p0 = mapply(base, s0, rise)
-            top = mapply(base, s0, rise + 0.7 * fs)
+            p0 = apply_matrix_pt(base, (s0, rise))
+            top = apply_matrix_pt(base, (s0, rise + 0.7 * fs))
             self.page.record("texts", {
-                "text": txt, "p0": p0, "p1": mapply(base, s1, rise),
+                "text": txt, "p0": p0, "p1": apply_matrix_pt(base, (s1, rise)),
                 "up": (top[0] - p0[0], top[1] - p0[1]), "size": size,
                 "font": font.name, "rgb": self.extra.fill,
                 # each glyph: (char, start point, end point) on the page
-                "glyphs": [(c, mapply(base, a, rise), mapply(base, b, rise))
+                "glyphs": [(c, apply_matrix_pt(base, (a, rise)), apply_matrix_pt(base, (b, rise)))
                            for c, a, b in gl]})
         ts.linematrix = (lx + pen, ly)
 
@@ -459,9 +501,9 @@ class ContentInterpreter(PDFPageInterpreter):
             cxg, cyg = (bx0 + bx1) / 2000.0, (by0 + by1) / 2000.0
         else:
             cxg, cyg = DINGBAT_ANCHOR
-        c = mapply(base, pen + cxg * fs * th, rise + cyg * fs)
-        e0 = mapply(base, pen + bx0 / 1000.0 * fs * th, rise + by0 / 1000.0 * fs)
-        e1 = mapply(base, pen + bx1 / 1000.0 * fs * th, rise + by1 / 1000.0 * fs)
+        c = apply_matrix_pt(base, (pen + cxg * fs * th, rise + cyg * fs))
+        e0 = apply_matrix_pt(base, (pen + bx0 / 1000.0 * fs * th, rise + by0 / 1000.0 * fs))
+        e1 = apply_matrix_pt(base, (pen + bx1 / 1000.0 * fs * th, rise + by1 / 1000.0 * fs))
         filled = ts.render in (0, 2, 4, 6)    # modes 0/2/4/6 fill the glyph; 1/5 stroke it
         self.page.record("glyph_symbols", {
             "res": _resolution(self.unit, base), "tool": self.tool,
@@ -490,15 +532,22 @@ class ContentInterpreter(PDFPageInterpreter):
             # an embedded graphic that records its own program (innermost wins)
             sub.tool = form_tool(xobj) or self.tool
             sub.form_name = literal_name(xobjid) if not isinstance(xobjid, str) else xobjid
-            sub.render_contents(res, [xobj], ctm=mmul(matrix, self.ctm))
+            sub.render_contents(res, [xobj], ctm=mult_matrix(matrix, self.ctm))
         elif subtype == "Image":
-            pts = [mapply(self.ctm, u, v) for u, v in ((0, 0), (1, 0), (0, 1), (1, 1))]
+            pts = [apply_matrix_pt(self.ctm, (u, v)) for u, v in ((0, 0), (1, 0), (0, 1), (1, 1))]
             xs, ys = [p[0] for p in pts], [p[1] for p in pts]
             box = (min(xs), min(ys), max(xs), max(ys))
             # an image with a soft mask, a mask or drawn as a stencil (a
             # translucent watermark over the page) hides nothing for sure
             if not (xobj.get("SMask") or xobj.get("Mask") or resolve1(xobj.get("ImageMask"))):
                 self.page.images.append((box, self.page.order))
+            ww, hh = resolve1(xobj.get("Width")), resolve1(xobj.get("Height"))
+            if isinstance(ww, int) and isinstance(hh, int) and max(ww, hh) >= 2 and \
+                    max(ww, hh) >= 5 * min(ww, hh) and max(box[2] - box[0], box[3] - box[1]) >= 20:
+                strip = colour_strip(read_image(xobj))   # a colour bar (colourbar.py)
+                if strip:
+                    strip["ctm"] = self.ctm
+                    self.page.record("colour_strips", strip)
             if 1.0 <= max(box[2] - box[0], box[3] - box[1]) <= 30.0:
                 # small enough to be a marker drawn as a picture (Excel for
                 # Mac draws gradient-filled markers this way): image_marks.py

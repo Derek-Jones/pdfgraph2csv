@@ -60,6 +60,7 @@
 #   --keep           a hand-made reference: never overwritten by --update
 #   --exit N         the exit status the program must give (default 0)
 #   --stderr TEXT    a message stderr must contain (may be repeated)
+#   --no-stderr TEXT a message stderr must not contain (may be repeated)
 #   --out FILE       write the CSV with -o to a temporary FILE (which must
 #                    not be created when no points are found)
 #   --counts 'graph symbol=N|...'
@@ -263,6 +264,15 @@ run_program() {
     done <<EOF
 $c_stderr
 EOF
+    while IFS= read -r text; do
+        [ -z "$text" ] && continue
+        if grep -qF -- "$text" "$TMP/stderr"; then
+            { echo "message '$text' should not be on stderr:"; cat "$TMP/stderr"; } >"$TMP/why"
+            return 1
+        fi
+    done <<EOF
+$c_nostderr
+EOF
     if [ -n "$c_out" ]; then
         if [ -s "$TMP/stdout" ]; then
             echo "output on stdout although -o was given" >"$TMP/why"
@@ -374,7 +384,7 @@ write_expected() {
 # t NAME --pdf FILE [options] [-- program arguments]: one case
 t() {
     c_name=$1; shift
-    c_pdf= c_expect= c_tol=1e-6 c_cols= c_keep= c_exit= c_stderr= c_out= c_counts= c_meta=
+    c_pdf= c_expect= c_tol=1e-6 c_cols= c_keep= c_exit= c_stderr= c_nostderr= c_out= c_counts= c_meta=
     c_args=()
     while [ $# -gt 0 ]; do
         case $1 in
@@ -385,6 +395,8 @@ t() {
             --keep) c_keep=1 ;;
             --exit) c_exit=$2; shift ;;
             --stderr) c_stderr="$c_stderr$2
+"; shift ;;
+            --no-stderr) c_nostderr="$c_nostderr$2
 "; shift ;;
             --out) c_out=$2; shift ;;
             --counts) c_counts=$2; shift ;;
@@ -410,6 +422,29 @@ t() {
         failed_names="$failed_names  $c_name
 "
         printf 'FAIL  %4ds  %s\n' $((SECONDS - start)) "$c_name"
+        sed 's/^/      /' "$TMP/why"
+    fi
+}
+
+# t_help: the --help text must be the usage text README.md gives
+t_help() {
+    local name='--help: the same text as the usage block of README.md'
+    if [ -n "$filter" ] && ! printf '%s\n' "$name" | grep -qiF -- "$filter"; then
+        return
+    fi
+    [ "$update" -eq 1 ] && return
+    # (the indented block from "usage:" to the first line not indented)
+    awk '/^    usage:/ { on = 1 } on && !/^    / && !/^$/ { exit } on' \
+        "$(dirname "$PROGRAM")/README.md" | sed 's/^    //' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' >"$TMP/help_readme"
+    "$PYTHON" -I "$PROGRAM" --help >"$TMP/help_now" 2>&1
+    if diff "$TMP/help_readme" "$TMP/help_now" >"$TMP/why"; then
+        passed=$((passed + 1))
+        [ "$verbose" -eq 1 ] && printf 'ok    %4ds  %s\n' 0 "$name"
+    else
+        failed=$((failed + 1))
+        failed_names="$failed_names  $name
+"
+        printf 'FAIL  %4ds  %s\n' 0 "$name"
         sed 's/^/      /' "$TMP/why"
     fi
 }
@@ -602,7 +637,7 @@ t 'five ggplot2 panels without tick marks (labels at the positions, 0.00 ... 1.0
   --pdf cheyette2024limited-008.pdf \
   --expect cheyette2024limited-008.csv \
   --meta cheyette2024limited-008.meta.csv \
-  --stderr 'circles rebuilt from their outlines'
+  --no-stderr 'flattened into fragments'
 
 t 'Excel error bars (--errbars): halves from the marker centre, slightly slanted, dense stacks, log-log' \
   --pdf Rescaling_reliability_bounds_new_opprof-002.pdf \
@@ -801,10 +836,57 @@ t 'plus-symbols-log-axes: six panels of '"'"'+'"'"' markers, log y axis, numbere
   --pdf plus-symbols-log-axes.pdf \
   --expect plus-symbols-log-axes.csv
 
-t 'log-clipped-markers: circles flattened into fragments and clipped; rebuilt with stacking counts' \
+t 'State_IT_Project_Management_in_UK-056: no graph, one large ruled table of numbers (24 rules across its width, column rules cut cell by cell); no row of it is taken for a plot, no meta file' \
+  --pdf State_IT_Project_Management_in_UK-056.pdf \
+  --meta - \
+  --stderr 'No vector graphics found'
+
+t 'ThomasBockPhD-073, with meta file: four pdfLaTeX scatter plots of plus markers (26 MB of drawing instructions, 153 329 markers, 49 032 of them on one spot, each with its own horizontal stroke); the stacked copies are looked at once for legend keys (it took many minutes); a stray point beside the annotation "RMSE: 2.14" is no legend key' \
+  --pdf ThomasBockPhD-073.pdf \
+  --meta ThomasBockPhD-073.meta.csv \
+  --counts '1 plus=134915|2 plus=12848|3 plus=2783|4 plus=2783'
+
+t 'Memory_systems_cacheDRAMdisk-051, with meta file: InDesign page of three bar charts whose x ticks are labelled twice: bandwidths 0.8 ... 25.6 (numbers that fit no scale: categories) and, for each group of bars, its channel configuration in the x_group column (slanted under the GCC and BZIP charts, set last letter first; slanted above the PERL bars, whose axis has no ticks and whose 12.8 and 25.6 come as one string); stacked bars of five segments, the black ones thick strokes, the grey ones 0.17 pt thin; BZIP legend inside its plot with a white swatch drawn as an outline only; GCC named by the page colours, PERL (one colour) not' \
+  --pdf Memory_systems_cacheDRAMdisk-051.pdf \
+  --expect Memory_systems_cacheDRAMdisk-051.csv \
+  --meta Memory_systems_cacheDRAMdisk-051.meta.csv
+
+t 'cheyette2024limited-011, with meta file: four ggplot panels, all text outlined, no tick marks anywhere: axis positions from the labels (the y axis of panel (a) from two labels at the plot corner; the minus signs in panel (c) are no ticks; the labels of panel (d) not kept by error-bar caps read as ticks); markers of (c) and (d) drawn in layers, their pale faces dropped; the translucent rings of panel (b), flattened into pieces, rebuilt from their white faces (300 rings), its dotted diagonal (one path of 107 dots) no markers; two-key line legends with unreadable names flagged as keys' \
+  --pdf cheyette2024limited-011.pdf \
+  --expect cheyette2024limited-011.csv \
+  --meta cheyette2024limited-011.meta.csv
+
+t 'ArianeWuerbach-Phd-064, with meta file: two R lattice panels side by side (Female, Male) sharing one frame; the x axis of the left panel at the bottom and of the right panel at the top, each line across both panels, cut at the panel border; the right panel borrows the y scale of the left (its unlabelled ticks on the right edge); about ten open circles per observation' \
+  --pdf ArianeWuerbach-Phd-064.pdf \
+  --meta ArianeWuerbach-Phd-064.meta.csv \
+  --counts '1 open-circle=41455|2 open-circle=45058'
+
+t 'Maj-Petr_PhD-077, with meta file: four ggplot heat maps (geom_bin2d): a point per tile, its value read off the log colour bar (an inline image) beside it, the bar ticks no minus signs; titles under the axis title of the graph above; a two-label log x axis (10, 1000)' \
+  --pdf Maj-Petr_PhD-077.pdf \
+  --meta Maj-Petr_PhD-077.meta.csv \
+  --counts '1 tile=3017|2 tile=3705|3 tile=3137|4 tile=4526'
+
+t '10.5445IR1000121285-038, with meta file: six matplotlib panels of transfer curves (log y axes from 10^-11 to 10^-3), each with a legend of seven V_DS values in two columns: the numbers name the series (0.01 ... 1) and are no right y axis (no scale on both sides), the heading V_DS names no key, panel (f) is not split by its 10^-11 grid line; a grey square of the next figure under the caption is no legend key' \
+  --pdf 10.5445IR1000121285-038.pdf \
+  --expect 10.5445IR1000121285-038.csv \
+  --meta 10.5445IR1000121285-038.meta.csv \
+  --no-stderr 'scale on both sides'
+
+t '2305.15675v1-015, with meta file: 85 MB of drawing (34 000 dashes no longer compared pair by pair for minus signs: 30 s, was over 5 minutes); a horizontal box plot of 10 features, boxes as short as 0.25 pt; three histograms, the middle one log-log (labels 10^1, 10^3 and 10^2, 10^4 alone make log axes; its bars, clipped at the plot bottom, stand there and no longer hide the x labels under the plot)' \
+  --pdf 2305.15675v1-015.pdf \
+  --expect 2305.15675v1-015.csv \
+  --meta 2305.15675v1-015.meta.csv
+
+t 'unified-noise-bayes-019, with meta file: six MATLAB scatter panels whose markers are flattened into fragments, 510 circles rebuilt (each with a confidence) and no warning about it; log axes 0 (at the place of 1), 10, 100, 250' \
+  --pdf unified-noise-bayes-019.pdf \
+  --expect unified-noise-bayes-019.csv \
+  --meta unified-noise-bayes-019.meta.csv \
+  --no-stderr 'flattened into fragments'
+
+t 'log-clipped-markers: circles flattened into fragments and clipped; rebuilt with stacking counts and a confidence for each, no warning about it' \
   --pdf log-clipped-markers.pdf \
   --expect log-clipped-markers.csv \
-  --stderr 'circles rebuilt from their outlines'
+  --no-stderr 'flattened into fragments'
 
 t 'encrypted: AES-128, empty user password' \
   --pdf encrypted.pdf \
@@ -978,7 +1060,7 @@ t 'sarroRE15-008, with meta file: eight R box plots (pdfTeX): boxes filled and o
   --expect sarroRE15-008.csv \
   --meta sarroRE15-008.meta.csv
 
-t '2308.04785-006, with meta file: two seaborn correlation matrices with category axes both ways; each cell a coloured square with its coefficient printed in it (a label per square, values in neighbouring cells run together are split, a value just after a y label is not lost with it); the grid of numbers is no table; the colour bar is an image' \
+t '2308.04785-006, with meta file: two seaborn correlation matrices with category axes both ways; each cell a coloured square with its coefficient printed in it (a label per square, values in neighbouring cells run together are split, a value just after a y label is not lost with it); the grid of numbers is no table; the colour bar is an image (indexed colours): each cell a heat-map tile whose colour-bar value agrees with its printed coefficient' \
   --pdf 2308.04785-006.pdf \
   --expect 2308.04785-006.csv \
   --meta 2308.04785-006.meta.csv
@@ -997,6 +1079,28 @@ t 'Statistical_Test_Coverage_for_Linux, with meta file: 14-page IEEE paper; page
   --pdf Statistical_Test_Coverage_for_Linux.pdf \
   --expect Statistical_Test_Coverage_for_Linux.csv \
   --meta Statistical_Test_Coverage_for_Linux.meta.csv
+
+t 'w21074-042, with meta file: Excel line chart whose y labels 0% to 100% are repeated on the right side, 0.2 pt higher, with no tick marks of their own: one scale, no warning' \
+  --pdf w21074-042.pdf \
+  --expect w21074-042.csv \
+  --meta w21074-042.meta.csv
+
+t 'wp_21_1036-019, with meta file: ggplot2 scatter of three series, each of 17 points drawn 175 to 525 times over (duplicates reported); squares with a plus (pch 12) are one marker, not box plots; the line samples on the grey legend key squares and the names beside them are no second scale' \
+  --pdf wp_21_1036-019.pdf \
+  --meta wp_21_1036-019.meta.csv \
+  --counts '1 filled-square=4029|1 open-square-plus=3851|1 open-triangle=3676'
+
+t 'Seongmin-PhD-044, with --rotation and meta file: a thesis page set sideways (content turned 90 degrees anticlockwise, page not rotated) holding four ggplot figures of two box-plot panels each; the page is read turned; panel ticks with no axis lines run together across panels and are split into even runs; turned y labels end at their ticks; a two-label time axis (1000, 2000) running past zero is log; legend key medians are no ticks; panels without a legend named by the page colours; flat ORBS boxes named by their dodge slot; outliers named by their box and filled by a dot glyph' \
+  --pdf Seongmin-PhD-044.pdf \
+  --expect Seongmin-PhD-044.rotation.csv \
+  --meta Seongmin-PhD-044.meta.csv \
+  -- --rotation
+
+t 'Teaching-disciplined-softdev-008, with --errbars and meta file: three Statistica plots of means with 0.95 confidence bars; Fig. 4 category labels Exercise 2 ... 10 staggered over two rows, alternate ticks on each (Exercice 3 is spelt so in the PDF); markers are 10 x 9 pixel images of blue discs on white, no mask, with the dotted grid through them' \
+  --pdf Teaching-disciplined-softdev-008.pdf \
+  --expect Teaching-disciplined-softdev-008.errbars.csv \
+  --meta Teaching-disciplined-softdev-008.meta.csv \
+  -- --errbars
 
 t '3576042-018, with meta file: six matplotlib line charts, all text outlined; tick marks filled as single segments (no glyphs); x labels 1 to 10 read upright though 6 and 9 read as well upside down; each framed legend below its x axis goes whole to the graph above; the I of HINDBR bridges its word, so the H is no marker' \
   --pdf 3576042-018.pdf \
@@ -1043,6 +1147,11 @@ t '2510.19281v2-013: SPSS scatter plot converted by Inkscape - every shape follo
   --pdf 2510.19281v2-013.pdf \
   --expect 2510.19281v2-013.csv \
   --meta 2510.19281v2-013.meta.csv
+
+t 'meta file only: --meta-only writes the meta file and no data points (nothing on stdout)' \
+  --pdf 3576042-018.pdf \
+  --meta 3576042-018.meta.csv \
+  -- --meta-only
 
 t 'meta file: not created when no graph is found' \
   --pdf no-graph.pdf \
@@ -1314,5 +1423,7 @@ t 'random10 asterisk-unequal: the same points with 10-digit coordinates (asteris
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-8 \
   --keep
+
+t_help
 
 summary

@@ -85,9 +85,16 @@ def _find_title(rect, texts, symbols):
         if frame and not encloses(frame, t["bbox"], 1):
             continue                  # outside the box drawn round the chart
         cx = (t["bbox"][0] + t["bbox"][2]) / 2
+        def under(o, zb):
+            # a line between the labels above and t (that graph's own axis
+            # title: "# of duplicate files" over "Python",
+            # Maj-Petr_PhD-077)
+            return o is not t and o["text"].strip() and not o["rotated"] and \
+                o["bbox"][0] < t["bbox"][2] and t["bbox"][0] < o["bbox"][2] and \
+                t["bbox"][3] <= o["bbox"][1] + 0.1 and o["bbox"][3] <= zb + 0.1 * t["size"]
         if any(zx0 <= cx <= zx1 and zx1 - zx0 > 0 and
                -0.2 * t["size"] <= zb - t["bbox"][3] <= 2.5 * t["size"] and
-               not (zx0 == x0 and zx1 == x1)
+               not (zx0 == x0 and zx1 == x1) and not any(under(o, zb) for o in texts)
                for zx0, zx1, zb in PAGE.xlabel_zones):
             continue                  # the axis title of the graph above ("Hours")
         if t["size"] < 0.85 * PAGE.label_size:
@@ -234,8 +241,7 @@ def text_lines(texts):
         line = None
         for t in row:
             s = max(t["size"], 1e-6)
-            if line is not None and t["bbox"][0] - line["bbox"][2] <= 1.0 * max(
-                    s, max(sz for _, sz in line["sizes"])):
+            if line is not None and t["bbox"][0] - line["bbox"][2] <= 1.0 * max(s, *(sz for _, sz in line["sizes"])):
                 gap = t["bbox"][0] - line["bbox"][2]
                 line["text"] += (" " if gap > 0.15 * s and not line["text"].endswith(" ")
                                  else "") + t["text"].strip()
@@ -329,7 +335,7 @@ def find_figure_caption(rect, lines, graph_rects):
             # caption): not a line of the right-hand column below a short
             # centred caption
             starts = abs(ln["bbox"][0] - first["bbox"][0]) <= 2 * s or \
-                abs(ln["bbox"][0] - prev["bbox"][0]) <= 2 * s and prev is not first or \
+                (abs(ln["bbox"][0] - prev["bbox"][0]) <= 2 * s and prev is not first) or \
                 abs(ln["bbox"][2] - first["bbox"][2]) <= 2 * s
             centred = abs((ln["bbox"][0] + ln["bbox"][2]) / 2 -
                           (first["bbox"][0] + first["bbox"][2]) / 2) <= 2 * s

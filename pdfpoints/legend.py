@@ -44,7 +44,38 @@ def legend_line_samples(paths):
 def find_legend(symbols, texts, hlines=()):
     """Legend keys: a marker with a (non-numeric) label just to its right on
     the same line - measured from the end of the line sample the marker sits
-    on, if any.  Returns {symbol index: label}."""
+    on, if any.  Returns {symbol index: label}.
+
+    Markers stacked on one spot (and repeated line samples) are looked at
+    once: ThomasBockPhD-073 stacks tens of thousands of identical markers,
+    each with its own line sample, and looking at each pair took minutes.
+    Every copy gets the key its spot gets."""
+    spots, copies = {}, []
+    for i, s in enumerate(symbols):
+        k = (s["cx"], s["cy"], s["size"])
+        if k not in spots:
+            spots[k] = len(copies)
+            copies.append([i])
+        else:
+            copies[spots[k]].append(i)
+    if len(copies) == len(symbols):
+        return _find_legend(symbols, texts, set(hlines), [1] * len(symbols))
+    reps = [symbols[c[0]] for c in copies]
+    keys = _find_legend(reps, texts, set(hlines), [len(c) for c in copies])
+    return {i: label for r, label in keys.items() for i in copies[r]}
+
+
+def _reads_out_value(t, texts):
+    """Text ending in a colon with a number just after it on its line."""
+    if not t["text"].strip().endswith(":"):
+        return False
+    size = t["size"] or 1.0
+    return any(is_number(o) and abs(o["center"][1] - t["center"][1]) < 0.5 * size and
+               0 <= o["bbox"][0] - t["bbox"][2] <= 1.5 * size for o in texts)
+
+
+def _find_legend(symbols, texts, hlines, weight):
+    """find_legend on distinct markers; weight[i]: copies of marker i."""
     entries = {}
     # possible labels (a long line of a paragraph is none), by height on
     # the page, so each marker only looks at the texts on its own line
@@ -52,24 +83,34 @@ def find_legend(symbols, texts, hlines=()):
                      if not (is_number(t) or t["rotated"] or not t["text"].strip()
                              or len(t["text"].strip()) > 60)), key=lambda ct: ct[0])
     label_y = [cy for cy, _ in labels]
+    # a lead-in to a value ("RMSE: 2.14", in a fit annotation beside a
+    # stray data point, ThomasBockPhD-073) names no series
+    labels = [(cy, t) for cy, t in labels if not _reads_out_value(t, texts)]
+    label_y = [cy for cy, _ in labels]
     reach = 0.6 * max((t["size"] or 1.0 for _, t in labels), default=1.0)
     # line samples (horizontal) filed in a grid by height and by every x cell
     # they span, so a marker looks only at the samples around itself
     hl_cell = 8.0
     hl_grid = {}
     for x0, x1, y in hlines:
-        gy = int(math.floor(y / hl_cell))
-        for gx in range(int(math.floor((x0 - 0.5) / hl_cell)),
-                        int(math.floor((x1 + 0.5) / hl_cell)) + 1):
+        gy = math.floor(y / hl_cell)
+        for gx in range(math.floor((x0 - 0.5) / hl_cell),
+                        math.floor((x1 + 0.5) / hl_cell) + 1):
             hl_grid.setdefault((gx, gy), []).append((x0, x1, y))
     by_left = sorted(texts, key=lambda o: o["bbox"][0])     # (for label continuations)
     for i, s in enumerate(symbols):
+        # (a bar stands on the baseline: never a key - the tallest bars of
+        # Memory_systems_cacheDRAMdisk-051 reach the subtitle beside them.
+        # A box plot's legend key is read as a little box plot, and must be
+        # found as a key: Seongmin-PhD-044)
+        if s["shape"] in ("bar", "stem", "tile"):
+            continue
         right = s["cx"] + s["size"] / 2
         tol = 0.3 * max(s["size"], 1.0)
         if hl_grid:
-            gx = int(math.floor(s["cx"] / hl_cell))
-            for gy in range(int(math.floor((s["cy"] - tol) / hl_cell)),
-                            int(math.floor((s["cy"] + tol) / hl_cell)) + 1):
+            gx = math.floor(s["cx"] / hl_cell)
+            for gy in range(math.floor((s["cy"] - tol) / hl_cell),
+                            math.floor((s["cy"] + tol) / hl_cell) + 1):
                 for x0, x1, y in hl_grid.get((gx, gy), ()):
                     if x0 - 0.5 <= s["cx"] <= x1 + 0.5 and abs(y - s["cy"]) < tol:
                         right = max(right, x1)
@@ -144,6 +185,7 @@ def find_legend(symbols, texts, hlines=()):
     # annotation next to a data point does not.  When a page has an aligned
     # legend, unaligned candidates are dropped.
     ids = list(keys)
+    n_ids = sum(weight[i] for i in ids)
     grouped = set()
     for a in ids:
         for b in ids:
@@ -152,7 +194,7 @@ def find_legend(symbols, texts, hlines=()):
             sa, sb = symbols[a], symbols[b]
             ta, tb = entries[a][1], entries[b][1]
             stacked = abs(sa["cx"] - sb["cx"]) <= 1.5 and abs(ta["bbox"][0] - tb["bbox"][0]) <= 1.5 \
-                and abs(sa["cy"] - sb["cy"]) < 4 * max(ta["size"], 1.0) * max(1, len(ids))
+                and abs(sa["cy"] - sb["cy"]) < 4 * max(ta["size"], 1.0) * max(1, n_ids)
             side = abs(sa["cy"] - sb["cy"]) <= 1.0 and abs(ta["center"][1] - tb["center"][1]) <= 1.0
             if stacked or side:
                 grouped.update((a, b))
@@ -286,6 +328,160 @@ def find_page_legend(symbols, texts, blobs, graphs, paths):
     return {i: _clean_label(name) for i, name in _page_legend(symbols, texts, blobs, graphs, paths).items()}
 
 
+_CAPTION_START = re.compile(r"(?i)(fig(ure|\.)|table)\s*[0-9]")
+
+
+def _caption_between(s, rect, caps):
+    """Does a caption line lie between symbol s and graph rect (across
+    s's x, between them up or down)?"""
+    x0, y0, x1, y1 = rect
+    for t in caps:
+        bx0, by0, bx1, by1 = t["bbox"]
+        if not (bx0 <= s["cx"] <= bx1 or bx0 <= (x0 + x1) / 2 <= bx1):
+            continue
+        if (s["cy"] < by0 and by1 < y0) or (s["cy"] > by1 and by0 > y1):
+            return True
+    return False
+
+
+def patch_swatches(paths, texts, graphs):
+    """Legend patches of a bar chart, too oblong to be markers
+    (2401.16279-023's Figure 6: matplotlib's 7.4 x 2.6 pt patches before
+    "t_RCD", "CAS latency", "t_RAS", "t_RC"): filled rectangles without
+    outline, 4 to 15 pt wide, 1.5 to 5 pt tall and 1.8 times as wide as
+    tall or more, inside a graph, each with a text just to its right on
+    its line (within 1.5 of its size), two or more standing in a column
+    (one left edge) in different colours.  Returned as square swatch
+    symbols (filled rectangles are swatches) for the legend to find."""
+    rects = [g["rect"] for g in graphs]
+    cands = []
+    for p in paths:
+        if not p["fill"] or p["stroke"] or p.get("fill_rgb") is None or len(p["subpaths"]) != 1:
+            continue
+        sp = p["subpaths"][0]
+        if len(sp["segs"]) not in (3, 4) or any(s[0] != "l" for s in sp["segs"]):
+            continue
+        pts = [sp["start"]] + [s[-1] for s in sp["segs"]]
+        xs, ys = sorted({round(q[0], 3) for q in pts}), sorted({round(q[1], 3) for q in pts})
+        if len(xs) != 2 or len(ys) != 2:
+            continue
+        w, h = xs[1] - xs[0], ys[1] - ys[0]
+        if not (4 <= w <= 15 and 1.5 <= h <= 5 and w >= 1.8 * h):
+            continue
+        cx, cy = (xs[0] + xs[1]) / 2, (ys[0] + ys[1]) / 2
+        if not any(r[0] < cx < r[2] and r[1] < cy < r[3] for r in rects):
+            continue
+        label = any(0 <= t["bbox"][0] - xs[1] <= 1.5 * (t["size"] or 1.0) and
+                    abs(t["center"][1] - cy) <= 0.5 * max(t["size"] or 1.0, h)
+                    and t["text"].strip() and not t["rotated"] for t in texts)
+        if label:
+            cands.append((round(xs[0], 1), cx, cy, w, h, p))
+    out = []
+    cols = {}
+    for c in cands:
+        cols.setdefault(c[0], []).append(c)
+    for col in cols.values():
+        if len(col) < 2 or len({c[5]["fill_rgb"] for c in col}) != len(col):
+            continue
+        for _, cx, cy, w, h, p in col:
+            out.append({"shape": "square", "cx": cx, "cy": cy, "size": h, "w": w, "h": h,
+                        "filled": True, "rgb": p["fill_rgb"], "idx": p["idx"],
+                        "clip": p.get("clip"), "patch": True})
+    return out
+
+
+def numeric_legend(symbols, texts):
+    """Legend keys named by numbers (10.5445IR1000121285-038: V_DS 0.01,
+    0.1, 0.2 | 0.4, 0.6, 0.8, 1 in two columns): three or more markers, each
+    with a number just to its right on its line (within 1.5 of the number's
+    size), standing in columns (one x each, two or more keys, evenly
+    spaced), the columns' rows level with each other, all in different
+    colours and with different numbers.  Returns ({symbol index: number as
+    printed}, {texts of the heading just above the keys})."""
+    found = {}
+    for i, s in enumerate(symbols):
+        if s["shape"] in ("bar", "stem", "tile", "line") or s["size"] > 8 or not s.get("rgb"):
+            continue
+        right = s["cx"] + s["size"] / 2
+        best = None
+        for t in texts:
+            if not is_number(t) or t["rotated"]:
+                continue
+            ts = t["size"] or 1.0
+            gap = t["bbox"][0] - right
+            if 0 <= gap <= 1.5 * ts and abs(t["center"][1] - s["cy"]) <= 0.4 * ts:
+                if best is None or gap < best[0]:
+                    best = (gap, t)
+        if best:
+            found[i] = best[1]
+    cols = {}
+    for i in found:
+        cols.setdefault(round(symbols[i]["cx"] * 2) / 2, []).append(i)
+    # (a column runs on only while its keys are close: the legends of
+    # panels one above the other share their x)
+    runs = []
+    for x, ids in cols.items():
+        ids = sorted(ids, key=lambda i: symbols[i]["cy"])
+        cur = [ids[0]]
+        for i in ids[1:]:
+            if symbols[i]["cy"] - symbols[cur[-1]]["cy"] > 3 * (found[i]["size"] or 1.0):
+                runs.append((x, cur))
+                cur = [i]
+            else:
+                cur.append(i)
+        runs.append((x, cur))
+    good = []
+    for x, ids in runs:
+        if len(ids) < 2:
+            continue
+        ys = sorted(symbols[i]["cy"] for i in ids)
+        gaps = [b - a for a, b in zip(ys, ys[1:])]
+        g = median(gaps)
+        if g <= 0 or any(abs(d - g) > 0.15 * g for d in gaps):
+            continue
+        good.append((x, g, ys, ids))
+    keys, heads = {}, set()
+    used = set()
+    for x, g, ys, ids in good:
+        if id(ids) in used:
+            continue
+        block = [(x, g, ys, ids)]
+        for x2, g2, ys2, ids2 in good:
+            short, long_ = (ys, ys2) if len(ys) <= len(ys2) else (ys2, ys)
+            level = all(any(abs(a - b) <= 0.3 * g for b in long_) for a in short)
+            if x2 != x and id(ids2) not in used and abs(g2 - g) <= 0.15 * g and level and \
+                    abs(x2 - x) <= 12 * g:
+                block.append((x2, g2, ys2, ids2))
+        members = [i for _, _, _, b in block for i in b]
+        colours = {symbols[i]["rgb"] for i in members}
+        values = {found[i]["text"].strip() for i in members}
+        if len(members) < 3 or len(colours) != len(members) or len(values) != len(members):
+            continue
+        for _, _, _, b in block:
+            used.add(id(b))
+        for i in members:
+            keys[i] = found[i]["text"].strip()
+        # the heading: a text just above the top row, over the block
+        top = max(symbols[i]["cy"] for i in members)
+        x0 = min(symbols[i]["cx"] for i in members) - g
+        x1 = max(found[i]["bbox"][2] for i in members) + g
+        # (any other text over the keys' block: it may stand level with the
+        # top key of a longer column - panel (f)'s "V_DS" beside "0.4")
+        bottom = min(symbols[i]["cy"] for i in members)
+        labels = {id(found[i]) for i in members}
+        head = sorted((t for t in texts
+                       if t["text"].strip() and not t["rotated"] and id(t) not in labels
+                       and bottom - 0.5 * g <= t["center"][1] <= top + 1.6 * g
+                       and x0 <= t["center"][0] <= x1 and not is_number(t)), key=lambda t: t["bbox"][0])
+        for t in head:
+            heads.add(t["text"].strip())
+        if head:
+            # (as one label reads it: "V" and subscript "DS" -> "VDS")
+            heads.add("".join(t["text"].strip() for t in head))
+            heads.add(" ".join(t["text"].strip() for t in head))
+    return keys, heads
+
+
 def clipped_out(s):
     """Whether a symbol lies wholly outside the clipping box it was drawn
     with (so is not seen)."""
@@ -298,10 +494,37 @@ def clipped_out(s):
 
 
 def _page_legend(symbols, texts, blobs, graphs, paths):
+    # a text of marker characters only is a marker, not a label
+    # (Seongmin-PhD-044's outliers are "\u25cf" in the plot's own font: one
+    # beside another was a legend key named "\u25cf")
+    from .fonts import DINGBAT_BY_UNICODE
+    texts = [t for t in texts if not (t["text"].strip() and
+                                      set(t["text"].strip()) <= set(DINGBAT_BY_UNICODE))]
     hlines = legend_line_samples(paths)
     legend = find_legend(symbols, texts, hlines)
     for i, label in numbered_legend(symbols, texts).items():
         legend.setdefault(i, label)
+    keys, heads = numeric_legend(symbols, texts)
+    for i, label in keys.items():
+        legend.setdefault(i, label)
+    for i in [i for i, label in legend.items() if label in heads and i not in keys]:
+        del legend[i]                     # (the heading over a numeric legend)
+    # a key with a figure caption between it and every graph belongs to
+    # another figure (10.5445IR1000121285-038: a grey square of Figure
+    # 2.11's diagram, under Figure 2.10's caption, keyed "ITO")
+    caps = []
+    for t in texts:
+        if not t["rotated"] and _CAPTION_START.match(t["text"].strip()):
+            # (the caption's whole first line)
+            s = t["size"] or 1.0
+            line = [o for o in texts if not o["rotated"] and abs(o["p0"][1] - t["p0"][1]) < 0.3 * s]
+            caps.append({"bbox": (min(o["bbox"][0] for o in line), min(o["bbox"][1] for o in line),
+                                  max(o["bbox"][2] for o in line), max(o["bbox"][3] for o in line))})
+    if caps and graphs:
+        for i in list(legend):
+            s = symbols[i]
+            if all(_caption_between(s, g["rect"], caps) for g in graphs):
+                del legend[i]
     for i in _unreadable_legend_keys(symbols, texts, blobs, graphs, hlines, legend):
         legend[i] = ""
     for rot in sorted({g["rot"] for g in graphs} - {0}):
@@ -314,7 +537,9 @@ def _unreadable_legend_keys(symbols, texts, blobs, graphs, hlines, legend):
     """Markers each followed by a word drawn as outlines that could not be
     read: legend keys, when they line up with each other just outside a
     graph, or (inside a graph) when at least three of them, all different
-    markers, are stacked in a column."""
+    markers, are stacked in a column - or two, when each sits on a line
+    sample (the legend of a line chart: cheyette2024limited-011's panels
+    (c) and (d), "Low/High localization ..." in outlines)."""
     unread = [{"text": "\x00", "value": None, "rotated": False, "bbox": b["bbox"],
                "center": b["center"], "size": b["size"], "idx": b["idx"],
                "p0": (b["bbox"][0], b["bbox"][1]), "p1": (b["bbox"][2], b["bbox"][1])}
@@ -347,7 +572,11 @@ def _unreadable_legend_keys(symbols, texts, blobs, graphs, hlines, legend):
         column = sorted((o for o in inner.values() if abs(o["cx"] - s["cx"]) < 1.0),
                         key=lambda o: o["cy"])
         sizes = [o["size"] for o in column]
-        if (len(column) >= 3 and len({symbol_signature(o) for o in column}) == len(column)
+        def on_sample(o):
+            return any(x0 < o["cx"] < x1 and abs(y - o["cy"]) <= 0.3 * o["size"]
+                       for x0, x1, y in hlines)
+        least = 2 if all(on_sample(o) for o in column) else 3
+        if (len(column) >= least and len({symbol_signature(o) for o in column}) == len(column)
                 and max(sizes) <= 2.0 * min(sizes)   # (shapes of one nominal size differ)
                 and all(b["cy"] - a["cy"] >= 0.8 * max(sizes) for a, b in zip(column, column[1:]))):
             keys.append(i)                  # rows of similar keys, one under another
@@ -384,8 +613,12 @@ class SeriesNamer:
         self.figure = []          # (rgb, signature, label) of keys outside all graphs
         self.by_outline = {}      # (graph no, shape, outline colour) -> label (white keys)
         self.swatches = {}        # graph no -> [(rgb, label)] of its colour swatches
+        self.page_colour = {}     # colour -> label / None, of every graph's swatches
+        self.keyed = set()        # numbers of the graphs with legend keys of their own
         self._figure_cache = {}
         self._near_cache = {}
+        self._shared = {}         # graph no -> shares two page swatch colours
+        self.symbols = symbols
         for i, label in legend.items():
             s = symbols[i]
             g = _nearest_graph(graphs, s)
@@ -397,12 +630,38 @@ class SeriesNamer:
             if label:
                 self.form_keys.setdefault(g["no"], {}).setdefault(
                     (s["shape"], bool(s.get("filled"))), []).append(label)
+            self.keyed.add(g["no"])
             if s["shape"] in ("rectangle", "square") and s["filled"]:
                 _claim(self.by_colour, (g["no"], color_name(s["rgb"])[1]), label)
+                if label:
+                    _claim(self.page_colour, color_name(s["rgb"])[1], label)
                 if label and s["rgb"]:
                     self.swatches.setdefault(g["no"], []).append((tuple(s["rgb"]), label))
-            if s["rgb"] and all(rect_distance(g["rect"], s["cx"], s["cy"]) > 0 for g in graphs):
+            # (wholly outside: the top key of Memory_systems_cacheDRAMdisk-051's
+            # legend, inside a plot, reaches 0.01 pt past its top edge)
+            if s["rgb"] and all(rect_distance(g["rect"], s["cx"], s["cy"]) > 0.5 * s["size"]
+                                for g in graphs):
                 self.figure.append((s["rgb"], symbol_signature(s), label))
+        # a swatch drawn as an outline only, among filled swatches of its
+        # size, is white (the legend box's colour shows through):
+        # Memory_systems_cacheDRAMdisk-051's "System Overhead + DRAM"
+        filled_labels = {lb for i, lb in legend.items()
+                         if symbols[i]["shape"] in ("rectangle", "square") and symbols[i]["filled"]}
+        for i, label in legend.items():
+            s = symbols[i]
+            if not label or s["filled"] or s["shape"] not in ("rectangle", "square") or \
+                    label in filled_labels:
+                continue
+            g = _nearest_graph(graphs, s)
+            sizes = [symbols[j]["size"] for j, lb in legend.items()
+                     if lb in filled_labels and symbols[j]["filled"] and
+                     _nearest_graph(graphs, symbols[j]) is g]
+            if not sizes or not any(abs(z - s["size"]) <= 0.1 * s["size"] for z in sizes):
+                continue
+            white = (1.0, 1.0, 1.0)
+            _claim(self.by_colour, (g["no"], color_name(white)[1]), label)
+            _claim(self.page_colour, color_name(white)[1], label)
+            self.swatches.setdefault(g["no"], []).append((white, label))
         # (near colours name nothing in a graph whose swatches are themselves
         # near each other: symbols-on-axes' swatches #ff0500, #ff0e00 ...
         # sample a continuous colour scale its markers are drawn along)
@@ -447,7 +706,30 @@ class SeriesNamer:
         if si in self.legend:
             return self.legend[si]
         return (self.by_colour.get((g["no"], color_name(s["rgb"])[1])) or self._figure_series(s)
-                or self._by_form(g, s) or self._by_near_swatch(g, s))
+                or self._by_form(g, s) or self._by_near_swatch(g, s) or self._page_swatch(g, s))
+
+    def _page_swatch(self, g, s):
+        """A graph with no legend of its own takes a series name from the
+        colour swatches of the page's other graphs, when that colour names
+        one series on the whole page: Seongmin-PhD-044's time panels have no
+        legend, their boxes coloured as in the legend of the panel beside
+        each.  The graph must share two or more of those colours: one bar
+        colour alone is no shared legend (Memory_systems_cacheDRAMdisk-051's
+        PERL bars are the light grey of the charts' "CPU Execution", but
+        stand for the whole time)."""
+        if g["no"] in self.keyed or not s.get("rgb"):
+            return ""
+        name = self.page_colour.get(color_name(s["rgb"])[1])
+        if not name:
+            return ""
+        if g["no"] not in self._shared:
+            near = set()
+            x0, y0, x1, y1 = g["rect"]
+            for o in self.symbols:
+                if o.get("rgb") and x0 <= o["cx"] <= x1 and y0 <= o["cy"] <= y1:
+                    near.add(color_name(o["rgb"])[1])
+            self._shared[g["no"]] = sum(1 for c in near if self.page_colour.get(c)) >= 2
+        return name if self._shared[g["no"]] else ""
 
     # largest difference in any channel (0..1) between a marker's colour
     # and the swatch that names it, and how much nearer that swatch must be

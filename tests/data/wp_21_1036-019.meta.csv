@@ -1,0 +1,2 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,,3,Discounting for 6 week delay from different up-front delays,R 4.0.3,R,11556,33,49,0.2,1

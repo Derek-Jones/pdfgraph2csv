@@ -1,0 +1,610 @@
+page,graph,symbol,series,legend_key,x_coord,x_group,y_coord,color,color_hex
+1,1,bar,CPU Execution,0,0.8,1 chan x 1 byte,0.260107985,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,0.8,1 chan x 1 byte,0.4207917534,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,0.8,1 chan x 1 byte,0.5635007274,gainsboro,#e6e6e6
+1,1,bar,CPU + DRAM,0,0.8,1 chan x 1 byte,0.6376696179,black,#000000
+1,1,bar,CPU + DRAM,0,0.8,1 chan x 1 byte,0.6376921567,black,#000000
+1,1,bar,CPU + DRAM,0,0.8,1 chan x 1 byte,0.6376694613,black,#000000
+1,1,bar,,0,0.8,1 chan x 1 byte,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,0.8,1 chan x 1 byte,0.6792929007,white,#ffffff
+1,1,bar,,0,0.8,1 chan x 1 byte,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,0.8,1 chan x 1 byte,0.6792929007,white,#ffffff
+1,1,bar,,0,0.8,1 chan x 1 byte,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,0.8,1 chan x 1 byte,0.6792929007,white,#ffffff
+1,1,bar,DRAM Latency,0,0.8,1 chan x 1 byte,2.8174990978,gray,#808080
+1,1,bar,DRAM Latency,0,0.8,1 chan x 1 byte,2.281409932,gray,#808080
+1,1,bar,DRAM Latency,0,0.8,1 chan x 1 byte,2.7409019624,gray,#808080
+1,1,bar,CPU Execution,0,1.6,2 chan x 1 byte,0.4246953704,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,1.6,2 chan x 1 byte,0.4581030691,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,1.6,2 chan x 1 byte,0.5657929676,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,1.6,1 chan x 2 bytes,0.2906106664,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,1.6,1 chan x 2 bytes,0.4443950188,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,1.6,1 chan x 2 bytes,0.5925055093,gainsboro,#e6e6e6
+1,1,bar,CPU + DRAM,0,1.6,2 chan x 1 byte,0.6376922883,black,#000000
+1,1,bar,CPU + DRAM,0,1.6,2 chan x 1 byte,0.6376921567,black,#000000
+1,1,bar,CPU + DRAM,0,1.6,2 chan x 1 byte,0.6376694613,black,#000000
+1,1,bar,CPU + DRAM,0,1.6,1 chan x 2 bytes,0.6376921567,black,#000000
+1,1,bar,CPU + DRAM,0,1.6,1 chan x 2 bytes,0.6376694613,black,#000000
+1,1,bar,CPU + DRAM,0,1.6,1 chan x 2 bytes,0.6376921567,black,#000000
+1,1,bar,,0,1.6,2 chan x 1 byte,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,1.6,2 chan x 1 byte,0.6581861345,white,#ffffff
+1,1,bar,,0,1.6,2 chan x 1 byte,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,1.6,2 chan x 1 byte,0.6582769163,white,#ffffff
+1,1,bar,,0,1.6,2 chan x 1 byte,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,1.6,2 chan x 1 byte,0.6581861345,white,#ffffff
+1,1,bar,,0,1.6,1 chan x 2 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,1.6,1 chan x 2 bytes,0.6581861345,white,#ffffff
+1,1,bar,,0,1.6,1 chan x 2 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,1.6,1 chan x 2 bytes,0.6582769163,white,#ffffff
+1,1,bar,,0,1.6,1 chan x 2 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,1.6,1 chan x 2 bytes,0.6581861345,white,#ffffff
+1,1,bar,DRAM Latency,0,1.6,2 chan x 1 byte,2.1415151934,gray,#808080
+1,1,bar,DRAM Latency,0,1.6,2 chan x 1 byte,2.1751725421,gray,#808080
+1,1,bar,DRAM Latency,0,1.6,2 chan x 1 byte,2.6376830671,gray,#808080
+1,1,bar,DRAM Latency,0,1.6,1 chan x 2 bytes,2.3447075351,gray,#808080
+1,1,bar,DRAM Latency,0,1.6,1 chan x 2 bytes,1.768288559,gray,#808080
+1,1,bar,DRAM Latency,0,1.6,1 chan x 2 bytes,1.9666921612,gray,#808080
+1,1,bar,CPU Execution,0,3.2,4 chan x 1 byte,0.4325026043,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,3.2,4 chan x 1 byte,0.4615073863,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,3.2,4 chan x 1 byte,0.5664057447,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,3.2,1 chan x 4 bytes,0.3256978283,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,3.2,1 chan x 4 bytes,0.3794860389,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,3.2,1 chan x 4 bytes,0.5915976914,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,3.2,2 chan x 2 bytes,0.4485936766,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,3.2,2 chan x 2 bytes,0.4690876657,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,3.2,2 chan x 2 bytes,0.5945027087,gainsboro,#e6e6e6
+1,1,bar,CPU + DRAM,0,3.2,4 chan x 1 byte,0.6376694613,black,#000000
+1,1,bar,CPU + DRAM,0,3.2,4 chan x 1 byte,0.6376694613,black,#000000
+1,1,bar,CPU + DRAM,0,3.2,4 chan x 1 byte,0.6376921567,black,#000000
+1,1,bar,CPU + DRAM,0,3.2,1 chan x 4 bytes,0.6376694613,black,#000000
+1,1,bar,CPU + DRAM,0,3.2,1 chan x 4 bytes,0.6376694613,black,#000000
+1,1,bar,CPU + DRAM,0,3.2,1 chan x 4 bytes,0.6376921567,black,#000000
+1,1,bar,CPU + DRAM,0,3.2,2 chan x 2 bytes,0.6376694613,black,#000000
+1,1,bar,CPU + DRAM,0,3.2,2 chan x 2 bytes,0.6376694613,black,#000000
+1,1,bar,CPU + DRAM,0,3.2,2 chan x 2 bytes,0.6376694726,black,#000000
+1,1,bar,,0,3.2,4 chan x 1 byte,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,3.2,4 chan x 1 byte,0.6575733574,white,#ffffff
+1,1,bar,,0,3.2,4 chan x 1 byte,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,3.2,4 chan x 1 byte,0.6495845599,white,#ffffff
+1,1,bar,DRAM Latency,0,3.2,4 chan x 1 byte,2.1539749941,gray,#808080
+1,1,bar,,0,3.2,4 chan x 1 byte,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,3.2,4 chan x 1 byte,0.6526711407,white,#ffffff
+1,1,bar,,0,3.2,1 chan x 4 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,3.2,1 chan x 4 bytes,0.648881001,white,#ffffff
+1,1,bar,DRAM Latency,0,3.2,1 chan x 4 bytes,2.138700958,gray,#808080
+1,1,bar,,0,3.2,1 chan x 4 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,3.2,1 chan x 4 bytes,0.6476781423,white,#ffffff
+1,1,bar,DRAM Latency,0,3.2,1 chan x 4 bytes,1.7531053046,gray,#808080
+1,1,bar,,0,3.2,1 chan x 4 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,3.2,1 chan x 4 bytes,0.6476781423,white,#ffffff
+1,1,bar,DRAM Latency,0,3.2,1 chan x 4 bytes,1.6185213008,gray,#808080
+1,1,bar,,0,3.2,2 chan x 2 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,3.2,2 chan x 2 bytes,0.6510824594,white,#ffffff
+1,1,bar,,0,3.2,2 chan x 2 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,3.2,2 chan x 2 bytes,0.6476781423,white,#ffffff
+1,1,bar,DRAM Latency,0,3.2,2 chan x 2 bytes,1.6941198365,gray,#808080
+1,1,bar,,0,3.2,2 chan x 2 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,3.2,2 chan x 2 bytes,0.6476781423,white,#ffffff
+1,1,bar,DRAM Latency,0,3.2,2 chan x 2 bytes,1.9307198769,gray,#808080
+1,1,bar,DRAM Latency,0,3.2,4 chan x 1 byte,2.1022066783,gray,#808080
+1,1,bar,DRAM Latency,0,3.2,4 chan x 1 byte,2.6172117735,gray,#808080
+1,1,bar,DRAM Latency,0,3.2,2 chan x 2 bytes,1.8874850494,gray,#808080
+1,1,bar,CPU Execution,0,6.4,2 chan x 4 bytes,0.4763955998,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,6.4,2 chan x 4 bytes,0.4623017269,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,6.4,2 chan x 4 bytes,0.5940941907,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,6.4,1 chan x 8 bytes,0.3158026132,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,6.4,1 chan x 8 bytes,0.3756051174,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,6.4,1 chan x 8 bytes,0.5408052799,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,6.4,4 chan x 2 bytes,0.4564916924,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,6.4,4 chan x 2 bytes,0.472196942,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,6.4,4 chan x 2 bytes,0.5950020086,gainsboro,#e6e6e6
+1,1,bar,CPU + DRAM,0,6.4,2 chan x 4 bytes,0.6376921567,black,#000000
+1,1,bar,CPU + DRAM,0,6.4,2 chan x 4 bytes,0.6376921567,black,#000000
+1,1,bar,CPU + DRAM,0,6.4,2 chan x 4 bytes,0.6376694613,black,#000000
+1,1,bar,CPU + DRAM,0,6.4,1 chan x 8 bytes,0.6376921567,black,#000000
+1,1,bar,CPU + DRAM,0,6.4,1 chan x 8 bytes,0.6376694613,black,#000000
+1,1,bar,CPU + DRAM,0,6.4,1 chan x 8 bytes,0.6376694613,black,#000000
+1,1,bar,CPU + DRAM,0,6.4,4 chan x 2 bytes,0.6376694613,black,#000000
+1,1,bar,CPU + DRAM,0,6.4,4 chan x 2 bytes,0.6376921567,black,#000000
+1,1,bar,CPU + DRAM,0,6.4,4 chan x 2 bytes,0.6376695452,black,#000000
+1,1,bar,,0,6.4,2 chan x 4 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,6.4,2 chan x 4 bytes,0.6487902192,white,#ffffff
+1,1,bar,DRAM Latency,0,6.4,2 chan x 4 bytes,1.7621153973,gray,#808080
+1,1,bar,,0,6.4,2 chan x 4 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,6.4,2 chan x 4 bytes,0.6430936619,white,#ffffff
+1,1,bar,DRAM Latency,0,6.4,2 chan x 4 bytes,1.6125070072,gray,#808080
+1,1,bar,,0,6.4,2 chan x 4 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,6.4,2 chan x 4 bytes,0.6444780842,white,#ffffff
+1,1,bar,DRAM Latency,0,6.4,2 chan x 4 bytes,1.5904016413,gray,#808080
+1,1,bar,,0,6.4,1 chan x 8 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,6.4,1 chan x 8 bytes,0.6482909194,white,#ffffff
+1,1,bar,DRAM Latency,0,6.4,1 chan x 8 bytes,2.0751990958,gray,#808080
+1,1,bar,,0,6.4,1 chan x 8 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,6.4,1 chan x 8 bytes,0.642390103,white,#ffffff
+1,1,bar,DRAM Latency,0,6.4,1 chan x 8 bytes,1.6510211817,gray,#808080
+1,1,bar,,0,6.4,1 chan x 8 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,6.4,1 chan x 8 bytes,0.6426851438,white,#ffffff
+1,1,bar,DRAM Latency,0,6.4,1 chan x 8 bytes,1.4430174051,gray,#808080
+1,1,bar,,0,6.4,4 chan x 2 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,6.4,4 chan x 2 bytes,0.6511732412,white,#ffffff
+1,1,bar,,0,6.4,4 chan x 2 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,6.4,4 chan x 2 bytes,0.6453859021,white,#ffffff
+1,1,bar,DRAM Latency,0,6.4,4 chan x 2 bytes,1.6812061269,gray,#808080
+1,1,bar,,0,6.4,4 chan x 2 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,6.4,4 chan x 2 bytes,0.6471788424,white,#ffffff
+1,1,bar,DRAM Latency,0,6.4,4 chan x 2 bytes,1.9247963651,gray,#808080
+1,1,bar,DRAM Latency,0,6.4,4 chan x 2 bytes,1.862111539,gray,#808080
+1,1,bar,CPU Execution,0,12.8,4 chan x 4 bytes,0.4847021336,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,12.8,4 chan x 4 bytes,0.4655925668,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,12.8,4 chan x 4 bytes,0.5947977495,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,12.8,2 chan x 8 bytes,0.4661826485,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,12.8,2 chan x 8 bytes,0.4601910503,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,12.8,2 chan x 8 bytes,0.5485898184,gainsboro,#e6e6e6
+1,1,bar,CPU + DRAM,0,12.8,4 chan x 4 bytes,0.6376921567,black,#000000
+1,1,bar,CPU + DRAM,0,12.8,4 chan x 4 bytes,0.6376694613,black,#000000
+1,1,bar,CPU + DRAM,0,12.8,4 chan x 4 bytes,0.6376694613,black,#000000
+1,1,bar,CPU + DRAM,0,12.8,2 chan x 8 bytes,0.6376921567,black,#000000
+1,1,bar,CPU + DRAM,0,12.8,2 chan x 8 bytes,0.6376694613,black,#000000
+1,1,bar,CPU + DRAM,0,12.8,2 chan x 8 bytes,0.6376921567,black,#000000
+1,1,bar,,0,12.8,4 chan x 4 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,12.8,4 chan x 4 bytes,0.648881001,white,#ffffff
+1,1,bar,DRAM Latency,0,12.8,4 chan x 4 bytes,1.7421887943,gray,#808080
+1,1,bar,,0,12.8,4 chan x 4 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,12.8,4 chan x 4 bytes,0.6430936619,white,#ffffff
+1,1,bar,DRAM Latency,0,12.8,4 chan x 4 bytes,1.6029976147,gray,#808080
+1,1,bar,,0,12.8,4 chan x 4 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,12.8,4 chan x 4 bytes,0.6445915614,white,#ffffff
+1,1,bar,DRAM Latency,0,12.8,4 chan x 4 bytes,1.5859079427,gray,#808080
+1,1,bar,,0,12.8,2 chan x 8 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,12.8,2 chan x 8 bytes,0.6481774421,white,#ffffff
+1,1,bar,DRAM Latency,0,12.8,2 chan x 8 bytes,1.7074193687,gray,#808080
+1,1,bar,,0,12.8,2 chan x 8 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,12.8,2 chan x 8 bytes,0.6422993212,white,#ffffff
+1,1,bar,DRAM Latency,0,12.8,2 chan x 8 bytes,1.5332998954,gray,#808080
+1,1,bar,,0,12.8,2 chan x 8 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,12.8,2 chan x 8 bytes,0.6426851438,white,#ffffff
+1,1,bar,DRAM Latency,0,12.8,2 chan x 8 bytes,1.420390044,gray,#808080
+1,1,bar,CPU Execution,0,25.6,4 chan x 8 bytes,0.4748977003,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,25.6,4 chan x 8 bytes,0.4645939671,gainsboro,#e6e6e6
+1,1,bar,CPU Execution,0,25.6,4 chan x 8 bytes,0.5498153726,gainsboro,#e6e6e6
+1,1,bar,CPU + DRAM,0,25.6,4 chan x 8 bytes,0.6376921567,black,#000000
+1,1,bar,CPU + DRAM,0,25.6,4 chan x 8 bytes,0.6376694613,black,#000000
+1,1,bar,CPU + DRAM,0,25.6,4 chan x 8 bytes,0.6376694613,black,#000000
+1,1,bar,,0,25.6,4 chan x 8 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,25.6,4 chan x 8 bytes,0.6481774421,white,#ffffff
+1,1,bar,DRAM Latency,0,25.6,4 chan x 8 bytes,1.6858133027,gray,#808080
+1,1,bar,,0,25.6,4 chan x 8 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,25.6,4 chan x 8 bytes,0.6422993212,white,#ffffff
+1,1,bar,DRAM Latency,0,25.6,4 chan x 8 bytes,1.5244940617,gray,#808080
+1,1,bar,,0,25.6,4 chan x 8 bytes,0.6414368942,darkgray,#b3b3b3
+1,1,bar,System Overhead + DRAM,0,25.6,4 chan x 8 bytes,0.6426851438,white,#ffffff
+1,1,bar,DRAM Latency,0,25.6,4 chan x 8 bytes,1.4165999042,gray,#808080
+1,2,bar,CPU Execution,0,0.8,1 chan x 1 byte,0.060407762,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,0.8,1 chan x 1 byte,0.0880054471,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,0.8,1 chan x 1 byte,0.0932102736,gainsboro,#e6e6e6
+1,2,bar,CPU + DRAM,0,0.8,1 chan x 1 byte,0.6101221546,black,#000000
+1,2,bar,CPU + DRAM,0,0.8,1 chan x 1 byte,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,0.8,1 chan x 1 byte,0.6101070243,black,#000000
+1,2,bar,,0,0.8,1 chan x 1 byte,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,0.8,1 chan x 1 byte,0.8570185725,white,#ffffff
+1,2,bar,,0,0.8,1 chan x 1 byte,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,0.8,1 chan x 1 byte,0.850013239,white,#ffffff
+1,2,bar,,0,0.8,1 chan x 1 byte,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,0.8,1 chan x 1 byte,0.9911185082,white,#ffffff
+1,2,bar,DRAM Latency,0,0.8,1 chan x 1 byte,1.7301887505,gray,#808080
+1,2,bar,DRAM Latency,0,0.8,1 chan x 1 byte,1.4641222528,gray,#808080
+1,2,bar,DRAM Latency,0,0.8,1 chan x 1 byte,1.9212996935,gray,#808080
+1,2,bar,CPU Execution,0,1.6,2 chan x 1 byte,0.0749025988,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,1.6,2 chan x 1 byte,0.1498127626,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,1.6,2 chan x 1 byte,0.2992094414,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,1.6,1 chan x 2 bytes,0.0839051331,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,1.6,1 chan x 2 bytes,0.090199342,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,1.6,1 chan x 2 bytes,0.1972008928,gainsboro,#e6e6e6
+1,2,bar,CPU + DRAM,0,1.6,2 chan x 1 byte,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,1.6,2 chan x 1 byte,0.6101221546,black,#000000
+1,2,bar,CPU + DRAM,0,1.6,2 chan x 1 byte,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,1.6,1 chan x 2 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,1.6,1 chan x 2 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,1.6,1 chan x 2 bytes,0.6101221546,black,#000000
+1,2,bar,,0,1.6,2 chan x 1 byte,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,1.6,2 chan x 1 byte,0.7106176949,white,#ffffff
+1,2,bar,,0,1.6,2 chan x 1 byte,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,1.6,2 chan x 1 byte,0.7359155729,white,#ffffff
+1,2,bar,,0,1.6,2 chan x 1 byte,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,1.6,2 chan x 1 byte,0.8122177252,white,#ffffff
+1,2,bar,,0,1.6,1 chan x 2 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,1.6,1 chan x 2 bytes,0.8025191966,white,#ffffff
+1,2,bar,,0,1.6,1 chan x 2 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,1.6,1 chan x 2 bytes,0.7805197262,white,#ffffff
+1,2,bar,,0,1.6,1 chan x 2 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,1.6,1 chan x 2 bytes,0.8159246511,white,#ffffff
+1,2,bar,DRAM Latency,0,1.6,2 chan x 1 byte,1.1989938344,gray,#808080
+1,2,bar,DRAM Latency,0,1.6,2 chan x 1 byte,1.2102053939,gray,#808080
+1,2,bar,DRAM Latency,0,1.6,2 chan x 1 byte,1.5703975488,gray,#808080
+1,2,bar,DRAM Latency,0,1.6,1 chan x 2 bytes,1.4939894843,gray,#808080
+1,2,bar,DRAM Latency,0,1.6,1 chan x 2 bytes,1.2476075197,gray,#808080
+1,2,bar,DRAM Latency,0,1.6,1 chan x 2 bytes,1.3120021182,gray,#808080
+1,2,bar,CPU Execution,0,3.2,4 chan x 1 byte,0.1822975377,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,3.2,4 chan x 1 byte,0.2672996181,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,3.2,4 chan x 1 byte,0.3395014564,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,3.2,1 chan x 4 bytes,0.096206075,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,3.2,1 chan x 4 bytes,0.0982032759,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,3.2,1 chan x 4 bytes,0.2494004616,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,3.2,2 chan x 2 bytes,0.1200968341,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,3.2,2 chan x 2 bytes,0.2096985287,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,3.2,2 chan x 2 bytes,0.366297235,gainsboro,#e6e6e6
+1,2,bar,CPU + DRAM,0,3.2,4 chan x 1 byte,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,3.2,4 chan x 1 byte,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,3.2,4 chan x 1 byte,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,3.2,1 chan x 4 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,3.2,1 chan x 4 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,3.2,1 chan x 4 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,3.2,2 chan x 2 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,3.2,2 chan x 2 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,3.2,2 chan x 2 bytes,0.6101069532,black,#000000
+1,2,bar,,0,3.2,4 chan x 1 byte,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,3.2,4 chan x 1 byte,0.6800242086,white,#ffffff
+1,2,bar,,0,3.2,4 chan x 1 byte,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,3.2,4 chan x 1 byte,0.6786170897,white,#ffffff
+1,2,bar,,0,3.2,4 chan x 1 byte,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,3.2,4 chan x 1 byte,0.7398191928,white,#ffffff
+1,2,bar,,0,3.2,1 chan x 4 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,3.2,1 chan x 4 bytes,0.7673109657,white,#ffffff
+1,2,bar,,0,3.2,1 chan x 4 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,3.2,1 chan x 4 bytes,0.7372167796,white,#ffffff
+1,2,bar,,0,3.2,1 chan x 4 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,3.2,1 chan x 4 bytes,0.753012823,white,#ffffff
+1,2,bar,,0,3.2,2 chan x 2 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,3.2,2 chan x 2 bytes,0.6914173318,white,#ffffff
+1,2,bar,,0,3.2,2 chan x 2 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,3.2,2 chan x 2 bytes,0.6925218444,white,#ffffff
+1,2,bar,,0,3.2,2 chan x 2 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,3.2,2 chan x 2 bytes,0.7107236071,white,#ffffff
+1,2,bar,DRAM Latency,0,3.2,4 chan x 1 byte,1.0632144343,gray,#808080
+1,2,bar,DRAM Latency,0,3.2,4 chan x 1 byte,1.1247040133,gray,#808080
+1,2,bar,DRAM Latency,0,3.2,4 chan x 1 byte,1.4274917728,gray,#808080
+1,2,bar,DRAM Latency,0,3.2,1 chan x 4 bytes,1.3908007716,gray,#808080
+1,2,bar,DRAM Latency,0,3.2,1 chan x 4 bytes,1.1273972084,gray,#808080
+1,2,bar,DRAM Latency,0,3.2,1 chan x 4 bytes,1.1583084313,gray,#808080
+1,2,bar,DRAM Latency,0,3.2,2 chan x 2 bytes,1.0740174755,gray,#808080
+1,2,bar,DRAM Latency,0,3.2,2 chan x 2 bytes,1.069599425,gray,#808080
+1,2,bar,DRAM Latency,0,3.2,2 chan x 2 bytes,1.1638158641,gray,#808080
+1,2,filled-square,DRAM Latency,1,6.4,,1.9977531488,gray,#808080
+1,2,open-square,DRAM Latency,1,6.4,,2.0006127774,black,#000000
+1,2,open-square,System Overhead + DRAM,1,6.4,,1.8571471799,black,#000000
+1,2,filled-square,CPU + DRAM,1,6.4,,1.7012747285,black,#000000
+1,2,open-square,CPU + DRAM,1,6.4,,1.7041192267,black,#000000
+1,2,filled-square,CPU Execution,1,6.4,,1.5621212693,gainsboro,#e6e6e6
+1,2,open-square,CPU Execution,1,6.4,,1.5649657676,black,#000000
+1,2,bar,CPU Execution,0,6.4,2 chan x 4 bytes,0.15701479,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,6.4,2 chan x 4 bytes,0.2328025118,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,6.4,2 chan x 4 bytes,0.3679010479,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,6.4,1 chan x 8 bytes,0.0967053752,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,6.4,1 chan x 8 bytes,0.10280289,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,6.4,1 chan x 8 bytes,0.2677081364,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,6.4,4 chan x 2 bytes,0.2364035255,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,6.4,4 chan x 2 bytes,0.2961077279,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,6.4,4 chan x 2 bytes,0.3996898288,gainsboro,#e6e6e6
+1,2,bar,CPU + DRAM,0,6.4,2 chan x 4 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,6.4,2 chan x 4 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,6.4,2 chan x 4 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,6.4,1 chan x 8 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,6.4,1 chan x 8 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,6.4,1 chan x 8 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,6.4,4 chan x 2 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,6.4,4 chan x 2 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,6.4,4 chan x 2 bytes,0.6101070712,black,#000000
+1,2,bar,,0,6.4,2 chan x 4 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,6.4,2 chan x 4 bytes,0.6756212884,white,#ffffff
+1,2,bar,,0,6.4,2 chan x 4 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,6.4,2 chan x 4 bytes,0.6800242086,white,#ffffff
+1,2,bar,,0,6.4,2 chan x 4 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,6.4,2 chan x 4 bytes,0.6878163181,white,#ffffff
+1,2,bar,,0,6.4,1 chan x 8 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,6.4,1 chan x 8 bytes,0.767810266,white,#ffffff
+1,2,bar,,0,6.4,1 chan x 8 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,6.4,1 chan x 8 bytes,0.7237205432,white,#ffffff
+1,2,bar,,0,6.4,1 chan x 8 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,6.4,1 chan x 8 bytes,0.729227976,white,#ffffff
+1,2,bar,,0,6.4,4 chan x 2 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,6.4,4 chan x 2 bytes,0.66690623,white,#ffffff
+1,2,bar,,0,6.4,4 chan x 2 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,6.4,4 chan x 2 bytes,0.6622158339,white,#ffffff
+1,2,bar,,0,6.4,4 chan x 2 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,6.4,4 chan x 2 bytes,0.6744259939,white,#ffffff
+1,2,bar,DRAM Latency,0,6.4,2 chan x 4 bytes,1.0204107879,gray,#808080
+1,2,bar,DRAM Latency,0,6.4,2 chan x 4 bytes,1.0001059122,gray,#808080
+1,2,bar,DRAM Latency,0,6.4,2 chan x 4 bytes,1.0473881303,gray,#808080
+1,2,bar,DRAM Latency,0,6.4,1 chan x 8 bytes,1.3737943034,gray,#808080
+1,2,bar,DRAM Latency,0,6.4,1 chan x 8 bytes,1.0758028521,gray,#808080
+1,2,bar,DRAM Latency,0,6.4,1 chan x 8 bytes,1.0810076786,gray,#808080
+1,2,bar,DRAM Latency,0,6.4,4 chan x 2 bytes,0.9802095548,gray,#808080
+1,2,bar,DRAM Latency,0,6.4,4 chan x 2 bytes,1.0057041268,gray,#808080
+1,2,bar,DRAM Latency,0,6.4,4 chan x 2 bytes,1.1062147747,gray,#808080
+1,2,bar,CPU Execution,0,12.8,4 chan x 4 bytes,0.2709006318,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,12.8,4 chan x 4 bytes,0.3109051709,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,12.8,4 chan x 4 bytes,0.3946968265,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,12.8,2 chan x 8 bytes,0.1531111701,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,12.8,2 chan x 8 bytes,0.2428036465,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,12.8,2 chan x 8 bytes,0.3665998412,gainsboro,#e6e6e6
+1,2,bar,CPU + DRAM,0,12.8,4 chan x 4 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,12.8,4 chan x 4 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,12.8,4 chan x 4 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,12.8,2 chan x 8 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,12.8,2 chan x 8 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,12.8,2 chan x 8 bytes,0.6101221546,black,#000000
+1,2,bar,,0,12.8,4 chan x 4 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,12.8,4 chan x 4 bytes,0.6563150131,white,#ffffff
+1,2,bar,,0,12.8,4 chan x 4 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,12.8,4 chan x 4 bytes,0.6551197186,white,#ffffff
+1,2,bar,,0,12.8,4 chan x 4 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,12.8,4 chan x 4 bytes,0.6611113213,white,#ffffff
+1,2,bar,,0,12.8,2 chan x 8 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,12.8,2 chan x 8 bytes,0.67521277,white,#ffffff
+1,2,bar,,0,12.8,2 chan x 8 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,12.8,2 chan x 8 bytes,0.6735181753,white,#ffffff
+1,2,bar,,0,12.8,2 chan x 8 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,12.8,2 chan x 8 bytes,0.6761205886,white,#ffffff
+1,2,bar,DRAM Latency,0,12.8,4 chan x 4 bytes,0.9459091425,gray,#808080
+1,2,bar,DRAM Latency,0,12.8,4 chan x 4 bytes,0.9445020237,gray,#808080
+1,2,bar,DRAM Latency,0,12.8,4 chan x 4 bytes,0.9983054053,gray,#808080
+1,2,bar,DRAM Latency,0,12.8,2 chan x 8 bytes,1.0075046337,gray,#808080
+1,2,bar,DRAM Latency,0,12.8,2 chan x 8 bytes,0.9678027008,gray,#808080
+1,2,bar,DRAM Latency,0,12.8,2 chan x 8 bytes,0.9866096758,gray,#808080
+1,2,open-square,CPU + DRAM,0,25.6,,0.6324166888,black,#000000
+1,2,open-square,CPU + DRAM,0,25.6,,0.6317736506,black,#000000
+1,2,bar,CPU Execution,0,25.6,4 chan x 8 bytes,0.2682982185,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,25.6,4 chan x 8 bytes,0.3184098046,gainsboro,#e6e6e6
+1,2,bar,CPU Execution,0,25.6,4 chan x 8 bytes,0.3905057307,gainsboro,#e6e6e6
+1,2,bar,CPU + DRAM,0,25.6,4 chan x 8 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,25.6,4 chan x 8 bytes,0.6101070243,black,#000000
+1,2,bar,CPU + DRAM,0,25.6,4 chan x 8 bytes,0.6101070243,black,#000000
+1,2,bar,,0,25.6,4 chan x 8 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,25.6,4 chan x 8 bytes,0.6522146992,white,#ffffff
+1,2,bar,,0,25.6,4 chan x 8 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,25.6,4 chan x 8 bytes,0.6509286228,white,#ffffff
+1,2,bar,,0,25.6,4 chan x 8 bytes,0.6126186784,darkgray,#b3b3b3
+1,2,bar,System Overhead + DRAM,0,25.6,4 chan x 8 bytes,0.6547112003,white,#ffffff
+1,2,bar,DRAM Latency,0,25.6,4 chan x 8 bytes,0.9317925635,gray,#808080
+1,2,bar,DRAM Latency,0,25.6,4 chan x 8 bytes,0.9194008397,gray,#808080
+1,2,bar,DRAM Latency,0,25.6,4 chan x 8 bytes,0.9412792677,gray,#808080
+1,3,bar,,0,0.1,1 x 8-bit x 100 Mhz,1.4027903793,gainsboro,#e6e6e6
+1,3,bar,,0,0.1,1 x 8-bit x 100 Mhz,1.3256583201,gainsboro,#e6e6e6
+1,3,bar,,0,0.1,1 x 8-bit x 100 Mhz,1.3028123107,gainsboro,#e6e6e6
+1,3,bar,,0,0.1,1 x 8-bit x 100 Mhz,0.8829397062,gainsboro,#e6e6e6
+1,3,bar,,0,0.1,1 x 8-bit x 100 Mhz,1.5555927564,gainsboro,#e6e6e6
+1,3,bar,,0,0.2,1 x 16-bit x 100 Mhz,1.3299553357,gainsboro,#e6e6e6
+1,3,bar,,0,0.2,1 x 16-bit x 100 Mhz,1.0338519004,gainsboro,#e6e6e6
+1,3,bar,,0,0.2,1 x 16-bit x 100 Mhz,0.9419638142,gainsboro,#e6e6e6
+1,3,bar,,0,0.2,1 x 16-bit x 100 Mhz,0.6868017383,gainsboro,#e6e6e6
+1,3,bar,,0,0.2,1 x 16-bit x 100 Mhz,1.0566979098,gainsboro,#e6e6e6
+1,3,bar,,0,0.2,2 x 8-bit x 100 Mhz,1.1019236834,gainsboro,#e6e6e6
+1,3,bar,,0,0.2,2 x 8-bit x 100 Mhz,0.9610042556,gainsboro,#e6e6e6
+1,3,bar,,0,0.2,2 x 8-bit x 100 Mhz,0.9329161392,gainsboro,#e6e6e6
+1,3,bar,,0,0.2,2 x 8-bit x 100 Mhz,0.7277430976,gainsboro,#e6e6e6
+1,3,bar,,0,0.2,2 x 8-bit x 100 Mhz,1.1647659607,gainsboro,#e6e6e6
+1,3,bar,,0,0.2,1 x 8-bit x 200 Mhz,1.3299553357,gainsboro,#e6e6e6
+1,3,bar,,0,0.2,1 x 8-bit x 200 Mhz,1.0338519004,gainsboro,#e6e6e6
+1,3,bar,,0,0.2,1 x 8-bit x 200 Mhz,0.9419638142,gainsboro,#e6e6e6
+1,3,bar,,0,0.2,1 x 8-bit x 200 Mhz,0.6868017383,gainsboro,#e6e6e6
+1,3,bar,,0,0.2,1 x 8-bit x 200 Mhz,1.0566979098,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,1 x 32-bit x 100 Mhz,1.2956674198,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,1 x 32-bit x 100 Mhz,0.9910077571,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,1 x 32-bit x 100 Mhz,0.794857188,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,1 x 32-bit x 100 Mhz,0.623959461,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,1 x 32-bit x 100 Mhz,0.8086681236,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,2 x 16-bit x 100 Mhz,1.0728904757,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,2 x 16-bit x 100 Mhz,0.8338957633,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,2 x 16-bit x 100 Mhz,0.7548735213,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,2 x 16-bit x 100 Mhz,0.645860379,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,2 x 16-bit x 100 Mhz,0.8629541734,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,4 x 8-bit x 100 Mhz,0.9567198412,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,4 x 8-bit x 100 Mhz,0.803904863,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,4 x 8-bit x 100 Mhz,0.7539284299,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,4 x 8-bit x 100 Mhz,0.7077449636,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,4 x 8-bit x 100 Mhz,0.9729124072,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,1 x 16-bit x 200 Mhz,1.2956674198,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,1 x 16-bit x 200 Mhz,0.9910077571,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,1 x 16-bit x 200 Mhz,0.794857188,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,1 x 16-bit x 200 Mhz,0.623959461,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,1 x 16-bit x 200 Mhz,0.8086681236,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,2 x 8-bit x 200 Mhz,1.0728904757,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,2 x 8-bit x 200 Mhz,0.8338957633,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,2 x 8-bit x 200 Mhz,0.7548735213,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,2 x 8-bit x 200 Mhz,0.645860379,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,2 x 8-bit x 200 Mhz,0.8629541734,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,1 x 8-bit x 400 Mhz,1.2956674198,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,1 x 8-bit x 400 Mhz,0.9910077571,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,1 x 8-bit x 400 Mhz,0.794857188,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,1 x 8-bit x 400 Mhz,0.623959461,gainsboro,#e6e6e6
+1,3,bar,,0,0.4,1 x 8-bit x 400 Mhz,0.8086681236,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 64-bit x 100 Mhz,1.2809113928,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 64-bit x 100 Mhz,0.9686279928,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 64-bit x 100 Mhz,0.7639211963,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 64-bit x 100 Mhz,0.5968290373,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 64-bit x 100 Mhz,0.6849115555,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,2 x 32-bit x 100 Mhz,1.0628977094,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,2 x 32-bit x 100 Mhz,0.814855322,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,2 x 32-bit x 100 Mhz,0.6820384777,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,2 x 32-bit x 100 Mhz,0.6077920975,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,2 x 32-bit x 100 Mhz,0.712029378,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,4 x 16-bit x 100 Mhz,0.9438665982,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,4 x 16-bit x 100 Mhz,0.7501228619,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,4 x 16-bit x 100 Mhz,0.6687189896,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,4 x 16-bit x 100 Mhz,0.6387280892,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,4 x 16-bit x 100 Mhz,0.7667690717,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 32-bit x 200 Mhz,1.2809113928,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 32-bit x 200 Mhz,0.9686279928,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 32-bit x 200 Mhz,0.7639211963,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 32-bit x 200 Mhz,0.5968290373,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 32-bit x 200 Mhz,0.6849115555,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,2 x 16-bit x 200 Mhz,1.0628977094,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,2 x 16-bit x 200 Mhz,0.814855322,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,2 x 16-bit x 200 Mhz,0.6820384777,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,2 x 16-bit x 200 Mhz,0.6077920975,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,2 x 16-bit x 200 Mhz,0.712029378,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,4 x 8-bit x 200 Mhz,0.9438665982,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,4 x 8-bit x 200 Mhz,0.7501228619,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,4 x 8-bit x 200 Mhz,0.6687189896,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,4 x 8-bit x 200 Mhz,0.6387280892,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,4 x 8-bit x 200 Mhz,0.7667690717,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 16-bit x 400 Mhz,1.2809113928,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 16-bit x 400 Mhz,0.9686279928,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 16-bit x 400 Mhz,0.7639211963,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 16-bit x 400 Mhz,0.5968290373,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 16-bit x 400 Mhz,0.6849115555,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,2 x 8-bit x 400 Mhz,1.0609823241,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,2 x 8-bit x 400 Mhz,0.814855322,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,2 x 8-bit x 400 Mhz,0.6820384777,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,2 x 8-bit x 400 Mhz,0.6077920975,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,2 x 8-bit x 400 Mhz,0.712029378,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 8-bit x 800 Mhz,1.2809113928,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 8-bit x 800 Mhz,0.9686279928,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 8-bit x 800 Mhz,0.7639211963,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 8-bit x 800 Mhz,0.5968290373,gainsboro,#e6e6e6
+1,3,bar,,0,0.8,1 x 8-bit x 800 Mhz,0.6849115555,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 64-bit x 100 Mhz,1.0557402172,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 64-bit x 100 Mhz,0.8067779408,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 64-bit x 100 Mhz,0.6668036043,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 64-bit x 100 Mhz,0.5911080841,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 64-bit x 100 Mhz,0.636812704,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,4 x 32-bit x 100 Mhz,0.9386370925,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,4 x 32-bit x 100 Mhz,0.737735864,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,4 x 32-bit x 100 Mhz,0.6410971183,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,4 x 32-bit x 100 Mhz,0.6058767123,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,4 x 32-bit x 100 Mhz,0.6649008203,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,1 x 64-bit x 200 Mhz,1.2775846711,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,1 x 64-bit x 200 Mhz,0.9576775338,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,1 x 64-bit x 200 Mhz,0.7520130447,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,1 x 64-bit x 200 Mhz,0.5887264537,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,1 x 64-bit x 200 Mhz,0.6230269708,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 32-bit x 200 Mhz,1.0557402172,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 32-bit x 200 Mhz,0.8067779408,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 32-bit x 200 Mhz,0.6668036043,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 32-bit x 200 Mhz,0.5911080841,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 32-bit x 200 Mhz,0.636812704,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,4 x 16-bit x 200 Mhz,0.9386370925,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,4 x 16-bit x 200 Mhz,0.737735864,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,4 x 16-bit x 200 Mhz,0.6410971183,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,4 x 16-bit x 200 Mhz,0.6058767123,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,4 x 16-bit x 200 Mhz,0.6649008203,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,1 x 32-bit x 400 Mhz,1.2775846711,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,1 x 32-bit x 400 Mhz,0.9576775338,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,1 x 32-bit x 400 Mhz,0.7520130447,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,1 x 32-bit x 400 Mhz,0.5887264537,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,1 x 32-bit x 400 Mhz,0.6230269708,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 16-bit x 400 Mhz,1.0557402172,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 16-bit x 400 Mhz,0.8067779408,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 16-bit x 400 Mhz,0.6668036043,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 16-bit x 400 Mhz,0.5911080841,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 16-bit x 400 Mhz,0.636812704,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,4 x 8-bit x 400 Mhz,0.9386370925,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,4 x 8-bit x 400 Mhz,0.737735864,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,4 x 8-bit x 400 Mhz,0.6410971183,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,4 x 8-bit x 400 Mhz,0.6058767123,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,4 x 8-bit x 400 Mhz,0.6649008203,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,1 x 16-bit x 800 Mhz,1.2775846711,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,1 x 16-bit x 800 Mhz,0.9576775338,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,1 x 16-bit x 800 Mhz,0.7520130447,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,1 x 16-bit x 800 Mhz,0.5887264537,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,1 x 16-bit x 800 Mhz,0.6230269708,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 8-bit x 800 Mhz,1.0557402172,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 8-bit x 800 Mhz,0.8067779408,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 8-bit x 800 Mhz,0.6668036043,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 8-bit x 800 Mhz,0.5911080841,gainsboro,#e6e6e6
+1,3,bar,,0,1.6,2 x 8-bit x 800 Mhz,0.636812704,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 64-bit x 100 Mhz,0.9348189233,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 64-bit x 100 Mhz,0.7339302959,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 64-bit x 100 Mhz,0.631104352,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 64-bit x 100 Mhz,0.5896841464,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 64-bit x 100 Mhz,0.6168145701,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,2 x 64-bit x 200 Mhz,1.0538374332,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,2 x 64-bit x 200 Mhz,0.8010569876,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,2 x 64-bit x 200 Mhz,0.6620403437,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,2 x 64-bit x 200 Mhz,0.5839757943,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,2 x 64-bit x 200 Mhz,0.6030288369,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 32-bit x 200 Mhz,0.9348189233,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 32-bit x 200 Mhz,0.7339302959,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 32-bit x 200 Mhz,0.631104352,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 32-bit x 200 Mhz,0.5896841464,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 32-bit x 200 Mhz,0.6168145701,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,1 x 64-bit x 400 Mhz,1.2766269784,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,1 x 64-bit x 400 Mhz,0.9557747498,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,1 x 64-bit x 400 Mhz,0.7448807549,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,1 x 64-bit x 400 Mhz,0.5839757943,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,1 x 64-bit x 400 Mhz,0.5958713447,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,2 x 32-bit x 400 Mhz,1.0538374332,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,2 x 32-bit x 400 Mhz,0.8020146802,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,2 x 32-bit x 400 Mhz,0.6620403437,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,2 x 32-bit x 400 Mhz,0.5839757943,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,2 x 32-bit x 400 Mhz,0.6030288369,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 16-bit x 400 Mhz,0.9348189233,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 16-bit x 400 Mhz,0.7339302959,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 16-bit x 400 Mhz,0.631104352,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 16-bit x 400 Mhz,0.5896841464,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 16-bit x 400 Mhz,0.6168145701,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,1 x 32-bit x 800 Mhz,1.2766269784,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,1 x 32-bit x 800 Mhz,0.9557747498,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,1 x 32-bit x 800 Mhz,0.7448807549,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,1 x 32-bit x 800 Mhz,0.5839757943,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,1 x 32-bit x 800 Mhz,0.5958713447,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,2 x 16-bit x 800 Mhz,1.0538374332,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,2 x 16-bit x 800 Mhz,0.8020146802,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,2 x 16-bit x 800 Mhz,0.6620403437,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,2 x 16-bit x 800 Mhz,0.5839757943,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,2 x 16-bit x 800 Mhz,0.6030288369,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 8-bit x 800 Mhz,0.9348189233,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 8-bit x 800 Mhz,0.7339302959,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 8-bit x 800 Mhz,0.631104352,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 8-bit x 800 Mhz,0.5896841464,gainsboro,#e6e6e6
+1,3,bar,,0,3.2,4 x 8-bit x 800 Mhz,0.6168145701,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,4 x 64-bit x 200 Mhz,0.9348189233,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,4 x 64-bit x 200 Mhz,0.7310698193,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,4 x 64-bit x 200 Mhz,0.6268199376,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,4 x 64-bit x 200 Mhz,0.5830181017,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,4 x 64-bit x 200 Mhz,0.5939685607,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,2 x 64-bit x 400 Mhz,1.0528797406,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,2 x 64-bit x 400 Mhz,0.8010569876,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,2 x 64-bit x 400 Mhz,0.6577685306,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,2 x 64-bit x 400 Mhz,0.57969138,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,2 x 64-bit x 400 Mhz,0.5868362709,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,4 x 32-bit x 400 Mhz,0.9348189233,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,4 x 32-bit x 400 Mhz,0.7310698193,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,4 x 32-bit x 400 Mhz,0.6268199376,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,4 x 32-bit x 400 Mhz,0.5830181017,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,4 x 32-bit x 400 Mhz,0.5939685607,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,1 x 64-bit x 800 Mhz,1.2756692858,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,1 x 64-bit x 800 Mhz,0.9548296584,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,1 x 64-bit x 800 Mhz,0.7429779709,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,1 x 64-bit x 800 Mhz,0.5820856115,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,1 x 64-bit x 800 Mhz,0.5839757943,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,2 x 32-bit x 800 Mhz,1.0528797406,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,2 x 32-bit x 800 Mhz,0.8010569876,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,2 x 32-bit x 800 Mhz,0.6577685306,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,2 x 32-bit x 800 Mhz,0.57969138,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,2 x 32-bit x 800 Mhz,0.5868362709,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,4 x 16-bit x 800 Mhz,0.9348189233,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,4 x 16-bit x 800 Mhz,0.7310698193,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,4 x 16-bit x 800 Mhz,0.6268199376,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,4 x 16-bit x 800 Mhz,0.5830181017,gainsboro,#e6e6e6
+1,3,bar,,0,6.4,4 x 16-bit x 800 Mhz,0.5939685607,gainsboro,#e6e6e6
+1,3,bar,,0,12.8,4 x 64-bit x 400 Mhz,0.9338738319,gainsboro,#e6e6e6
+1,3,bar,,0,12.8,4 x 64-bit x 400 Mhz,0.7296458816,gainsboro,#e6e6e6
+1,3,bar,,0,12.8,4 x 64-bit x 400 Mhz,0.6249171536,gainsboro,#e6e6e6
+1,3,bar,,0,12.8,4 x 64-bit x 400 Mhz,0.57969138,gainsboro,#e6e6e6
+1,3,bar,,0,12.8,4 x 64-bit x 400 Mhz,0.5839757943,gainsboro,#e6e6e6
+1,3,bar,,0,12.8,2 x 64-bit x 800 Mhz,1.0528797406,gainsboro,#e6e6e6
+1,3,bar,,0,12.8,2 x 64-bit x 800 Mhz,0.8010569876,gainsboro,#e6e6e6
+1,3,bar,,0,12.8,2 x 64-bit x 800 Mhz,0.6577685306,gainsboro,#e6e6e6
+1,3,bar,,0,12.8,2 x 64-bit x 800 Mhz,0.5787336874,gainsboro,#e6e6e6
+1,3,bar,,0,12.8,2 x 64-bit x 800 Mhz,0.57969138,gainsboro,#e6e6e6
+1,3,bar,,0,12.8,4 x 32-bit x 800 Mhz,0.9338738319,gainsboro,#e6e6e6
+1,3,bar,,0,12.8,4 x 32-bit x 800 Mhz,0.7296458816,gainsboro,#e6e6e6
+1,3,bar,,0,12.8,4 x 32-bit x 800 Mhz,0.6249171536,gainsboro,#e6e6e6
+1,3,bar,,0,12.8,4 x 32-bit x 800 Mhz,0.57969138,gainsboro,#e6e6e6
+1,3,bar,,0,12.8,4 x 32-bit x 800 Mhz,0.5839757943,gainsboro,#e6e6e6
+1,3,bar,,0,25.6,4 x 64-bit x 800 Mhz,0.9338738319,gainsboro,#e6e6e6
+1,3,bar,,0,25.6,4 x 64-bit x 800 Mhz,0.7296458816,gainsboro,#e6e6e6
+1,3,bar,,0,25.6,4 x 64-bit x 800 Mhz,0.623959461,gainsboro,#e6e6e6
+1,3,bar,,0,25.6,4 x 64-bit x 800 Mhz,0.5778011972,gainsboro,#e6e6e6
+1,3,bar,,0,25.6,4 x 64-bit x 800 Mhz,0.57969138,gainsboro,#e6e6e6

@@ -8,7 +8,7 @@ import math
 from .context import PAGE
 from .geometry import (
     axis_aligned, bbox_of, frame_rect, median, merge_collinear, overlap_area, rect_area,
-    rect_distance, straight_segments, to_frame, vertices)
+    rect_distance, rects_gap, straight_segments, to_frame, vertices)
 from .scales import map_value
 from .titles import find_title
 
@@ -238,20 +238,50 @@ def merge_twin_axes(graphs):
     return out
 
 
+def _agree(ma, mb, p, tol):
+    """Do two value mappings agree at position p, to within what tol points
+    of position mean there?  (w21074-042's right labels stand 0.2 pt above
+    the left ones.)"""
+    va, vb = map_value(ma, p), map_value(mb, p)
+    if va is None or vb is None:
+        return False
+    vt = map_value(ma, p + tol)
+    slack = abs(vt - va) if vt is not None else 0.0
+    return abs(va - vb) <= max(slack, 1e-3 * max(abs(va), abs(vb), 1e-12))
+
+
+def _same_values(a, b, tol=0.5):
+    """Do two numeric scales give the same values at the labelled ticks of
+    each (two or more labels on each side)?"""
+    ma, mb = a.get("map"), b.get("map")
+    if not ma or not mb or "nominal" in (ma["kind"], mb["kind"]):
+        return False
+    pts = list(a.get("ticks", ())) + list(b.get("ticks", ()))
+    if len(a.get("ticks", ())) < 2 or len(b.get("ticks", ())) < 2:
+        return False
+    return all(_agree(ma, mb, p, tol) for p, _ in pts)
+
+
 def _mirrored(a, b):
     """Whether axis b, opposite axis a, repeats a's scale: the same series of
     tick marks (one set within the other, as one side may lack the minor
     ticks), and labels that do not say otherwise.  The user asked for such
     ticks to be treated as one scale unless the labels differ: labels that
     give other values at those ticks make b a second scale; labels that are
-    words opposite numbers (body text beside the plot) do not."""
+    words opposite numbers (body text beside the plot) do not.
+
+    A side with fewer than three tick marks (w21074-042, Excel: the right
+    side has none, only the frame's corners, labelled 0% and 100%, its
+    other labels beside the left side's gridlines) repeats the scale when
+    two or more numeric labels give the same values as the other side at
+    the same places."""
     ta, tb = a.get("tick_pos") or [], b.get("tick_pos") or []
     small, big = (ta, tb) if len(ta) <= len(tb) else (tb, ta)
     if len(small) < 3:
-        return False
+        return _same_values(a, b)
     tol = max(0.5, 0.005 * (max(big) - min(big) if big else 0))
     # (a tick at an end of the axis may be lost in the frame's corner)
-    big = list(big) + [a["lo"], a["hi"], b["lo"], b["hi"]]
+    big = [*list(big), a["lo"], a["hi"], b["lo"], b["hi"]]
     if sum(1 for p in small if any(abs(p - q) <= tol for q in big)) < 0.9 * len(small):
         return False
     ma, mb = a.get("map"), b.get("map")
@@ -261,11 +291,8 @@ def _mirrored(a, b):
         return True                      # words opposite numbers: not a scale
     if mb["kind"] == "nominal":
         return [v for _, v in ma["ticks"]] == [v for _, v in mb["ticks"]]
-    for p, _ in b.get("ticks", ()):
-        va, vb = map_value(ma, p), map_value(mb, p)
-        if va is None or vb is None or abs(va - vb) > 1e-3 * max(abs(va), abs(vb), 1e-12):
-            return False                 # other values: a second scale
-    return True
+    # (other values: a second scale)
+    return all(_agree(ma, mb, p, tol) for p, _ in b.get("ticks", ()))
 
 
 def dark_frame_lines(paths):
@@ -484,20 +511,13 @@ def _graphs_at(graphs, x, y):
         grid = {}
         for k, g in enumerate(graphs):
             x0, y0, x1, y1 = g["rect"]
-            for gx in range(int(math.floor(x0 / cell)), int(math.floor(x1 / cell)) + 1):
-                for gy in range(int(math.floor(y0 / cell)), int(math.floor(y1 / cell)) + 1):
+            for gx in range(math.floor(x0 / cell), math.floor(x1 / cell) + 1):
+                for gy in range(math.floor(y0 / cell), math.floor(y1 / cell) + 1):
                     grid.setdefault((gx, gy), []).append(k)
         cache["at"] = (cell, grid)
     cell, grid = cache["at"]
-    ks = grid.get((int(math.floor(x / cell)), int(math.floor(y / cell))), ())
+    ks = grid.get((math.floor(x / cell), math.floor(y / cell)), ())
     return [graphs[k] for k in ks if rect_distance(graphs[k]["rect"], x, y) == 0]
-
-
-def rects_gap(a, b):
-    """Distance between two rectangles (0 when they meet)."""
-    dx = max(a[0] - b[2], 0, b[0] - a[2])
-    dy = max(a[1] - b[3], 0, b[1] - a[3])
-    return math.hypot(dx, dy)
 
 
 def nearest_to_frame(graphs, frame):

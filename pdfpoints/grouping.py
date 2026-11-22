@@ -43,8 +43,8 @@ class BoxGrid:
 
     def _span(self, x0, y0, x1, y1):
         c = self.cell
-        return (range(int(math.floor(x0 / c)), int(math.floor(x1 / c)) + 1),
-                range(int(math.floor(y0 / c)), int(math.floor(y1 / c)) + 1))
+        return (range(math.floor(x0 / c), math.floor(x1 / c) + 1),
+                range(math.floor(y0 / c), math.floor(y1 / c) + 1))
 
     def add(self, item, box):
         xs, ys = self._span(*box)

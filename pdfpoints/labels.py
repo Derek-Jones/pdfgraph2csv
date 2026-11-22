@@ -126,7 +126,7 @@ def _label_anchor(tx, orient, axis_pos):
     ang = abs(tx.get("angle", 0.0)) % 180
     if orient == "x" and tx["rotated"] and abs(ang - 90) <= 15:
         return tx["center"][i]             # upright text: centred on its tick
-    if orient == "x" and tx["rotated"] or orient == "y" and abs(ang - 90) < 75 and tx["rotated"]:
+    if (orient == "x" and tx["rotated"]) or (orient == "y" and abs(ang - 90) < 75 and tx["rotated"]):
         p0, p1 = tx["p0"], tx["p1"]
         end = p0 if abs(p0[1 - i] - axis_pos) < abs(p1[1 - i] - axis_pos) else p1
         # the middle of the text's end, not its baseline end: 0.35 em up
@@ -195,14 +195,29 @@ def nominal_axis(g, orient, line, debug):
         # nearest candidate of each place defines the row (captions, titles
         # and the inner letters of slanted labels lie further away)
         nearest = {}
-        for d, i, j, gp, s in cands:
+        for _d, i, _j, gp, _s in cands:
             nearest[i] = min(nearest.get(i, gp), gp)
         mg = median(nearest.values())
         ms = median(s for d, i, j, gp, s in cands if abs(gp - nearest[i]) < 1e-9)
-        cands = [c for c in cands if abs(c[3] - mg) <= 0.6 * ms and abs(c[4] - ms) <= 0.25 * ms]
+        # long names staggered over two rows, alternate places in each
+        # (Teaching-disciplined-softdev-008, Fig. 4: "Exercise 2", "Exercise
+        # 4" ... on the first row, "Exercise 3", "Exercise 5" ... a line
+        # further out): the places whose nearest label lies a line beyond
+        # the first row take their labels from the second row
+        row2 = {}
+        first = sorted(i for i, gp in nearest.items() if abs(gp - mg) <= 0.6 * ms)
+        far = sorted(i for i, gp in nearest.items() if 0.6 * ms < gp - mg <= 2.0 * ms)
+        if len(first) >= 2 and len(far) >= 2:
+            both = sorted(first + far)
+            rows = [i in far for i in both]
+            if all(a != b for a, b in zip(rows, rows[1:])):
+                mg2 = median(nearest[i] for i in far)
+                row2 = dict.fromkeys(far, mg2)
+        cands = [c for c in cands if abs(c[4] - ms) <= 0.25 * ms and
+                 abs(c[3] - row2.get(c[1], mg)) <= 0.6 * ms]
         cands.sort()
         used_t, used_l, pairs = set(), set(), []
-        for d, i, j, gp, s in cands:
+        for d, i, j, _gp, _s in cands:
             if i in used_t or j in used_l:
                 continue
             used_t.add(i)
@@ -270,7 +285,8 @@ def split_labels_at_ticks(ticks, orient, numeric):
             out.append(tx)
             continue
         n = len(gl)
-        centre = lambda i, j: (gl[i][1][k] + gl[j - 1][2][k]) / 2
+        def centre(i, j, gl=gl):
+            return (gl[i][1][k] + gl[j - 1][2][k]) / 2
         # dynamic programme: best[i][m] = (cost, number of groups, previous
         # state) for glyphs[:i] cut into groups, the last one centred on
         # tick m-1 (ticks may stay unlabelled)
@@ -328,7 +344,20 @@ def split_labels_at_ticks(ticks, orient, numeric):
 def assign_labels(ticks, orient, outer, sign, numeric):
     """Pair each tick with the numeric label just beyond it (on the `sign`
     side of `outer`, centred on the tick).  Each label and each tick is used
-    once, best matches first.  Returns a LabelPairs list of (tick, value)."""
+    once, best matches first.  Returns a LabelPairs list of (tick, value).
+
+    A y label turned along the axis may end at its tick instead
+    (Seongmin-PhD-044: ggplot's turned y labels, justified to the tick):
+    pairing by either end is used only when it pairs two or more labels
+    more than centring does (an end may lie near the next tick)."""
+    centred = _assign_labels(ticks, orient, outer, sign, numeric, False)
+    if orient != "y":
+        return centred
+    ends = _assign_labels(ticks, orient, outer, sign, numeric, True)
+    return ends if len(ends) >= len(centred) + 2 else centred
+
+
+def _assign_labels(ticks, orient, outer, sign, numeric, by_ends):
     spacing = min((b - a for a, b in zip(ticks, ticks[1:])), default=0) or 1e9
     ordered = all(a <= b for a, b in zip(ticks, ticks[1:]))
     cands = []
@@ -338,10 +367,15 @@ def assign_labels(ticks, orient, outer, sign, numeric):
         cx, cy = tx["center"]
         # ref: the label's position along the axis; gap: its distance
         # beyond the tick ends; ptol: how far off-centre it may be
+        refs = None
         if orient == "y":           # tick is horizontal, labels left/right
             ref = cy
             gap = (outer - x1) if sign < 0 else (x0 - outer)
             ptol = 0.8 * size
+            ang = abs(tx.get("angle", 0.0)) % 180
+            if by_ends and tx["rotated"] and abs(ang - 90) <= 15:
+                # (either end may point at the tick, at a small cost)
+                refs = [(cy, 0.0), (y0, 0.3 * size), (y1, 0.3 * size)]
         else:                       # tick is vertical, labels below/above
             ang = abs(tx.get("angle", 0.0)) % 180
             if tx["rotated"] and abs(ang - 90) > 15:
@@ -358,18 +392,19 @@ def assign_labels(ticks, orient, outer, sign, numeric):
         if gap < -0.5 * size or gap > 5 * size:
             continue                          # on the wrong side, or too far
         lim = min(ptol, 0.5 * spacing + 1e-9)
-        # the ticks it may be centred on (by bisection: rows of ticks can
-        # be long and labels many)
-        if ordered:
-            near = range(bisect.bisect_left(ticks, ref - lim),
-                         bisect.bisect_right(ticks, ref + lim))
-        else:
-            near = range(len(ticks))
-        for i in near:
-            dperp = abs(ref - ticks[i])
-            if dperp > lim:
-                continue                      # not centred on this tick
-            cands.append((dperp + 0.2 * max(gap, 0), i, j))
+        for at, cost in refs or [(ref, 0.0)]:
+            # the ticks it may be centred on (by bisection: rows of ticks
+            # can be long and labels many)
+            if ordered:
+                near = range(bisect.bisect_left(ticks, at - lim),
+                             bisect.bisect_right(ticks, at + lim))
+            else:
+                near = range(len(ticks))
+            for i in near:
+                dperp = abs(at - ticks[i])
+                if dperp > lim:
+                    continue                  # not centred on this tick
+                cands.append((dperp + cost + 0.2 * max(gap, 0), i, j))
     # greedy matching: the best centred, closest pairs first
     cands.sort()
     used_t, used_x, trip = set(), set(), []
@@ -421,7 +456,11 @@ def resolve_shared_labels(axes):
     with too few labels are dropped.  Labels that one axis reads as a
     numeric scale go to it rather than to a nearer axis that takes them for
     categories (a grid line of a plot beside the y labels of an inset in
-    it)."""
+    it) - but never across another claimant's axis line: a label lies on
+    the outside of its axis, so an axis whose line runs between the label
+    and a second claimant takes it (Memory_systems_cacheDRAMdisk-051: bar
+    edges inside a bar chart read as ticks and fitted its category labels
+    0.8, 1.6, ... 25.6 to log and linear scales)."""
     def dist(a, tx):
         b = tx["bbox"]
         lo, hi = (b[0], b[2]) if a["orient"] == "y" else (b[1], b[3])
@@ -430,14 +469,30 @@ def resolve_shared_labels(axes):
         if a.get("inside") and ((lo + hi) / 2 - a["pos"]) * a["inside"] > 0:
             d += 1000.0
         return d
+    def across(a, b, tx):
+        """The line of axis a runs between label tx and axis b."""
+        if not a["has_line"] or a["orient"] != b["orient"]:
+            return False
+        k = 0 if a["orient"] == "x" else 1
+        c = tx["center"][k]
+        if not a["lo"] - 0.5 <= c <= a["hi"] + 0.5:
+            return False
+        lab = tx["center"][1 - k]
+        return (lab - a["pos"]) * (b["pos"] - a["pos"]) < 0 and abs(b["pos"] - a["pos"]) > 0.5
+    claims = {}
+    for ai, a in enumerate(axes):
+        for _, tx in a.get("labels", ()):
+            claims.setdefault(id(tx), []).append(ai)
     owner = {}
     for ai, a in enumerate(axes):
         cat = 1 if a["map"] and a["map"]["kind"] == "nominal" else 0
         for _, tx in a.get("labels", ()):
-            d = (cat, dist(a, tx))
             k = id(tx)
+            if any(aj != ai and across(axes[aj], a, tx) for aj in claims[k]):
+                continue
+            d = (cat, dist(a, tx))
             if k not in owner or d[0] < owner[k][0][0] or \
-                    d[0] == owner[k][0][0] and d[1] < owner[k][0][1] - 1e-6:
+                    (d[0] == owner[k][0][0] and d[1] < owner[k][0][1] - 1e-6):
                 owner[k] = (d, ai)
     out = []
     for ai, a in enumerate(axes):
@@ -445,7 +500,7 @@ def resolve_shared_labels(axes):
         if not labels:
             out.append(a)
             continue
-        kept = [(tv, tx) for tv, tx in labels if owner[id(tx)][1] == ai]
+        kept = [(tv, tx) for tv, tx in labels if id(tx) in owner and owner[id(tx)][1] == ai]
         if len(kept) == len(labels):
             out.append(a)
             continue

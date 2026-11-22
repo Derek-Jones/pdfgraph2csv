@@ -1,20 +1,11 @@
-"""Small geometry helpers shared by all analysis steps: 2-D affine
-matrices, bounding boxes, flattening of Bezier subpaths, recognising
-axis-aligned segments and rectangles, distances and frame rotations.
+"""Small geometry helpers shared by all analysis steps: bounding boxes,
+flattening of Bezier subpaths, recognising axis-aligned segments and
+rectangles, areas, distances and frame rotations (PDF matrices: see
+pdfminer.utils.mult_matrix and apply_matrix_pt).
 """
 
 import math
-
-
-def mmul(m, n):
-    """Product of two PDF matrices [a b c d e f] (m1 applied first)."""
-    return [m[0] * n[0] + m[1] * n[2], m[0] * n[1] + m[1] * n[3],
-            m[2] * n[0] + m[3] * n[2], m[2] * n[1] + m[3] * n[3],
-            m[4] * n[0] + m[5] * n[2] + n[4], m[4] * n[1] + m[5] * n[3] + n[5]]
-
-
-def mapply(m, x, y):
-    return (m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5])
+import statistics
 
 
 # A subpath is {"start": (x, y), "segs": [("l", p) | ("c", p1, p2, p3)],
@@ -62,11 +53,12 @@ def box_of(sp, tol=0.5):
 
 
 def median(values, default=None):
-    """The middle value (the upper one of an even count), or `default` for
-    none.  Medians, not means, are used throughout for sizes and gaps: one
-    stray glyph or a missing tick must not move the typical value."""
-    vs = sorted(values)
-    return vs[len(vs) // 2] if vs else default
+    """The middle value (the upper one of an even count:
+    statistics.median_high), or `default` for none.  Medians, not means, are
+    used throughout for sizes and gaps: one stray glyph or a missing tick
+    must not move the typical value."""
+    vs = list(values)
+    return statistics.median_high(vs) if vs else default
 
 
 def inside_rect(rect, x, y, slack=0.0):
@@ -78,6 +70,14 @@ def encloses(outer, inner, slack=0.5):
     """Whether box `outer` (widened by `slack`) contains box `inner`."""
     return (outer[0] - slack <= inner[0] and inner[2] <= outer[2] + slack and
             outer[1] - slack <= inner[1] and inner[3] <= outer[3] + slack)
+
+
+def polygon_area(poly):
+    """Signed area of a polygon given by its vertices (shoelace formula;
+    positive when anticlockwise)."""
+    n = len(poly)
+    return 0.5 * sum(poly[i][0] * poly[(i + 1) % n][1] - poly[(i + 1) % n][0] * poly[i][1]
+                     for i in range(n))
 
 
 def rect_area(rect):
@@ -104,8 +104,8 @@ def rect_of(sp):
     if len(pts) == 5 and math.hypot(pts[4][0] - pts[0][0], pts[4][1] - pts[0][1]) > 0.01:
         return None
     pts = pts[:4]
-    xs = sorted(set(round(p[0], 2) for p in pts))
-    ys = sorted(set(round(p[1], 2) for p in pts))
+    xs = sorted({round(p[0], 2) for p in pts})
+    ys = sorted({round(p[1], 2) for p in pts})
     if len(xs) != 2 or len(ys) != 2:
         return None
     for p, q in zip(pts, pts[1:] + pts[:1]):
@@ -307,4 +307,11 @@ def rect_distance(rect, x, y):
     x0, y0, x1, y1 = rect
     dx = max(x0 - x, 0, x - x1)
     dy = max(y0 - y, 0, y - y1)
+    return math.hypot(dx, dy)
+
+
+def rects_gap(a, b):
+    """Distance between two rectangles (0 when they meet)."""
+    dx = max(a[0] - b[2], 0, b[0] - a[2])
+    dy = max(a[1] - b[3], 0, b[1] - a[3])
     return math.hypot(dx, dy)

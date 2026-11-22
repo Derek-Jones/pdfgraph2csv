@@ -53,6 +53,24 @@ def _components(cs):
     return None
 
 
+def _palette(cs):
+    """The colours of an /Indexed colour space as byte tuples, or None."""
+    cs = resolve1(cs)
+    if not (isinstance(cs, list) and len(cs) == 4 and getattr(resolve1(cs[0]), "name", None) == "Indexed"):
+        return None
+    n = _components(cs[1])
+    look = resolve1(cs[3])
+    if n is None:
+        return None
+    if hasattr(look, "get_data"):
+        look = _decoded(look)
+    if isinstance(look, str):
+        look = look.encode("latin-1")
+    if not isinstance(look, (bytes, bytearray)) or len(look) < n:
+        return None
+    return [tuple(look[i:i + n]) for i in range(0, len(look) - n + 1, n)]
+
+
 def _filters(st):
     f = resolve1(st.get("Filter"))
     fs = f if isinstance(f, list) else [f] if f is not None else []
@@ -67,10 +85,15 @@ def read_image(xobj):
     w, h = resolve1(xobj.get("Width")), resolve1(xobj.get("Height"))
     if resolve1(xobj.get("BitsPerComponent")) != 8 or not isinstance(w, int) or not isinstance(h, int):
         return None
-    n = _components(xobj.get("ColorSpace"))
+    palette = _palette(xobj.get("ColorSpace"))
+    n = 1 if palette else _components(xobj.get("ColorSpace"))
     data = _decoded(xobj) if n else None
     if data is None or len(data) < w * h * n:
         return None
+    if palette:
+        # (an indexed image: matplotlib's colour bars, 2308.04785-006)
+        data = bytes(b for k in range(w * h) for b in palette[min(data[k], len(palette) - 1)])
+        n = len(palette[0])
     rgb = []
     for k in range(w * h):
         px = data[k * n:(k + 1) * n]
@@ -115,11 +138,32 @@ def _shape(grid):
     widest = max(range(H), key=lambda j: widths[j])
     if fill >= 0.88:
         return "square"
-    if top <= 0.45 * W and bottom >= 0.75 * W or bottom <= 0.45 * W and top >= 0.75 * W:
+    if (top <= 0.45 * W and bottom >= 0.75 * W) or (bottom <= 0.45 * W and top >= 0.75 * W):
         return "triangle"
     if top <= 0.45 * W and bottom <= 0.45 * W and 0.3 <= widest / float(H - 1 or 1) <= 0.7:
         return "diamond" if fill < 0.68 else "circle"
     return "image"
+
+
+def _soft_round(w, h, rgb):
+    """An anti-aliased disc drawn on white with no mask: every pixel but
+    pure white counts as ink, so it reads as a square (or as nothing) by its
+    opaque pixels.  Teaching-disciplined-softdev-008 draws its blue markers
+    as 10 x 9 pixel images.  Weighing each pixel by its ink (1 - its
+    lightest channel): a disc has empty corners (each under 0.3) and covers
+    65% to 90% of its box, with no row of the top or bottom fifth filled
+    to three quarters (a square does; a diamond covers about half).
+    Returns "circle" or None."""
+    if w < 5 or h < 5 or not 0.6 <= w / float(h) <= 1.6:
+        return None
+    ink = [[1.0 - min(rgb[j * w + i]) for i in range(w)] for j in range(h)]
+    corners = (ink[0][0], ink[0][w - 1], ink[h - 1][0], ink[h - 1][w - 1])
+    fill = sum(map(sum, ink)) / float(w * h)
+    k = max(1, h // 5)
+    ends = ink[:k] + ink[-k:]
+    if max(corners) < 0.3 and 0.65 <= fill <= 0.9 and all(sum(r) < 0.75 * w for r in ends):
+        return "circle"
+    return None
 
 
 def image_symbols(marks, paths):
@@ -130,7 +174,15 @@ def image_symbols(marks, paths):
         if p["stroke"] and not p["fill"]:
             for sp in p["subpaths"]:
                 if len(sp["segs"]) >= 1:
-                    for q in vertices(sp):
+                    vs = vertices(sp)
+                    # the dots and lines of a grid are no data line:
+                    # Teaching-disciplined-softdev-008's dotted grid runs
+                    # through every marker, and its silver dots gave the
+                    # blue markers their colour
+                    xs, ys = [q[0] for q in vs], [q[1] for q in vs]
+                    if len(sp["segs"]) == 1 and (max(xs) - min(xs) < 0.05 or max(ys) - min(ys) < 0.05):
+                        continue
+                    for q in vs:
                         corners[(round(q[0]), round(q[1]))].append((q, p["stroke_rgb"]))
     out = []
     cache = {}
@@ -155,6 +207,8 @@ def image_symbols(marks, paths):
             if a < 0:
                 grid = [r[::-1] for r in grid]
             shape = _shape(grid)
+            if resolve1(m["xobj"].get("SMask")) is None and shape in ("square", "image"):
+                shape = _soft_round(w, h, rgb) or shape
         opaque = [rgb[k] for k in range(w * h) if alpha[k] >= 0.5]
         colour = collections.Counter(tuple(round(v, 3) for v in c) for c in opaque).most_common(1)[0][0]
         x0, y0, x1, y1 = m["box"]

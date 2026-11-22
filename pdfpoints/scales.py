@@ -40,7 +40,7 @@ def _prefix_steps(pairs):
     if ups < len(ps) - 1 - ups:
         ps = ps[::-1]                    # (values grow along the list, mostly)
     out, scale, falls = [ps[0]], 1.0, 0
-    for (c0, v0), (c1, v1) in zip(ps, ps[1:]):
+    for (_c0, v0), (c1, v1) in zip(ps, ps[1:]):
         if v1 < v0:
             # the value expected next, from the ratio of the step before
             prev = out[-2][1] / scale if len(out) >= 2 else None
@@ -97,7 +97,7 @@ def _fit_axis(pairs, rescue=False):
     if rounded is not None:
         return rounded
     while len(pairs) >= max(2, n0 // 2 + 1):
-        if len(set(v for _, v in pairs)) < 2:
+        if len({v for _, v in pairs}) < 2:
             return None
         lin = lsq(pairs)
         if lin is None:
@@ -158,7 +158,7 @@ def _rounded_log_steps(pairs, lsq):
     if med <= 0 or any(abs(g - med) > 0.02 * med for g in gaps):
         return None
     dec = [(c, v) for c, v in ps if abs(math.log10(v) - round(math.log10(v))) < 1e-9]
-    if len(dec) < 2 or len(dec) == len(ps) or len(set(v for _, v in dec)) < 2:
+    if len(dec) < 2 or len(dec) == len(ps) or len({v for _, v in dec}) < 2:
         return None
     fit = lsq(dec, True)
     if fit is None or max(fit[2]) > 1e-3:

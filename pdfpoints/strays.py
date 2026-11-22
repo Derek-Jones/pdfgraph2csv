@@ -16,6 +16,7 @@ import collections
 import math
 
 from .geometry import bbox_of, box_of, encloses, inside_rect, median, rect_area, rect_distance, vertices
+from .grouping import DisjointSets
 from .text import WORD_RE
 
 
@@ -196,7 +197,7 @@ def drop_rule_joints(symbols, paths):
             w, h = b[2] - b[0], b[3] - b[1]
             t = min(w, h)
             if 0 < t <= 1.5 and max(w, h) >= 3 * t:
-                rules.append(b + (t, w > h))
+                rules.append((*b, t, w > h))
     if not rules:
         return symbols
 
@@ -326,28 +327,37 @@ def pattern_dash_paths(paths):
     left over at its end) is a dash too.  Returns the paths' idx."""
     pieces = {}                       # colour -> [(cx, path idx, shape)]
     for p in paths:
-        if not p["fill"] or p["stroke"] or len(p["subpaths"]) != 1:
+        if not p["fill"] or p["stroke"]:
             continue
-        sp = p["subpaths"][0]
-        if len(sp["segs"]) not in (3, 4) or any(g[0] != "l" for g in sp["segs"]):
-            continue
-        q = ([sp["start"]] + [g[-1] for g in sp["segs"]])[:4]
-        xs = [v[0] for v in q]
-        ys = [v[1] for v in q]
-        if max(max(xs) - min(xs), max(ys) - min(ys)) > 2.0:
-            continue
-        e = [(q[(i + 1) % 4][0] - q[i][0], q[(i + 1) % 4][1] - q[i][1]) for i in range(4)]
-        ln = [math.hypot(*v) for v in e]
-        k = 0 if ln[0] >= ln[1] else 1
-        ang = round(math.degrees(math.atan2(e[k][1], e[k][0])) % 180 / 10) % 18
-        shape = (round(min(ln[0], ln[1]), 1), round(max(ln[0], ln[1]), 1), ang)
-        slender = max(ln[0], ln[1]) >= 1.6 * max(1e-9, min(ln[0], ln[1]))
-        pieces.setdefault(p["fill_rgb"], []).append((sum(xs) / 4, p["idx"], shape, sum(ys) / 4, slender))
+        # (a path of many pieces - a whole dotted line in one path,
+        # cheyette2024limited-011 - counts only as a straight run of dots:
+        # Excel draws all the markers of a series in one path)
+        many = len(p["subpaths"]) > 1
+        for sp in p["subpaths"]:
+            if len(sp["segs"]) not in (3, 4) or any(g[0] != "l" for g in sp["segs"]):
+                if many:
+                    break
+                continue
+            q = ([sp["start"]] + [g[-1] for g in sp["segs"]])[:4]
+            xs = [v[0] for v in q]
+            ys = [v[1] for v in q]
+            if max(max(xs) - min(xs), max(ys) - min(ys)) > 2.0:
+                continue
+            e = [(q[(i + 1) % 4][0] - q[i][0], q[(i + 1) % 4][1] - q[i][1]) for i in range(4)]
+            ln = [math.hypot(*v) for v in e]
+            k = 0 if ln[0] >= ln[1] else 1
+            ang = round(math.degrees(math.atan2(e[k][1], e[k][0])) % 180 / 10) % 18
+            shape = (round(min(ln[0], ln[1]), 1), round(max(ln[0], ln[1]), 1), ang)
+            slender = max(ln[0], ln[1]) >= 1.6 * max(1e-9, min(ln[0], ln[1]))
+            pieces.setdefault(p["fill_rgb"], []).append(
+                (sum(xs) / 4, p["idx"], shape, sum(ys) / 4, slender, many))
 
     def line_like(run):
         # a line sample: four or more pieces on one level line (a legend's
         # dotted sample, its pieces alike)
         if len(run) >= 4 and max(x[3] for x in run) - min(x[3] for x in run) <= 0.5:
+            return True
+        if straight_dots(run):
             return True
         # dashes are mostly oblong (73% of logpaper5Rediscoveries-007's,
         # turned along the curve); scattered nodes of a network are squares
@@ -356,17 +366,49 @@ def pattern_dash_paths(paths):
             return False
         return sum(1 for x in run if x[4]) >= 0.4 * len(run)
 
+    def straight_dots(run):
+        # a dotted straight line in any direction (cheyette2024limited-011's
+        # diagonal y = x: 107 squares of 0.5 pt sides, 2.07 pt apart): eight
+        # or more alike pieces on one line (within 0.2 pt), close together
+        # (the usual gap at most 5 sides) and evenly spaced (four in five
+        # gaps within 25% of the usual one, or twice it: a dot hidden under
+        # a marker)
+        if len(run) < 8 or len({x[2] for x in run}) > 2:
+            return False
+        pts = [(x[0], x[3]) for x in run]
+        mx = sum(p[0] for p in pts) / len(pts)
+        my = sum(p[1] for p in pts) / len(pts)
+        sxx = sum((p[0] - mx) ** 2 for p in pts)
+        syy = sum((p[1] - my) ** 2 for p in pts)
+        sxy = sum((p[0] - mx) * (p[1] - my) for p in pts)
+        ang = 0.5 * math.atan2(2 * sxy, sxx - syy)
+        ux, uy = math.cos(ang), math.sin(ang)
+        if any(abs(-(p[0] - mx) * uy + (p[1] - my) * ux) > 0.2 for p in pts):
+            return False
+        along = sorted((p[0] - mx) * ux + (p[1] - my) * uy for p in pts)
+        gaps = [b - a for a, b in zip(along, along[1:])]
+        g = median(gaps)
+        size = max(run[0][2][1], 0.1)
+        if g <= 0 or g > 5 * size:
+            return False
+        even = sum(1 for d in gaps if abs(d - g) <= 0.25 * g or abs(d - 2 * g) <= 0.25 * g)
+        return even >= 0.8 * len(gaps)
+
     drop = set()
+    for rgb, ps in list(pieces.items()):
+        # a path of many pieces is judged on its own: a straight dotted line
+        by_path = {}
+        for x in ps:
+            if x[5]:
+                by_path.setdefault(x[1], []).append(x)
+        for idx, run in by_path.items():
+            if straight_dots(sorted(run)):
+                drop.add(idx)
+        pieces[rgb] = [x for x in ps if not x[5]]
     for ps in pieces.values():
         # pieces within 6 pt of one another make one run (a legend's dotted
         # sample is a run apart from the curve it crosses in x)
-        parent = list(range(len(ps)))
-
-        def find(i):
-            while parent[i] != i:
-                parent[i] = parent[parent[i]]
-                i = parent[i]
-            return i
+        sets = DisjointSets(len(ps))
         cells = {}
         for i, x in enumerate(ps):
             cells.setdefault((int(x[0] // 6), int(x[3] // 6)), []).append(i)
@@ -378,13 +420,10 @@ def pattern_dash_paths(paths):
                     for j in cells.get((cx + dx, cy + dy), ()):
                         for i in idxs:
                             if i < j and math.hypot(ps[i][0] - ps[j][0], ps[i][3] - ps[j][3]) <= 6.0:
-                                parent[find(i)] = find(j)
-        runs = {}
-        for i in range(len(ps)):
-            runs.setdefault(find(i), []).append(ps[i])
+                                sets.union(j, i)
         mine = set()
-        for run in runs.values():
-            run.sort()
+        for group in sets.groups():
+            run = sorted(ps[i] for i in group)
             if line_like(run):
                 mine.update(x[1] for x in run)
         if mine:
@@ -445,7 +484,7 @@ def add_dash_markers(symbols, paths, graphs):
         if any(x0 <= s["cx"] <= x1 and y0 <= s["cy"] <= y1 for s in symbols
                if s["shape"] != "rectangle"):
             continue                      # the graph has markers of its own
-        for key, cs in groups.items():
+        for cs in groups.values():
             mine = [c for c in cs if x0 <= (c[3][0] + c[3][2]) / 2 <= x1 and y0 <= (c[3][1] + c[3][3]) / 2 <= y1]
             if len(mine) < 5 or any(abs(c[3][1] - y0) <= 0.5 for c in mine):
                 continue
@@ -507,3 +546,66 @@ def mark_legend_frames(symbols, paths, graphs):
         if sum(1 for o in out if b[0] < o["cx"] < b[2] and b[1] < o["cy"] < b[3]) >= 2:
             s["frame"] = b
     return symbols
+
+
+def fill_circles_under_dots(symbols, texts):
+    """An open circle with a "\u25cf" character of its colour centred on it
+    is a filled circle: Seongmin-PhD-044 (cairo) draws each ggplot outlier
+    as a stroked circle and a black-circle glyph of the plot's font over it.
+    The glyph's centre: the middle of its advance, half its up vector up
+    (within 0.3 of the circle's size)."""
+    dots = []
+    for t in texts:
+        if t["text"].strip() != "\u25cf" or not t.get("up"):
+            continue
+        (x0, y0), (x1, y1), (ux, uy) = t["p0"], t["p1"], t["up"]
+        dots.append(((x0 + x1) / 2 + 0.5 * ux, (y0 + y1) / 2 + 0.5 * uy, t.get("rgb")))
+    if not dots:
+        return symbols
+    grid = {}
+    for k, (x, y, _) in enumerate(dots):
+        grid.setdefault((int(x // 5), int(y // 5)), []).append(k)
+    for s in symbols:
+        if s["shape"] != "circle" or s["filled"]:
+            continue
+        tol = 0.3 * max(s.get("size", 0.0), 1.0)
+        gx, gy = int(s["cx"] // 5), int(s["cy"] // 5)
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for k in grid.get((gx + dx, gy + dy), ()):
+                    x, y, rgb = dots[k]
+                    if abs(x - s["cx"]) <= tol and abs(y - s["cy"]) <= tol and \
+                            (rgb is None or s["rgb"] is None or
+                             max(abs(a - b) for a, b in zip(rgb, s["rgb"])) <= 0.05):
+                        s["filled"] = True
+    return symbols
+
+
+def merge_crossed_squares(symbols):
+    """An open square and a plus of one colour and centre (within a tenth
+    of the square's size; sizes within 15%) are one marker, the square with
+    a plus in it (R's pch 12): wp_21_1036-019's "6 weeks from 18 weeks".
+    Reported as "square-plus" (open)."""
+    plus = {}
+    for k, s in enumerate(symbols):
+        if s["shape"] == "plus":
+            plus.setdefault((round(s["cx"]), round(s["cy"])), []).append(k)
+    if not plus:
+        return symbols
+    gone = set()
+    for s in symbols:
+        if s["shape"] != "square" or s["filled"]:
+            continue
+        size = s.get("size", 0.0)
+        cx, cy = round(s["cx"]), round(s["cy"])
+        for key in ((cx + i, cy + j) for i in (-1, 0, 1) for j in (-1, 0, 1)):
+            hit = next((k for k in plus.get(key, ()) if k not in gone and
+                        symbols[k]["rgb"] == s["rgb"] and
+                        abs(symbols[k]["cx"] - s["cx"]) <= 0.1 * size and
+                        abs(symbols[k]["cy"] - s["cy"]) <= 0.1 * size and
+                        abs(symbols[k].get("size", 0.0) - size) <= 0.15 * size), None)
+            if hit is not None:
+                gone.add(hit)
+                s["shape"] = "square-plus"
+                break
+    return [s for k, s in enumerate(symbols) if k not in gone]

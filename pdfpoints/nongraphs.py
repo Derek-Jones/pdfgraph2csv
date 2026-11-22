@@ -60,10 +60,14 @@ def prose_inside(g, texts, boxes=()):
     the names beside points, legend entries and short notes are shorter.
     Text enclosed by a border or a filled box smaller than half the plot box
     does not count either: the user asked for notes describing the data
-    (ITRS charts) to be allowed however long they are."""
+    (ITRS charts) to be allowed however long they are.  Nor does turned or
+    slanted text: running text is set level (the page itself is read
+    turned when its text is), while category names may stand at a slant
+    over their bars (Memory_systems_cacheDRAMdisk-051's PERL chart: 48
+    names such as "1 x 8-bit x 100 Mhz" at 45 degrees inside the plot)."""
     half = 0.5 * rect_area(g["rect"])
     notes = [b for b in boxes if rect_area(b) < half]
-    items = sorted((t for t in texts_inside(g, texts) if t["text"].strip()
+    items = sorted((t for t in texts_inside(g, texts) if t["text"].strip() and not t.get("rotated")
                     and not any(encloses(b, t["bbox"]) for b in notes)),
                    key=lambda t: (-round(t["p0"][1], 1), t["p0"][0]))
     lines = []           # [baseline y, right end, text]
@@ -178,6 +182,62 @@ def _cell_numbers_boxed(g, texts, paths):
     return all(0.5 * mw <= w <= 1.5 * mw for w in widths)
 
 
+def ruled_tables(paths):
+    """Boxes of ruled tables: five or more rules of one extent (ends within
+    1 pt), parallel, one under another (or side by side); the box spans the
+    rules.  State_IT_Project_Management_in_UK-056's table has 24 rules
+    across its full width, its column rules cut cell by cell.  A rule is
+    drawn unbroken: pieces join only where they touch (within 0.5 pt), so
+    the frames and grid lines of charts side by side, lined up, make no
+    rules across them; and the table is closed by a border, rules across
+    the whole box at both ends of its rules (3276496-020's three Excel
+    scatter plots of one size have frame sides and grid lines of one
+    height)."""
+    from .axes import _page_segments
+    _, segs, _ = _page_segments(paths)
+    rules = {}
+    for orient in ("h", "v"):
+        by_pos = {}
+        for lo, hi, pos in segs[orient]:
+            by_pos.setdefault(round(pos, 1), []).append((lo, hi))
+        rules[orient] = []
+        for pos, pieces in by_pos.items():
+            pieces.sort()
+            cur = list(pieces[0])
+            for lo, hi in pieces[1:]:
+                if lo <= cur[1] + 0.5:
+                    cur[1] = max(cur[1], hi)
+                else:
+                    rules[orient].append((cur[0], cur[1], pos))
+                    cur = [lo, hi]
+            rules[orient].append((cur[0], cur[1], pos))
+
+    def spans(orient, lo, hi, at):
+        """A rule across lo..hi (within 1 pt) at position at (within 1 pt)?"""
+        return any(abs(p - at) <= 1.0 and a <= lo + 1.0 and b >= hi - 1.0
+                   for a, b, p in rules[orient])
+    out = []
+    for orient, other in (("h", "v"), ("v", "h")):
+        groups = []
+        for lo, hi, pos in rules[orient]:
+            for g in groups:
+                if abs(g[0] - lo) <= 1.0 and abs(g[1] - hi) <= 1.0:
+                    g[2].append(pos)
+                    break
+            else:
+                groups.append([lo, hi, [pos]])
+        for lo, hi, ps in groups:
+            if len(ps) < 5 or hi - lo <= 20:
+                continue
+            a, b = min(ps), max(ps)
+            # closed by a border: rules across the whole box at both ends
+            # (charts of one size side by side are not)
+            if not (spans(other, a, b, lo) and spans(other, a, b, hi)):
+                continue
+            out.append((lo, a, hi, b) if orient == "h" else (a, lo, b, hi))
+    return out
+
+
 def drop_tables(graphs, texts, debug=False, boxes=(), paths=()):
     """The graphs that are graphs.  Dropped:
     - a 'plot' holding more words of running text than --max-words
@@ -188,12 +248,29 @@ def drop_tables(graphs, texts, debug=False, boxes=(), paths=()):
     - a graph with a category axis each way whose cells hold text in at
       least half of them: a ruled table (its column headings and row names
       are the categories).  A chart with categories both ways, such as a
-      dot matrix, holds markers in its cells, not text."""
+      dot matrix, holds markers in its cells, not text;
+    - a graph lying inside a ruled table (ruled_tables) twice its size or
+      more, whose box holds a grid of numbers: a few rows of the table
+      taken for a plot
+      (State_IT_Project_Management_in_UK-056: one row of a 24-rule table,
+      its cell values read as categories)."""
     out = []
+    tables = None
     for g in graphs:
         why = None
         mx, my = g["x"]["map"], g["y"]["map"]
-        if prose_inside(g, texts, boxes) > SETTINGS.max_words:
+        if tables is None:
+            tables = [t for t in ruled_tables(paths) if numeric_grid(dict(g, rect=t), texts)] \
+                if paths else []
+        x0, y0, x1, y1 = g["rect"]
+        # (a slice of a table at most half its size: a plot's own grid
+        # lines make a "table" of its own box - 2308.04785-006's correlation
+        # matrices, an Excel scatter's grid)
+        if any(t[0] - 1 <= x0 and x1 <= t[2] + 1 and t[1] - 1 <= y0 and y1 <= t[3] + 1 and
+               rect_area(g["rect"]) <= 0.5 * rect_area(t) for t in tables) and \
+                not _cell_numbers_boxed(g, texts, paths):
+            why = "lies in a ruled table of numbers"
+        elif prose_inside(g, texts, boxes) > SETTINGS.max_words:
             why = "holds running text: no graph"
         elif numeric_grid(g, texts) and not _cell_numbers_boxed(g, texts, paths):
             why = "holds a grid of numbers: a table"

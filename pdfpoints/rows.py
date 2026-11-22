@@ -6,6 +6,7 @@ its error bars."""
 import math
 
 from .colours import color_name
+from .context import PAGE
 from .geometry import overlap_area, rect_area
 from .graphs import clip_graph, graph_for_symbol
 from .scales import map_value, nominal_rank
@@ -100,10 +101,13 @@ def make_rows(pno, graphs, symbols, legend, namer, opts, bars=None):
         if s["shape"] == "rectangle" and si not in legend and not s.get("marker"):
             continue                      # oblong boxes count only as legend keys (or as a set
                                           # of markers: strays.add_dash_markers)
+        if si in legend and s["shape"] in BOX_SHAPES:
+            continue                      # a box-plot legend key read as a little box plot
+                                          # (Seongmin-PhD-044): its rectangle is the key
         d, g = graph_for_symbol(graphs, s)
         if not reportable(graphs, s, g, d, opts, si in legend, keyed):
             continue
-        if opts.inside_only and d > 1e-6 or opts.exclude_legend and si in legend:
+        if (opts.inside_only and d > 1e-6) or (opts.exclude_legend and si in legend):
             continue
         if si in legend:
             # one key drawn by several layers (ggplot2 draws each point
@@ -113,7 +117,7 @@ def make_rows(pno, graphs, symbols, legend, namer, opts, bars=None):
                 continue
             keys_seen.add(k)
         name, hexs = color_name(s["rgb"])
-        if s["shape"] in LINE_SHAPES or s["shape"] in ("bar", "line", "stem") or s["shape"] in BOX_SHAPES:
+        if s["shape"] in LINE_SHAPES or s["shape"] in ("bar", "line", "stem", "tile") or s["shape"] in BOX_SHAPES:
             sym_name = s["shape"]
         else:
             sym_name = ("filled-" if s["filled"] else "open-") + s["shape"]
@@ -123,6 +127,8 @@ def make_rows(pno, graphs, symbols, legend, namer, opts, bars=None):
         # page positions along the data axes (swapped in a turned graph)
         xc, yc = (s["cy"], s["cx"]) if g["rot"] else (s["cx"], s["cy"])
         x = map_value(g["x"]["map"], xc)
+        if s.get("x_category") is not None and not g["rot"]:
+            x = s["x_category"]           # a whole group of bars in one category
         y = map_value(g["y"]["map"], yc)
         rows.append({
             "page": pno, "graph": g["no"], "graph_title": g["title"],
@@ -133,14 +139,19 @@ def make_rows(pno, graphs, symbols, legend, namer, opts, bars=None):
             "y_digits": value_digits(g["y"]["map"], y, s.get("res")),
             "color": name, "color_hex": hexs,
             "series": series, "axis": side, "label": s.get("label", ""),
-            "rotation": g["rot"],
+            "confidence": s.get("confidence", ""),
+            "x_group": s.get("x_group", ""),
+            "value": s.get("value", "") if s.get("value") is not None else "",
+            "rotation": (g["rot"] + PAGE.turn + 180) % 360 - 180 if PAGE.turn else g["rot"],
             "symbol_size": symbol_size(s),
             "legend_key": 1 if si in legend else 0,
-            "pdf_x": s["cx"], "pdf_y": s["cy"],
-            "x_order": x_order(g["x"]["map"], xc, x)})
+            "pdf_x": PAGE.unturn((s["cx"], s["cy"]))[0] if PAGE.turn else s["cx"],
+            "pdf_y": PAGE.unturn((s["cx"], s["cy"]))[1] if PAGE.turn else s["cy"],
+            "x_order": (1, s["x_rank"]) if s.get("x_category") is not None and not g["rot"]
+            else x_order(g["x"]["map"], xc, x)})
         rows[-1].update(label_tick_ranges(g, xc, yc))
         if opts.errbars:
-            rows[-1].update(error_bar_values(g, s, x, y, (bars or {}).get(si)))
+            rows[-1].update(error_bar_values(g, x, y, (bars or {}).get(si)))
     # graph by graph, in increasing x (a stable sort: rows with the same x
     # keep their drawing order)
     rows.sort(key=lambda r: (r["graph"], r["x_order"]))
@@ -175,7 +186,7 @@ def x_order(m, c, x):
     return (0, x)
 
 
-def error_bar_values(g, s, x, y, bar):
+def error_bar_values(g, x, y, bar):
     """x_low, x_high, y_low, y_high of a point from its error bars (page
     coordinates) mapped through its graph's axes; "" where it has no bar
     in that direction.  A side without a bar is the point's own value.  In
@@ -195,3 +206,72 @@ def error_bar_values(g, s, x, y, bar):
         if all(isinstance(v, float) for v in vals):
             out[axis + "_low"], out[axis + "_high"] = min(vals), max(vals)
     return out
+
+
+def name_box_slots(rows):
+    """Box plots dodged by series (ggplot: one box per series side by side
+    at each category, always in the same order) give each series a slot,
+    the same offset from the category's position.  Seongmin-PhD-044's ORBS
+    boxes of no height are drawn without their fill, only the dark outline,
+    and name no series by colour: a box with no name takes the one name of
+    the named boxes in its slot (offsets within 0.03 of the category
+    spacing's unit); when one slot of three or more (two boxes or more in
+    each) has no named box and one series name of the page's box plots is
+    used by no other slot, the slot is that series.  Then an unnamed point standing on a
+    box's centre line (within 0.02; an outlier) takes the box's name, when
+    one box only is there."""
+    page_names = {}
+    for r in rows:
+        if r["symbol"] in BOX_SHAPES and r["series"] and not r["legend_key"]:
+            page_names.setdefault(r["page"], set()).add(r["series"])
+    by_graph = {}
+    for r in rows:
+        if r["legend_key"] or not isinstance(r["x_coord"], (int, float)):
+            continue
+        by_graph.setdefault((r["page"], r["graph"]), []).append(r)
+    for rs in by_graph.values():
+        boxes = [r for r in rs if r["symbol"] == "box-median"]
+        if len(boxes) < 4:
+            continue
+        # slots: offsets from the nearest whole category position
+        slots = []
+        for r in boxes:
+            o = r["x_coord"] - round(r["x_coord"])
+            for sl in slots:
+                if abs(sl[0] - o) <= 0.03:
+                    sl[1].append(r)
+                    break
+            else:
+                slots.append([o, [r]])
+        rename = {}
+        slot_name = []
+        for _, members in slots:
+            names = {r["series"] for r in members if r["series"]}
+            slot_name.append(names.pop() if len(names) == 1 else None)
+        # one slot with no name, one of the page's box names unused here:
+        # the slot is that series (Seongmin-PhD-044's ORBS slot, all its
+        # boxes flat in the deleted-lines panels)
+        blank = [k for k, nm in enumerate(slot_name) if nm is None]
+        if len(blank) == 1 and len(slots) >= 3 and \
+                all(len(sl[1]) >= 2 for sl in slots):
+            left = page_names.get(rs[0]["page"], set()) - set(slot_name)
+            if len(left) == 1 and not any(r["series"] for r in slots[blank[0]][1]):
+                slot_name[blank[0]] = left.pop()
+        for (_, members), nm in zip(slots, slot_name):
+            if nm:
+                for r in members:
+                    if not r["series"]:
+                        rename[round(r["x_coord"], 9)] = nm
+        if rename:
+            for r in rs:
+                if r["symbol"] in BOX_SHAPES and not r["series"]:
+                    r["series"] = rename.get(round(r["x_coord"], 9), "")
+        centres = [(r["x_coord"], r["series"]) for r in boxes
+                   if r["series"] or round(r["x_coord"], 9) in rename]
+        centres = [(x, s or rename[round(x, 9)]) for x, s in centres]
+        for r in rs:
+            if r["symbol"] in BOX_SHAPES or r["series"]:
+                continue
+            on = {s for x, s in centres if abs(x - r["x_coord"]) <= 0.02}
+            if len(on) == 1:
+                r["series"] = on.pop()

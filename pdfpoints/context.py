@@ -30,6 +30,8 @@ class PageState:
         self.dark_lines = ([], [])  # merged dark horizontal, vertical lines (lo, hi, pos)
         self.all_lines = ([], [])   # merged horizontal, vertical lines of any shade
         self.chart_frames = {}    # graph rect -> the box drawn round the whole chart
+        self.turn = 0             # degrees the page was turned to be read (pipeline.page_turn)
+        self.unturn = None        # turned point -> PDF page point
 
 
 SETTINGS = Settings()

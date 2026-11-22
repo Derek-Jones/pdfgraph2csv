@@ -21,6 +21,8 @@ def graph_meta(pno, graphs, rows):
         k2 = "y2" if "y2" in g else "x2" if "x2" in g else None
         m["axis2"] = ("%s %s" % (k2[0], g["twin"]["sides"][1])) if k2 and g.get("twin") else ""
         m["axis2_tick_min"], m["axis2_tick_max"] = tick_range(g[k2]) if k2 else ("", "")
+        # heat maps: what the tiles' value column holds (the colour bar's title)
+        m["value_name"] = g.get("value_name", "")
         out.append(m)
     return out
 

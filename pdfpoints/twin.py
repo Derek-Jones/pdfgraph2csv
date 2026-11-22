@@ -45,7 +45,7 @@ def axis_title(axis, texts, side):
         outer = pos
     band = (outer - 40, outer + 0.5) if side < 0 else (outer - 0.5, outer + 40)
     lo, hi = axis["lo"], axis["hi"]
-    used = set(id(tx) for tx in labels)
+    used = {id(tx) for tx in labels}
     picked = []
     for t in texts:
         if id(t) in used or not t.get("text") or t["value"] is not None:
@@ -133,8 +133,8 @@ def warn_twin_unsure(graphs, rows, warnings):
     for g in graphs:
         unsure = g.get("twin_unsure", ())
         # (the key of an unnamed series is its colour, as in twin_key)
-        names = sorted(set(r["series"] or r["color_hex"] for r in rows if r["graph"] == g["no"]
-                           and (r["series"] or "#colour " + r["color_hex"]) in unsure))
+        names = sorted({r["series"] or r["color_hex"] for r in rows if r["graph"] == g["no"]
+                           and (r["series"] or "#colour " + r["color_hex"]) in unsure})
         if names:
             warnings.append("graph %d has a scale on both sides; not known which one "
                             "series %s use%s: read against the %s one" % (

@@ -14,6 +14,7 @@ and highlight circles drawn round a point, and boxes round a point.  (The
 filters that need the page's graphs are in strays.py.)
 """
 
+import bisect
 import collections
 import math
 
@@ -142,8 +143,8 @@ def drop_outline_rings(symbols):
     for s in symbols:
         if not s["filled"] and s["shape"] == "circle" and s.get("idx") is not None:
             body = [f for d in (1, 2) for f in filled.get(s["idx"] - d, ())
-                    if (f["rgb"] == s["rgb"] and 0.5 * s["size"] <= f["size"] <= s["size"] or
-                        d == 1 and s.get("ring") and 0.75 * s["size"] <= f["size"] <= s["size"])
+                    if ((f["rgb"] == s["rgb"] and 0.5 * s["size"] <= f["size"] <= s["size"]) or
+                        (d == 1 and s.get("ring") and 0.75 * s["size"] <= f["size"] <= s["size"]))
                     and math.hypot(f["cx"] - s["cx"], f["cy"] - s["cy"]) < 0.15 * s["size"]]
             if body:
                 continue
@@ -155,6 +156,199 @@ def drop_outline_rings(symbols):
             continue
         out.append(s)
     return out
+
+
+def _tint_of(light, base, tol=0.08):
+    """Is colour `light` the colour `base` mixed with white (each channel
+    the same fraction of the way to white, at least 0.3 of it: a face is
+    plainly lighter - small dots of one colour beside bigger ones are a
+    stippled drawing's, song2025rigorous-002)?"""
+    if light is None or base is None:
+        return False
+    ts = []
+    for a, b in zip(light, base):
+        if a < b - 0.02:
+            return False
+        if 1.0 - b > 0.05:
+            ts.append((a - b) / (1.0 - b))
+    return bool(ts) and min(ts) >= 0.3 and max(ts) - min(ts) <= tol
+
+
+def drop_marker_faces(symbols, paths=()):
+    """A marker drawn in layers, each layer for all markers in turn
+    (cheyette2024limited-011, strokes converted to outlines: a coloured
+    disc, its ring, then a pale disc and annulus inside it): a smaller
+    circle (at most 0.8 times the size), painted later on the centre of a
+    circle, filled or open (within 0.2 of its size), in a pale tint of its
+    colour (or white), is that marker's face, not another point; so is a
+    sliver of a face (at most 0.3 times the size, within one size of the
+    centre), cut where two markers overlap.  It is dropped; the marker
+    keeps its own colour.  Copies of one size (stacked points) are never
+    faces.
+
+    Translucent markers flattened into pieces (panel (b): open rings cut
+    by the lines crossing them and by each other into pieces of blended
+    colours) may keep no whole ring, but their opaque faces, painted last,
+    stay whole.  When three or more faces of one colour and size lie on
+    whole rings, every other face like them stands for a marker of its
+    own: a circle of the rings' usual size and kind, coloured by the fill
+    that covers most of the pieces painted before it within the ring.  The
+    small pieces (at most 0.45 of the ring's size) within 0.75 of a ring's
+    size of a face (lenses where two rings overlap),
+    and the circles painted before a face, centred within its ring and no
+    bigger (pieces of the disc and ring under it), are no points.  A marker
+    with a white face is an open marker."""
+    cell = 4.0
+    grid = {}
+    for s in symbols:
+        # (the base may be a ring too: an open marker whose inside is
+        # painted later, as cheyette2024limited-011's panel (b) does in white)
+        if s["shape"] == "circle" and s.get("idx") is not None and s["size"] > 0:
+            grid.setdefault((int(s["cx"] // cell), int(s["cy"] // cell)), []).append(s)
+    if not grid:
+        return symbols
+    # (largest first in each cell: a face looks only at bigger circles, so
+    # thousands of stacked markers of one size are never compared -
+    # 2001.10488v4-56's 200 000)
+    for lst in grid.values():
+        lst.sort(key=lambda b: -b["size"])
+
+    def base_of(s):
+        # (a filled disc rather than its ring, when the face lies on both)
+        found = None
+        gx, gy = int(s["cx"] // cell), int(s["cy"] // cell)
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for b in grid.get((gx + dx, gy + dy), ()):
+                    if s["size"] > 0.8 * b["size"]:
+                        break
+                    d = math.hypot(b["cx"] - s["cx"], b["cy"] - s["cy"])
+                    if b is not s and b["idx"] < s["idx"] and \
+                            (d <= 0.2 * b["size"] or (s["size"] <= 0.3 * b["size"] and d <= b["size"])) and \
+                            _tint_of(_paint(s), b["rgb"]):
+                        if b["filled"]:
+                            return b
+                        found = found or b
+        return found
+    faces = {}                        # id(face) -> its base
+    for s in symbols:
+        if s["shape"] == "circle" and s.get("idx") is not None:
+            b = base_of(s)
+            if b is not None:
+                faces[id(s)] = b
+    # faces whose ring was flattened into pieces
+    kinds = {}
+    for s in symbols:
+        b = faces.get(id(s))
+        if b is not None and s["size"] > 0.3 * b["size"]:
+            kinds.setdefault((_paint(s), round(s["size"], 1)), []).append(b)
+    made = []
+    for s in symbols:
+        if id(s) in faces or s["shape"] != "circle" or s.get("idx") is None:
+            continue
+        bases = kinds.get((_paint(s), round(s["size"], 1)))
+        if not bases or len(bases) < 3:
+            continue
+        # (a face of two parts - a disc and an annulus round it, painted
+        # one after the other - stands for one marker)
+        twin = next((m for m in made if abs(m["idx"] - s["idx"]) <= 2 and
+                     math.hypot(m["cx"] - s["cx"], m["cy"] - s["cy"]) <= 0.2 * m["size"]), None)
+        if twin is not None:
+            faces[id(s)] = {"size": twin["size"]}
+            continue
+        size = median(b["size"] for b in bases)
+        filled = sum(1 for b in bases if b["filled"]) * 2 > len(bases) and \
+            not (_paint(s) and min(_paint(s)) >= 0.97)       # (white face: open)
+        rgb = _ring_colour(s, size, paths)
+        if rgb is None:
+            continue
+        m = dict(s, size=size, filled=filled, rgb=rgb, w=size, h=size, face_of=True)
+        m.pop("outline_rgb", None)
+        made.append(m)
+        faces[id(s)] = m
+    # pieces within the ring of a face
+    centres = {}
+    for s in symbols:
+        b = faces.get(id(s))
+        # (whole faces only: a sliver of a face lies off its marker's centre)
+        if b is not None and s["size"] > 0.3 * b["size"]:
+            centres.setdefault((int(s["cx"] // cell), int(s["cy"] // cell)), []).append((s, b["size"]))
+
+    # (the bases of whole faces: a sliver of white may lie on any piece)
+    base_ids = {id(faces[id(s)]) for s in symbols
+                if id(s) in faces and s["size"] > 0.3 * faces[id(s)]["size"]}
+    # a marker whose face is white is an open marker (panel (b)'s rings
+    # with white insides), whether its base is the ring or a disc under it
+    white_faced = {id(faces[id(s)]) for s in symbols
+                   if id(s) in faces and _paint(s) and min(_paint(s)) >= 0.97 and
+                   s["size"] > 0.3 * faces[id(s)]["size"]}
+
+    def piece(s):
+        # a small piece near a face, or (painted before the face, on its
+        # ring, no bigger than it) a piece of the ring or disc under it
+        gx, gy = int(s["cx"] // cell), int(s["cy"] // cell)
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for f, z in centres.get((gx + dx, gy + dy), ()):
+                    if f is s:
+                        continue
+                    d = math.hypot(f["cx"] - s["cx"], f["cy"] - s["cy"])
+                    if (s["size"] <= 0.45 * z and d <= 0.75 * z) or \
+                            (s["idx"] < f["idx"] and s["size"] <= 1.1 * z and d <= 0.5 * z):
+                        return True
+        return False
+    out = []
+    for s in symbols:
+        if id(s) in faces:
+            b = faces[id(s)]
+            if b.get("face_of"):
+                out.append(b)          # the face stands for its marker
+            continue
+        if s["shape"] == "circle" and centres and id(s) not in base_ids and piece(s):
+            continue
+        if id(s) in white_faced and s["filled"]:
+            s = dict(s, filled=False)
+            s.pop("outline_rgb", None)
+        out.append(s)
+    return out
+
+
+def _paint(s):
+    """The colour a symbol is painted in (a ring filled in one colour may
+    carry a leftover stroke colour as its own)."""
+    return s.get("paint_rgb") or s["rgb"]
+
+
+def _ring_colour(face, size, paths):
+    """The fill covering most of the pieces painted before `face` within a
+    ring of `size` around it (by the area of their boxes); None if none.
+    Not the face's own colour (other faces nearby), nor a darker shade of
+    another colour found there (pieces where a translucent line or another
+    marker lies over the ring)."""
+    r = 0.5 * size
+    area = {}
+    for p in paths:
+        if p["idx"] >= face["idx"] or not p["fill"] or p.get("fill_rgb") is None:
+            continue
+        for sp in p["subpaths"]:
+            if not sp["segs"]:
+                continue
+            x0, y0, x1, y1 = subpath_bbox(sp)
+            if x1 - x0 > 1.2 * size or y1 - y0 > 1.2 * size:
+                continue
+            if math.hypot((x0 + x1) / 2 - face["cx"], (y0 + y1) / 2 - face["cy"]) > r:
+                continue
+            if p["fill_rgb"] != _paint(face):
+                area[p["fill_rgb"]] = area.get(p["fill_rgb"], 0.0) + (x1 - x0) * (y1 - y0)
+    pure = [c for c in area
+            if not any(d != c and all(a <= b + 0.005 for a, b in zip(c, d)) for d in area)]
+    # (the grey lines joining the points cross the rings: a grey is the
+    # ring's colour only when nothing coloured is there)
+    coloured = [c for c in pure if max(c) - min(c) > 0.05]
+    pure = coloured or pure
+    if not pure:
+        return None
+    return max(pure, key=area.get)
 
 
 def drop_highlight_boxes(symbols):
@@ -190,7 +384,8 @@ def drop_highlight_boxes(symbols):
     # (means drawn over the per-generator markers at the same value) stay
     cand = [s for s in symbols
             if not s.get("filled") and s["shape"] in ("square", "circle") and s["size"] > 0]
-    style = lambda s: (s["shape"], s["rgb"], round(s["size"], 1))
+    def style(s):
+        return (s["shape"], s["rgb"], round(s["size"], 1))
     total, hits = collections.Counter(), collections.Counter()
     hl = set()
     for s in cand:
@@ -248,8 +443,8 @@ def elongation(poly):
     cx /= 6.0 * A
     cy /= 6.0 * A
     sxx = syy = sxy = 0.0
-    for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]):
-        x0 -= cx; x1 -= cx; y0 -= cy; y1 -= cy
+    for (ax, ay), (bx, by) in zip(poly, poly[1:] + poly[:1]):
+        x0, x1, y0, y1 = ax - cx, bx - cx, ay - cy, by - cy
         c = x0 * y1 - x1 * y0
         sxx += (y0 * y0 + y0 * y1 + y1 * y1) * c
         syy += (x0 * x0 + x0 * x1 + x1 * x1) * c
@@ -402,8 +597,8 @@ def _classify_subpath(sp):
     # markers are compact; a short diagonal stroke (e.g. the dash of a dashed
     # line converted to an outline) has a square-ish bounding box but is long
     # and thin
-    if shape in ("polygon", "triangle", "diamond") and elongation(flatten_subpath(sp)) > 1.8 or \
-            shape == "thin-diamond" and elongation(flatten_subpath(sp)) > 2.2:
+    if (shape in ("polygon", "triangle", "diamond") and elongation(flatten_subpath(sp)) > 1.8) or \
+            (shape == "thin-diamond" and elongation(flatten_subpath(sp)) > 2.2):
         return None
     out = {"shape": shape, "cx": centre[0], "cy": centre[1], "size": size, "w": w, "h": h}
     if turned is not None:
@@ -545,6 +740,9 @@ def find_symbols(paths, glyph_symbols=(), text_parts=frozenset()):
                         h != k and abs(classify_subpath(p["subpaths"][h])["cx"] - c["cx"]) < 0.1 * c["size"]
                         for h in holes if classify_subpath(p["subpaths"][h])):
                     filled = False      # a ring: an open circle drawn as outline
+                    # (the colour it is painted in, for telling a marker's
+                    # face: cheyette2024limited-011's pale annuli)
+                    c["paint_rgb"] = p["fill_rgb"]
                 if c.get("ring"):
                     filled = False          # only the outline is painted
                     c["rgb"] = p["fill_rgb"] if p["fill"] else p["stroke_rgb"]
@@ -622,7 +820,7 @@ def match_crossing_strokes(lines):
     # drawn as thousands of 0.01 pt strokes beside 300 pt axes once made a
     # single grid scan 10^8 cells per long stroke)
     step = math.log(1.2)
-    klass = {i: int(math.floor(math.log(max(segs[i]["L"], 1e-9)) / step)) for i in reps}
+    klass = {i: math.floor(math.log(max(segs[i]["L"], 1e-9)) / step) for i in reps}
     grids = {}
     for i in reps:
         k = klass[i]
@@ -689,19 +887,29 @@ def _join_asterisks(syms):
     (or the other way round) comes out of the stroke matching as a plus and
     a cross: the strokes' lengths differ too much to be grouped.  A plus and
     a cross of one colour around the same centre, drawn one right after the
-    other, are one asterisk."""
-    by_spot = {}
-    for k, s in enumerate(syms):
-        if s["shape"] in ("plus", "cross"):
-            key = (s["rgb"], round(s["cx"], 1), round(s["cy"], 1))
-            by_spot.setdefault(key, []).append(k)
+    other, are one asterisk.
+
+    Partners are looked up by drawing order, not by place: thousands of
+    markers stacked on one spot (ThomasBockPhD-073) made a search by place
+    quadratic."""
+    marks = sorted((s["idx"], k) for k, s in enumerate(syms) if s["shape"] in ("plus", "cross"))
+    if not marks:
+        return syms
+    order = [i for i, _ in marks]
+    span = max(syms[k]["last"] - syms[k]["idx"] for _, k in marks) + 2
     gone = set()
     for k, s in enumerate(syms):
         if k in gone or s["shape"] not in ("plus", "cross"):
             continue
         other = "cross" if s["shape"] == "plus" else "plus"
-        cands = [j for dx in (-0.1, 0.0, 0.1) for dy in (-0.1, 0.0, 0.1)
-                 for j in by_spot.get((s["rgb"], round(s["cx"] + dx, 1), round(s["cy"] + dy, 1)), ())]
+        spot = {(round(s["cx"] + dx, 1), round(s["cy"] + dy, 1))
+                for dx in (-0.1, 0.0, 0.1) for dy in (-0.1, 0.0, 0.1)}
+        # drawn together: o.idx <= s.last + 2 and o.last >= s.idx - 2
+        lo = bisect.bisect_left(order, s["idx"] - span)
+        hi = bisect.bisect_right(order, s["last"] + 2)
+        cands = [j for _, j in marks[lo:hi]
+                 if syms[j]["rgb"] == s["rgb"] and
+                 (round(syms[j]["cx"], 1), round(syms[j]["cy"], 1)) in spot]
         for j in sorted(set(cands)):
             o = syms[j]
             if j in gone or j == k or o["shape"] != other:
@@ -730,8 +938,8 @@ def _drop_pattern_overlays(syms):
     gone = set()
     for i, a in enumerate(syms):
         if a["rgb"] is None and a["filled"] and (
-                i > 0 and syms[i - 1]["rgb"] is not None and _same_place(a, syms[i - 1]) or
-                i + 1 < len(syms) and syms[i + 1]["rgb"] is not None and _same_place(a, syms[i + 1])):
+                (i > 0 and syms[i - 1]["rgb"] is not None and _same_place(a, syms[i - 1])) or
+                (i + 1 < len(syms) and syms[i + 1]["rgb"] is not None and _same_place(a, syms[i + 1]))):
             gone.add(i)
     return [s for i, s in enumerate(syms) if i not in gone] if gone else syms
 
