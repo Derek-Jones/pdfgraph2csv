@@ -37,6 +37,7 @@ of one point's label are joined, top first.
 import math
 import re
 
+from .context import PAGE
 from .geometry import encloses, median, rect_area
 from .grouping import BoxGrid
 from .nongraphs import axis_labels
@@ -66,8 +67,31 @@ def _in_bar(box, s):
     if s.get("shape") != "bar" or s.get("base") is None:
         return False
     cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+    if s.get("horizontal"):                # (across is y, along is x)
+        lo, hi = sorted((s["base"], s["cx"]))
+        return abs(cy - s["cy"]) <= s["size"] / 2 and lo <= cx <= hi
     lo, hi = sorted((s["base"], s["cy"]))
     return abs(cx - s["cx"]) <= s["size"] / 2 and lo <= cy <= hi
+
+
+def _beyond_foot(box, s, em=0.0):
+    """Is a text box no label of bar s: its centre beyond the bar's foot
+    (2020.01.30.927558.full-023: bars hanging from 0, the asterisks and
+    panel titles above the 0 line), or off the bar's column (across the
+    bar, its centre more than half the bar's width and a quarter of a text
+    size from the bar's middle: the asterisks beside bars of almost 0)?"""
+    if s.get("shape") != "bar" or s.get("base") is None:
+        return False
+    k = 0 if s.get("horizontal") else 1
+    c = (0.5 * (box[0] + box[2]), 0.5 * (box[1] + box[3]))
+    across = s["cy"] if k == 0 else s["cx"]
+    if abs(c[1 - k] - across) > 0.5 * s["size"] + 0.25 * em:
+        return True
+    end = s["cx"] if k == 0 else s["cy"]
+    foot = s["base"]
+    if abs(end - foot) < 1e-6:
+        return False
+    return c[k] > foot if end < foot else c[k] < foot
 
 
 def _gap(box, s):
@@ -133,6 +157,9 @@ def _name_parts(names):
     return out
 
 
+_DECIMAL = re.compile(r"[+\-\u2212]?\d*\.\d+")
+
+
 def _lines(texts, apart=frozenset()):
     """Horizontal text items joined into lines: [{"text", "bbox", "size"}].
     Turned text is kept item by item.  Items whose ids are in `apart` (axis
@@ -151,9 +178,15 @@ def _lines(texts, apart=frozenset()):
         for o in reversed(out[-12:]):
             big = max(em, o["size"])
             lo, hi = max(o["bbox"][1], t["bbox"][1]), min(o["bbox"][3], t["bbox"][3])
+            # (two decimal numbers side by side are two values:
+            # Seongmin-PhD-036's crowded point labels "0.99" and "9.81",
+            # 0.25 em apart; whole numbers still join - a row of day counts,
+            # ids run together in touching markers)
             if hi - lo > 0 and \
                     -0.3 * big <= t["bbox"][0] - o["bbox"][2] <= 0.6 * big and \
-                    (id(t) in apart) == (id(o["items"][-1]) in apart):
+                    (id(t) in apart) == (id(o["items"][-1]) in apart) and \
+                    not (_DECIMAL.fullmatch(t["text"].strip()) and
+                         _DECIMAL.fullmatch(o["items"][-1]["text"].strip())):
                 ln = o
                 break
         if ln is not None:
@@ -202,6 +235,37 @@ def _attach_leftovers(got, cands):
                 placed[id(ln)] = k
                 break
 
+def _arrow_label(ln, symbols, marks, legend, got):
+    """A label at the free end of an arrow (PAGE.arrows: symbols.
+    drop_arrowheads) names the marker just beyond the arrow's tip - within
+    8 pt (or three head sizes) of it and 30 degrees of its direction
+    (1356058.1356080-007: "-O1" ... "-Os" pointing at the '+' markers of
+    GCC's levels).  Sets got[k]; True if the line was so used."""
+    arrows = getattr(PAGE, "arrows", None) or []
+    x0, y0, x1, y1 = ln["bbox"]
+    for tip, (ux, uy), end, size in arrows:
+        gap = math.hypot(max(x0 - end[0], end[0] - x1, 0.0), max(y0 - end[1], end[1] - y1, 0.0))
+        if gap > 1.0 * ln["size"]:
+            continue
+        best = None
+        for k in marks:
+            if k in legend:
+                continue
+            s = symbols[k]
+            dx, dy = s["cx"] - tip[0], s["cy"] - tip[1]
+            d = math.hypot(dx, dy)
+            if d > max(8.0, 3 * size):
+                continue
+            if d > 0.5 * s["size"] and (dx * ux + dy * uy) / d < math.cos(math.radians(30)):
+                continue
+            if best is None or d < best[0]:
+                best = (d, k)
+        if best:
+            got.setdefault(best[1], []).append(ln)
+            return True
+    return False
+
+
 def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
     """Set s["label"] on each symbol that has a data label.  `names` are
     the legend entries' names; `boxes` the note boxes (nongraphs.text_boxes);
@@ -216,45 +280,71 @@ def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
     most = 1.25 * tick if tick else float("inf")
     # note boxes: not bars (a bar's value is often printed inside it) and
     # not square markers (charts print a point's id inside its marker)
-    bar_tops = [(s["cx"], s["cy"]) for s in symbols if s["shape"] == "bar"]
+    bar_tops = [(s["cx"], s["cy"]) for s in symbols if s["shape"] == "bar" and not s.get("horizontal")]
+    # (horizontal bars: their far ends - 2305.15675v1 page 7's segments)
+    bar_ends = [(s["cx"], s["cy"]) for s in symbols if s["shape"] == "bar" and s.get("horizontal")]
     # (and heat-map tiles: a cell's value printed in it, 2308.04785-006)
     marker_boxes = [(s["cx"], s["cy"], s["size"]) for s in symbols
                     if s["shape"] in ("square", "tile") and is_marker(s)]
     small_boxes = [b for b in boxes if any(rect_area(b) < 0.5 * rect_area(g["rect"]) for g in graphs)
                    and not any(abs((b[0] + b[2]) / 2 - x) < 0.5 and
                                min(abs(b[3] - y), abs(b[1] - y)) < 0.5 for x, y in bar_tops)
+                   and not any(abs((b[1] + b[3]) / 2 - y) < 0.5 and
+                               min(abs(b[2] - x), abs(b[0] - x)) < 0.5 for x, y in bar_ends)
                    and not any(abs((b[0] + b[2]) / 2 - x) < 0.5 and abs((b[1] + b[3]) / 2 - y) < 0.5
                                and abs(max(b[2] - b[0], b[3] - b[1]) - sz) < 1.0
                                for x, y, sz in marker_boxes)
                    and not any(_band(b, g["rect"]) for g in graphs)]
+    # (graphs' titles are no labels: 2020.01.30.927558.full-030's "E5",
+    # inside the top of its panel over a bar)
+    from .titles import find_title
+    titles = {find_title(g["rect"], texts, symbols) for g in graphs} - {""}
     cands = []
     # (tiny items - specks of text 0.1 pt high - are dropped before lines
     # are made, so that they join nothing)
     lines = [ln for ln in _lines([t for t in texts if (t.get("size") or 0) >= least], own)
              if not _after_swatch(ln, boxes)]
+    # labels at the free ends of arrows first: an arrow says which point
+    # they name, even when the text is part of a legend name ("-O1" of
+    # "GCC -O1,-O2,-O3, -Os") or bigger than tick labels (up to twice
+    # their size: 8.7 pt over 5.9 pt there)
+    got = {}                               # symbol index -> [lines]
+    arrowed = set()
+    marks0 = [k for k, s in enumerate(symbols) if is_marker(s)]
+    for ln in lines:
+        if least <= ln["size"] <= 2 * (most / 1.25) and len(ln["text"]) <= MAX_CHARS and \
+                not any(id(t) in own for t in ln["items"]) and \
+                _arrow_label(ln, symbols, marks0, legend, got):
+            arrowed.add(id(ln))
+    lines = [ln for ln in lines if id(ln) not in arrowed]
     for ln in lines:
         txt, em = ln["text"], ln["size"]
         if len(txt) > MAX_CHARS or len(txt.split()) > MAX_WORDS or not least <= em <= most:
             continue
         if any(id(t) in own for t in ln["items"]) or txt in names or "=" in txt or ":" in txt:
             continue
+        if txt in titles:
+            continue                       # a graph's title ("E5" over its bars)
         if any(encloses(b, ln["bbox"]) for b in small_boxes):
             continue
         cx, cy = (ln["bbox"][0] + ln["bbox"][2]) / 2, (ln["bbox"][1] + ln["bbox"][3]) / 2
         if any(g["rect"][0] - em <= cx <= g["rect"][2] + em and
                g["rect"][1] - em <= cy <= g["rect"][3] + em for g in graphs):
             cands.append(ln)
-    marks = [k for k, s in enumerate(symbols) if is_marker(s)]
-    if not cands or not marks:
+    marks = marks0
+    if not marks:
+        return
+    if not cands:
+        for k, lns in got.items():
+            symbols[k]["label"] = " ".join(ln["text"] for ln in lns)
         return
     grid = BoxGrid(max(10.0, *(symbols[k]["size"] for k in marks)))
     for k in marks:
         s = symbols[k]
         h = s["size"] / 2
         grid.add(k, (s["cx"] - h, s["cy"] - h, s["cx"] + h, s["cy"] + h))
-    got = {}                               # symbol index -> [lines]
     unsure = []                            # (line, markers in reach) with no plain winner
-    queue = list(cands)
+    queue = [ln for ln in cands if id(ln) not in arrowed]
     while queue:
         ln = queue.pop(0)
         # each piece of the line centred on a marker of its own: values
@@ -279,6 +369,10 @@ def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
         if ln.get("piece"):
             reach = 0.0                    # (a piece must lie on its marker)
         near = [k for k in grid.near(ln["bbox"], reach) if _gap(ln["bbox"], symbols[k]) <= reach]
+        # (and a bar it is printed inside, however far its end: the long
+        # segments of 2305.15675v1 page 7's horizontal stacked bars)
+        if not ln.get("piece"):
+            near += [k for k in marks if k not in near and _in_bar(ln["bbox"], symbols[k])]
         if not near:
             ln["alone"] = True             # (may still be a second line: _attach_leftovers)
             continue
@@ -286,6 +380,8 @@ def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
         # a legend key on its sample - count as one spot)
         spots = {}
         for k in near:
+            if _beyond_foot(ln["bbox"], symbols[k], ln["size"]):
+                continue
             key = (round(symbols[k]["cx"], 1), round(symbols[k]["cy"], 1))
             if ln.get("piece"):
                 # (an id printed in a marker is centred on it)
@@ -296,6 +392,16 @@ def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
             if key not in spots or sc < spots[key]:
                 spots[key] = sc
         ranked = sorted(spots.values())
+        if not ranked:
+            continue                       # (only bars it lies beyond the foot of)
+        # a point marker within reach wins over bars: a chart of bars with
+        # labelled points over them labels the points (Seongmin-PhD-036's
+        # ratios 5.86 and 8.03, printed over bar tops beside their points)
+        # (squares and rectangles may be short bars: VaskeBeaman2006-003)
+        def point_mark(k):
+            return symbols[k]["shape"] not in ("bar", "square", "rectangle", "tile")
+        if any(point_mark(r[1]) and r[1] not in legend for r in ranked):
+            ranked = [r for r in ranked if point_mark(r[1])]
         # a value printed inside a bar (a segment of a stacked bar) is that
         # bar's, whatever the neighbouring segments' tops
         inside = [r for r in ranked if _in_bar(ln["bbox"], symbols[r[1]])]
@@ -307,6 +413,18 @@ def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
                 # line ("4168 7640 1157"): each piece on its own marker
                 queue[:0] = [{"text": t["text"].strip(), "bbox": t["bbox"], "size": ln["size"],
                               "items": [t], "piece": True} for t in ln["items"]]
+                continue
+            # (a lone value printed in a marker - an id in touching big
+            # markers, 3368089.3409714-004 - is that marker's, nearest
+            # centre first, as the pieces of a joined line are)
+            b = ln["bbox"]
+            tc = ((b[0] + b[2]) / 2, (b[1] + b[3]) / 2)
+            on = [r for _, r in ranked if r not in legend and symbols[r]["shape"] != "bar" and
+                  abs(symbols[r]["cx"] - tc[0]) <= symbols[r]["size"] / 2 and
+                  abs(symbols[r]["cy"] - tc[1]) <= symbols[r]["size"] / 2]
+            if len(ln["items"]) == 1 and on:
+                k = min(on, key=lambda r: math.hypot(symbols[r]["cx"] - tc[0], symbols[r]["cy"] - tc[1]))
+                got.setdefault(k, []).append(ln)
                 continue
             unsure.append((ln, [(sc, r) for sc, r in ranked if r not in legend]))
             continue                       # no plain winner (yet)

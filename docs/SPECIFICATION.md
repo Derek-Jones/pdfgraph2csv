@@ -148,9 +148,10 @@ python3 pdfgraph2csv.py FILE.pdf [options]
 | `--max-symbol-frac F` | largest marker size as a fraction of the plot's smaller side (default 0.1). |
 | `--rotation` | add a `rotation` column (0, 90, -90, 180). |
 | `--sizesymbol` | add a `symbol_size` column: the size of each point's marker in PDF points (1/72 inch). Added at the user's request. |
-| `--digits N` | fixed number of significant digits (1..17) for numbers; default: as many as the PDF's precision justifies (section 16). |
+| `--digits N` | fixed number of significant digits (1..17) for numbers; default: as many as the accuracy of the program that drew the graph justifies when it is recorded and known, else the PDF's precision (section 16). |
 | `--internal` | add `pdf_x`, `pdf_y` columns (marker centre in page coordinates). |
 | `--errbars` | add `x_low,x_high,y_low,y_high` columns: the ends of each point's error bars (section 12.1). |
+| `--heatmap` | look for a graded grey or colour scale (a colour bar) beside each graph and add a column, after `y_coord`, of the value each point's (marker's or heat-map tile's) colour stands for on it, named after the scale; the meta file gains `value_name` (sections 12.2, 12.3). Without it heat-map tiles are points with no value. Added at the user's request. |
 | `--max-words N` | the most words of running text a graph's plot area may hold (default 20; section 10). Added at the user's request. |
 | `--integer AXIS` | round the values of axis `x` or `y` (may be given twice) to whole numbers: data that can only be integers (counts) drawn with a little jitter. Category labels are left alone. Added at the user's request. |
 | `--password PW` | user or owner password of an encrypted file. |
@@ -189,7 +190,11 @@ Columns, in this order:
 ```
 page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
 ```
-plus `label` when some point has a data label, plus `axis` when a graph
+plus, after `y_coord`, `y_base` when a graph is a stacked area chart (the
+bottom of each point's band: its own share is `y_coord` - `y_base`;
+section 12), plus a colour-bar value column with `--heatmap` when a
+point (a heat map's tile or a coloured marker) has a value (named after
+the bar, else `value`; sections 12.2-12.3), plus `label` when some point has a data label, plus `axis` when a graph
 has two scales, plus
 `x_coord_low,x_coord_high,y_coord_low,y_coord_high` when an axis takes its
 tick positions from its label centres, plus `x_low,x_high,y_low,y_high`
@@ -207,7 +212,8 @@ plus `symbol_size` with `--sizesymbol`, plus `pdf_x,pdf_y` with `--internal`.
 * `symbol` — `filled-` or `open-` + shape for closed shapes (`circle`,
   `square`, `triangle`, `diamond`, `thin-diamond`, `polygon`, `rectangle`), or `plus`,
   `cross`, `asterisk`, `bar`, `stem`, `box-min`, `box-q1`, `box-median`,
-  `box-q3`, `box-max`, `line`.
+  `box-q3`, `box-max`, `line`, `tile` (heat maps, 12.2), `errorbar` (a
+  capped error bar with no marker: its middle, 12.1).
 * `series` — series name from a legend (section 13), else empty.
 * `symbol_size` (`--sizesymbol`) — the marker's size in PDF points, for
   data shown by marker size (bubble charts): the diameter of a circle (an
@@ -232,7 +238,9 @@ plus `symbol_size` with `--sizesymbol`, plus `pdf_x,pdf_y` with `--internal`.
 * `label` — only when some point of the output has one (the user asked
   for it for all graphs with labelled data points): the text printed
   beside the point ("55%", a name).  A line of text (items on one
-  baseline, subscripts included, joined across gaps under 0.6 em) is a
+  baseline, subscripts included, joined across gaps under 0.6 em; two
+  decimal numbers side by side are not joined, they are two values:
+  Seongmin-PhD-036's crowded "0.99" and "9.81") is a
   point's label when it lies within or up to 1 em around a graph's box;
   has at most 4 words and 40 characters; is at least 3 pt and 0.6 × the
   axis labels' size and at most 1.25 × it (panel numbers and titles are
@@ -243,7 +251,15 @@ plus `symbol_size` with `--sizesymbol`, plus `pdf_x,pdf_y` with `--internal`.
   number) of a marker or bar top (line corners take no labels) that
   plainly owns it: each candidate scores its gap plus its distance from
   the nearer of the text's centre lines, and the best must score under
-  0.6 × the next.  Text nearest a legend key is its name.  A chart labels
+  0.6 × the next (bars compete only when no point marker - not a square
+  or rectangle, which may be a short bar - is in reach: points labelled
+  over bars keep their values, Seongmin-PhD-036).  A lone value lying on
+  a marker (not a bar) with no plain winner goes to the marker whose
+  centre is nearest (ids in touching big markers, 3368089.3409714-004).
+  Text whose centre lies beyond a bar's foot, or off its column (across
+  the bar more than half its width and a quarter of a text size from its
+  middle), is no label of that bar (2020.01.30.927558.full-023: asterisks
+  and panel titles above bars hanging from 0).  Text nearest a legend key is its name.  A chart labels
   one series' points: a label won by the only labelled marker of its kind
   moves to another marker within reach of a kind with 3+ labels, and a
   label with no plain winner goes to the one (or plainly best) marker in
@@ -303,7 +319,9 @@ page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_t
 
 * `title` — section 14.1; empty if none.
 * `figure` — the figure number from a caption "Fig. 5" / "Figure 3.2" /
-  "FIGURE 12" / "Figure S3"; empty if none.
+  "FIGURE 12" / "Figure S3" / "Figure B.3" (an appendix's:
+  PsychologyToPhylogeny-AnalysisCultEvo-170) / "Figure 1.1.2" (any number
+  of levels: horowitz2014-004); empty if none.
 * `caption` — the caption text without the "Fig. N." label (section 14.2).
 * `tool` — the program recorded in the PDF as having drawn the graph
   (section 15.1); empty if not recorded.
@@ -502,6 +520,15 @@ bars of a log histogram, drawn down to y = -13 826 and clipped to the
 plot, hid the x tick labels and axis title under it; jordan-teh-026's
 last x labels, "5", come back the same way).
 
+A Form XObject's /BBox clips what the form draws, as the PDF specification
+says: text whose middle lies outside its clipping box or its form's box is
+not seen (Sovinsky-paper-017: the included Stata graph is a whole A4 page
+in a form whose box holds just the graph; the page's old caption "Figure
+4: ..." lies outside it, and the paper's caption reads "Figure 5: ...").
+The form's box is not made the clip of the paths and markers it draws:
+every mark of a figure then carried the figure's box, and the markers of
+log-inset's insets went to the main graph.
+
 ### 8.1a Broken ToUnicode entries
 
 Office for Mac (via Quartz) maps codes of Calibri subset glyphs it cannot
@@ -516,6 +543,13 @@ ligatures (ff, fi, fl, ffi, ffl, ft, tt, ti, tf, ...) as the one whose
 letters (glyphs of the same font) start where it starts, span its height
 and are within 3% of its width together; "\ufffd" if none or several fit.
 
+A ToUnicode entry mapping a two-byte font's code to a space is repaired
+when the embedded TrueType program's own cmap gives that glyph a visible
+character that is not a private-use code (Word's Arial subsets in
+2020.01.30.927558.full-023 and -026 map glyph 0xEE, "multiply", to U+0020
+as well as glyph 3; 61676858-74's program calls its space U+F007, which
+stays a space).
+
 ### 8.1b Glyphs known by their outlines
 
 Some producers rename the glyphs of a subset ("s0" ... "s9" in PostScript
@@ -525,17 +559,46 @@ embedded CFF or TrueType program: a blank glyph with an advance is a
 space; otherwise the character of the one named glyph drawn with the same
 operations at coordinates within 2 units, in the same font or else in a
 sibling subset of the same font on the page (the interpreter notes the
-fonts of every resource dictionary it meets).  Codes of a two-byte font
+fonts of every resource dictionary it meets).  A CID-keyed CFF program
+converted from TrueType keeps the TrueType glyph numbers as CIDs, with
+no glyph names ("cid00019") and often no ToUnicode map (R's embedded
+Arial, ArianeWuerbach-Phd-219): when every name is a CID and the shapes
+agree with the Macintosh standard order of the first 258 TrueType glyphs
+(CID 3 blank; three or more of the digits 19 ... 28, all of one height
+within 6% and taller than wide; a period at 17 small and on the
+baseline), the CIDs are read in that order (3 space, 17 period, 19 ...
+28 digits, 36 A, 68 a, ...).  Codes of a two-byte font
 with Identity ordering that is not embedded and has no ToUnicode map are
 unknown ("\ufffd"); in a legend name, one between two numbers is a range
 dash ("85–90").
+
+### 8.1c Repeated text
+
+Copies of a text drawn again on (nearly) the same spot - same string,
+font, size and colour, the start within a tenth of the size - are read
+once, before anything else is done with the page's text
+(Mohamed_Rakha_PhD-072: ggplot drew each of four quadrant labels 25 776
+times, once per data row, 0.01 to 0.04 pt apart; the 103 133 texts made
+the page take 88 s, now 3 s). Joining text into lines keeps a running
+largest size per line (a maximum over all its items made a long line
+quadratic).
 
 ### 8.2 Words and numbers
 
 * Merge text pieces that continue each other on the same baseline (same
   size within 5%, gap < 0.15 em; < 0.45 em either side of a "×", which
   mathtext spaces: matplotlib's log-axis labels "3×10^1" come as "3", "×",
-  "10" and a raised "1"). A small raised number directly after
+  "10" and a raised "1"; and either side of a ":" or "=" after or before a
+  letter or digit, which R's plotmath spaces: Seongmin-PhD-036's slanted
+  "VSM(γ : 0.6)", gaps of 1.2 pt at 6.6 pt).  Within one text run, digits
+  more than 0.6 em after a number (a space is about 0.28 em) start a new
+  label: that page's tick labels 1000 ... 3500, one run 0.84 em apart.
+  A text ending in a comma joins the next on its line across a word
+  space, with a space: "M-Avg," and "ε=|Δ|" in two fonts
+  (2020.01.30.927558.full-026)
+  (VaskeBeaman2006-Lessonslearned-003's equal values over neighbouring
+  bars, "4 4", now label both bars: 22 more of its bars labelled). A
+  small raised number directly after
   "10" is a superscript exponent: "10" + "3" → "10^3".  A raised sign
   drawn on its own (TeX sets the minus of 10^{-3} from a symbol font) is
   first joined to the digits that follow it at its size, within 0.3 of
@@ -571,11 +634,18 @@ dash ("85–90").
   writes a decimal comma elsewhere: one convention to a page
   (Korotayev_Doomsday_preprint-005: x axis 4,0 … 0,0 read 40 … 0).
 * `parse_number`: plain numbers, `1,000`, `$5`, `25%`, `10^3`, `2x10^3`,
+  fractional exponents (`10^+0.2`, `10^-1.0`: 2355585.2355594-006),
   `2×10^3`, Unicode minus (U+2212), '95-style years, dates (decimal year),
   and numbers with a unit or scale suffix: byte sizes in SI units (`B`,
   `kB`, `MB`, `GB`, `TB`, `PB` = 10^3n; the value is in bytes) and binary
   units (`KiB`, `MiB`, `GiB`, `TiB` = 1024^n), thousands and millions
-  (`10k`, `10K`, `2M`: ggplot2's label_number(scale_cut)), factors (`1.5x`,
+  (`10k`, `10K`, `2M`: ggplot2's label_number(scale_cut)), billions (`B`
+  after a number with a decimal point, `2.00B`, `18.0B`: d3's number
+  format - no fraction of a byte is a size; 978-3-031-36060-2_2-006's y
+  labels, `500M` beside them; and after a whole number, `5B`, on a page
+  that names no byte unit - KB, MiB, bytes - at the user's request: K
+  thousands, M millions, B billions, PsychologyToPhylogeny-AnalysisCultEvo-170),
+  factors (`1.5x`,
   `1.5×` = 1.5), and durations - a number and a unit of time, the value
   in seconds (`ns`, `µs`, `ms`, `s`/`sec`/`second`, `min`/`minute`,
   `h`/`hr`/`hour`, `d`/`day`, `w`/`wk`/`week`, `mo`/`month` = 365.25/12
@@ -645,7 +715,12 @@ Some PDF writers convert every character into a filled path. Then:
   templates: R's e-notation labels "1e+00" and "5e-04"
   (Statistical_Test_Coverage_for_Linux page 10, where no label was read
   and the graph was lost). Full-height glyphs are compared with digits
-  only.
+  only - and with the '+' when about square (aspect 0.8 to 1.25: no digit
+  is), which is a '+' at quality 0.9 when its single contour keeps every
+  corner near the horizontal or vertical centre line (within a fifth of
+  its size) and reaches the middle of all four sides (2355585.2355594-006's
+  exponents "+4.0": the plus as tall as the digits, its 0.19 pt bars
+  thinner than a raster cell).
 * A trailing "%" drawn as three shapes (two small rings and a slash) is
   recognised and dropped. "10" followed by a small raised number is 10^n;
   an exponent's minus sign drawn as a separate thin dash makes it 10^-n.
@@ -830,6 +905,38 @@ Some PDF writers convert every character into a filled path. Then:
 
 ### 9.2 Labels
 
+* A category axis with one name at every tick is no axis (categories
+  differ): Seongmin-PhD-036's "W-ORBS" under each of two charts, at the
+  feet of their left y axes taken for ticks.
+* Between two neighbouring y axes that face each other - lines, numeric
+  scales, the left one labelled on its left and the right one on its
+  right, starting at one height (within 1 pt) - with no x axis there, the
+  stretch between their feet is an x axis line without ticks, and the
+  category labels under it (slanted ones by their end nearest it) are its
+  categories (Seongmin-PhD-036: R barplot()s with axis(2) and axis(4)
+  only).
+* A y axis's category labels may be set flush left: three or more labels
+  left of the line whose left edges agree within 1 pt, evenly spaced, one
+  of them within 4 text sizes of the line, count however far the others
+  end from it (up to 25 sizes), one name per line (not joined as the
+  lines of two-line labels), each matched at the column's distance
+  (2020.01.30.927558.full-026: model names, "IIAB, ε=|Δ|" ending 35 pt
+  short of the axis).
+* A y axis with tick marks takes flush-left labels too: three or more
+  labels level with its ticks, left edges agreeing within 2 pt, one
+  within 4 sizes of the line, their distances differing by more than 0.6
+  of a size (2020.01.30.927558.full-048's heat map rows).
+* A category x axis on a line that a y axis with a scale spans well
+  inside (beyond 5% of it from its ends), whose labels all have their
+  centres past that y axis's ends, is no axis: a zero line inside the
+  plot with the panel titles above the plot (2020.01.30.927558.full-023).
+* Panels side by side on one axis line, each with ticks and labels of its
+  own (2020.01.30.927558.full-023: 1 ... 8 under each of three and four
+  panels, the line drawn across each row): numeric axes on one line
+  (within 1 pt) spanning the same stretch (within 2 pt), whose ticks do
+  not overlap, share the line out at the midpoints between their tick
+  ranges.
+
 * Pair each tick with the numeric label just beyond it: centred on the tick
   within min(0.8 × font size, half the tick spacing) (1.5 × size for oblique
   labels, which point at their tick with the end nearest the axis); its gap
@@ -956,7 +1063,21 @@ Some PDF writers convert every character into a filled path. Then:
   Category labels that are all month names make a date axis after all.
   At least 3 categories, except two readable words, one in each gap
   between three ticks on an axis line (an Excel bar chart of "Yes" and
-  "No").
+  "No"), or two level readable words on an axis line with exactly two
+  ticks, one word on each (BehavioralNetworkScience-121's R strip charts
+  of "early" and "late", their points jittered about the ticks).
+  Labels at the ticks or midway: the layout that labels the larger share
+  of its places, shares within 5% being alike, then the better centred;
+  ticks at the ends of the axis line (a frame's sides) are no places of
+  the "on" layout; and when both layouts label 85% of their places or
+  more and one is less than half as far off centre, that one
+  (2355585.2355594-006: slanted outlined names 0.6 pt off their ticks,
+  1.3 pt off the midpoints - an outlined word may be anchored at any of
+  its glyphs, which pairs it loosely with any place). Unread names at the
+  ticks are numbered by the ticks: every tick inside the line's ends is a
+  category when names were found for 80% of them (two slanted names run
+  together would leave a tick without one, its points given to a
+  neighbour: 32 benchmarks, 31 names made out).
 * Numbers at ticks that fit no scale are categories too (the row of ticks
   gives no numeric scale, so its labels are tried as categories):
   Memory_systems_cacheDRAMdisk-051's bandwidths 0.8, 1.6 ... 25.6 at ticks
@@ -966,6 +1087,22 @@ Some PDF writers convert every character into a filled path. Then:
   printed in its bars (2204.07073-010's "87%" ... "77%"). Not a y axis:
   ggplot panels side by side share one column of category names between
   them (2610.20068v1-009).
+* Numbers under an axis line without ticks that follow no scale, rising,
+  are categories (Memory_systems_cacheDRAMdisk-051's PERL chart). Two
+  rows of them, the second just below (within 1.8 label sizes) with one
+  label in each gap of the first (80% or more), are merged into one row:
+  labels too crowded for one row (VaskeBeaman2006-Lessonslearned-003: day
+  counts 1 3 5 ... over 2 4 6 ..., one per bar, 2.8 pt apart - categories
+  that close are allowed when so found, else 3 pt apart at least). A
+  label drawn upside down in the row is a misreading (S1383762124002030
+  page 7's "7" read as "6"), and the rule is not applied. This
+  is tried before the plot's sides are taken for two ticks pairing the
+  first and last labels as a scale, and such a scale fitted to two labels
+  on a line that also has these categories is dropped.
+* An axis placed by its labels (no ticks) is dropped when its labels'
+  column stands nearer another parallel axis line with more labels of
+  that column (the same page: Figure 1e's right frame side took the top
+  three labels, 100 ... 140, of Figure 1f's y axis just right of it).
 * Category labels form one row at one distance from the axis, or two
   staggered rows when long names alternate (Teaching-disciplined-softdev-008,
   Fig. 4: "Exercise 2", "Exercise 4" ... under their ticks, "Exercise 3",
@@ -1009,7 +1146,13 @@ Some PDF writers convert every character into a filled path. Then:
   of 2308.04785-006's correlation matrices are filled squares round their
   numbers, and their neighbours, as big, are no dashes).
   A graph with a category axis each way whose cells (rows by columns)
-  hold text in at least half of them is a ruled table and is dropped too.
+  hold text in at least half of them is a ruled table and is dropped too,
+  and so is one with a category axis each way where one axis names the
+  same category at every tick: categories differ, and one word repeated
+  is a heading repeated across a page's tables (roache_fundamentals_2009-
+  193: Word tables ruled only under their headings and between columns;
+  a column of two of them passed for a plot with x categories "R", "R"
+  from "R actual" and "R theory" and y categories "actual", "actual").
   So is any graph whose box holds a grid of numbers (apart from its axis
   labels, and ignoring text under 3 pt or 60% of the labels' size): at
   least 3 columns and 3 rows that each line up 3 or more numbers, with 9
@@ -1036,7 +1179,12 @@ Some PDF writers convert every character into a filled path. Then:
   own grid lines make no such table round it (half its size at most), nor
   do charts of one size side by side, whose frames and grid lines line up
   but are broken between the charts and have no border round them all
-  (3276496-020).
+  (3276496-020). So is a graph lying 70% or more within ruled tables of
+  numbers that together are twice its size or more (w21074-035: one column
+  of cells running down through two regression tables, one above the
+  other, its x categories two words of the note below). The numbers of a
+  table's cells include regression results: significance marks after a
+  number ("-.895**", "†") and standard errors in brackets ("(.177)").
 
 * Pair x and y axes whose lines meet at a corner: for each x axis the y
   axis closest to forming a corner, and vice versa, within 8% of the longer
@@ -1084,9 +1232,22 @@ Some PDF writers convert every character into a filled path. Then:
   mpl-shared-axes, borrows nothing).
 * **Two scales** (section 10.1): a left and a right y axis over one x
   axis are first paired as two graphs with the same plot box.
+* **One plot found twice**: graphs whose plot boxes overlap by 85% or more
+  of each are one plot; the one whose axes carry more labels stays
+  (ArianeWuerbach-Phd-219: a trace plot's own value axis, and the scale of
+  the plot at the foot of its column borrowed along the shared iteration
+  axis).
 * **Small multiples** (lattice/facet plots): only outer panels carry labels;
   every framed rectangle spanned by a column's x axis and a row's y axis is
   a graph sharing those scales (216 panels on one page in the corpus).
+* **Panels stacked on one axis line, each with its own scale**
+  (2355585.2355594-006: four violin panels, no space between them, the top
+  of one the bottom of the next, a thick border with ticks on both sides;
+  the y labels step back at each border): the tick group's labels make no
+  one scale, only a category axis; then the axis line is split at the
+  panel borders (dark lines ending on it away from any tick) as for small
+  multiples, and the split is kept when it gives two or more numeric axes.
+  Each panel is a graph over the bottom panel's x axis.
 * **Insets**: a graph whose opaque background box was painted over another
   graph; a symbol belongs to the innermost graph painted before it.
 * **Assigning symbols**: a symbol belongs to the graph whose box its clipping
@@ -1102,7 +1263,11 @@ Some PDF writers convert every character into a filled path. Then:
   in a plot area that is not a graph found (its axes were unreadable or
   not shared): it is not reported (legend keys excepted).
 * **Turned graphs**: a graph is turned (90, −90, 180) when the tick labels of
-  both axes read in the same non-horizontal direction and the title found in
+  both axes read in the same non-horizontal direction - or the page-y
+  axis's labels at r and the page-x axis's, not horizontal, at r + 90:
+  R's default labels, the y labels along their axis, turned with the graph
+  (ArianeWuerbach-Phd-219's trace plots: iteration labels at 90, values at
+  180) - and the title found in
   the turned frame is at least as large as any found in the page frame. Its
   data x values come from the axis running down the page and y from the one
   running across.
@@ -1119,6 +1284,21 @@ Some PDF writers convert every character into a filled path. Then:
   over the union of its box and a neighbour's of the same height (to 2 pt)
   a little way off (gap under a tenth of their width); both take it
   (Seongmin-PhD-044: "commons-cli criterion5" over its two panels).
+
+An x axis of ticks only (no line) at the foot of a y axis with its line
+(within 2 pt; 978-3-031-36060-2_2-006's lineless y axes do not count),
+the y axis left of its first tick by at most half its length, pairs with
+it, the plot starting at the y axis: ticks hanging from a frame
+(2020.01.30.927558.full-048's heat map, ticked only at the experiments'
+borders); such an axis is kept beside lined axes elsewhere when none
+covers it.
+
+A panel's x axis left without a y axis, on the line of a graph's x axis
+(within 1 pt) and beginning within 2 pt of where that one ends - or,
+when that graph's y axis is a category axis, after a gap of at most a
+quarter of its own length (-048's "Average" bars beside the heat map's
+rows) - takes that graph's y axis, along the row: a row of panels with the y scale drawn at
+the left only (2020.01.30.927558.full-023: three and four panels).
 
 ### 10.0 Labels claimed by two axes
 
@@ -1141,7 +1321,9 @@ give other values at those ticks make a second scale; labels that are
 words opposite numbers (body text beside the plot) do not.
 
 Two graphs sharing one x axis whose y axes span the same stretch (within
-2%) at opposite ends of it (each within 2% of an end, more than 80% of the
+2%; or that both start on the x axis line, whatever their far ends: R
+draws each axis() only to its last tick, Seongmin-PhD-036) at opposite
+ends of it (each within 2% of an end, more than 80% of the
 x axis apart) are one graph with two y scales: the left axis stays `y`, the
 right one becomes `y2` (likewise two x scales `x`, `x2` beside one y axis;
 in turned graphs the second scale follows its axis). Each series (a legend
@@ -1152,12 +1334,16 @@ order:
    "RHS", "(R)", "secondary", "axis 2", "y2" → second ("bottom"/"top" for
    x scales);
 2. the axis titles: the text beside each axis beyond its tick labels
-   (within 40 pt, along the axis), lower-cased with punctuation dropped,
+   (within 40 pt, along the axis; only the column nearest the labels and
+   lines within 1.6 text sizes of it: Seongmin-PhD-036's next chart's
+   "Deletions(line)" stands 11 pt beyond "Executions"), lower-cased with punctuation dropped,
    containing the series name as whole words in one title but not the
    other ("SRAM area (µm²)" / "CGP/M1 pitch (µm)" place SRAM left, CGP and
    M1 pitch right);
 3. colour: tick labels or title drawn in the series' colour on one side
-   only (text items carry their fill colour; black is ignored);
+   only (text items carry their fill colour, text read from glyph
+   outlines the outlines' colour: PhysRevResearch.3.033169-009's blue
+   and red outlined labels; black is ignored);
 4. otherwise the first (left/bottom) scale, with a warning naming the
    series (only series that are output).
 
@@ -1233,12 +1419,40 @@ files with known true values slightly worse.
   and a cross of one colour around the same centre (within 5% of the size),
   drawn one right after the other, with sizes within a factor of 2, are one
   asterisk.
+* A stroke may be drawn in halves (1356058.1356080-007: Excel's '+' as four
+  2.8 pt arms, the halves of each bar overlapping at the centre): two
+  consecutive strokes (drawing order) of one colour, in line (within 2°
+  and 0.05 pt), of lengths within 20%, overlapping or touching end to end
+  (a gap of at most 5% of the shorter), together reaching 1.5 times the
+  longer or more (a stroke drawn twice over is a duplicate point), are
+  one stroke first. Dashes of a dashed line leave gaps and stay apart.
+* A stroke drawn as its filled outline (the same page's 'x': four filled
+  half-arms, thin hexagons) counts as its centre line: a filled, unstroked
+  single closed contour of 4 to 8 straight edges, its length (along the
+  line through its two farthest corners) at least 3 widths and at most
+  30 pt, its ends half a width in from its farthest extent. Such contours
+  are taken even when outlined-text reading grouped them as an unread
+  "word" (not when it read them as text). An outlined letter (x, X, +) is
+  one contour of a dozen corners and is no stroke.
 
 ### 11.4 Duplicates and things that are not data points
 
 * **Fill + outline**: a filled shape directly followed by a stroke of the
   same outline (or vice versa) is one point (Excel), reported as filled.
   Only directly consecutive pairs; genuinely repeated points are kept.
+  Their sizes may differ by 15% (1356058.1356080-007: 2.21 pt dots, their
+  outlines' centre lines 1.97 pt).
+* **Arrowheads**: a triangle that heads an arrow pointing at a point is no
+  point (1356058.1356080-007: arrows from "-O1" ... "-Os" to GCC's '+'
+  markers): a separate straight stroked shaft drawn within two paths of
+  it, at least as long as the triangle is big, one end within 0.7 of its
+  size of the triangle's centre, pointing through it to its farthest
+  corner (within 25°), and no symbol at the shaft's other end (a line
+  joining markers leads to another). The text at the arrow's free end
+  (within 1 em) is the label of the marker just beyond its tip (within
+  8 pt or three head sizes, and 30° of its direction), even when it is a
+  word of a legend name or up to twice the axis labels' size (section 7,
+  `label`).
 * **Doubled outlines**: some converters (Acrobat Distiller) write every
   marker outline twice in a row. Form runs of identical consecutive marker
   outlines (followed across painting operations); when ≥ 90% of outlines
@@ -1259,7 +1473,11 @@ files with known true values slightly worse.
   painted within two steps after it: the ring is dropped.
 * **Dots hidden in a line**: a filled circle at most 1.3 × the width of a
   line of its colour that passes within a quarter of the line width of its
-  centre cannot be seen (points at the vertices of a model curve): dropped.
+  centre cannot be seen (points at the vertices of a model curve): dropped,
+  provided such dots are at least half the filled circles of their colour
+  and size. A few dots of a scatter that happen to lie under the smooth
+  drawn through it are data (monotonicity-025: 194 of 9 928 Stata dots
+  under the lowess curves).
 * Glyph outlines that are text are never markers.
 * **Markers drawn in layers** (cheyette2024limited-011: strokes converted
   to outlines, each layer painted for every marker in turn): a smaller
@@ -1313,6 +1531,11 @@ the radius, and count stacked points from the colour of overlapping layers.
   layers: 1 - (1 - m)(1 - (1 - a)^n), the darkest shade taken as m): a
   semi-transparent error bar across a marker darkens a strip of it to a
   shade no stack of markers gives, and that strip is not a stack.
+* A circle rebuilt outside every plot box (by more than half its size)
+  is dropped: coloured letters drawn as outlines may give their pieces to
+  the rebuilder, and the round ones make circles of the markers' size
+  (PhysRevResearch.3.033169-009: "0.01", "0.5" and the unread epsilon
+  beside the axes; its markers are whole circles, not rebuilt).
 No warning is given (the user asked for none): each rebuilt point gets a
 `confidence` instead (section 4.1). Cap grid cells per fragment box
 (degenerate boxes).
@@ -1419,8 +1642,34 @@ song2025rigorous-002, clipped to the whole figure, are dropped.
 And a group of "ticks" in three or more colours, none grey or black, is a
 legend's line samples, not an axis.)
 
-For graphs without marker symbols:
+For graphs without marker symbols (and, for bars, graphs with markers
+too when three or more bars stand on the baseline: bars with labelled
+points and lines over them, Seongmin-PhD-036; squares that are short bars
+are then no markers; nor are crosses centred on a bar, its error bar over
+the edge of a bar of almost 0, 2020.01.30.927558.full-023):
 
+* **Horizontal bars**: in a graph with categories up the y axis and a
+  number scale along x, filled axis-aligned rectangles at most a quarter
+  of the plot's height thick, one end on the plot's left side or on the
+  line of value 0; each is a point at the middle of its far end
+  (2020.01.30.927558.full-026). A square or rectangle "marker" centred on
+  such a bar (across within 30% of its thickness, along between its foot
+  and end) is its outline. Stacked: a rectangle as thick as a bar,
+  starting at its end, is the next segment, a point at its own end
+  (2305.15675v1 page 7's Fig. 2, shares of four classes: before, only an
+  empty graph; its legend does not name the segments yet). A value
+  printed inside a horizontal bar is its label (the bar is a candidate
+  however far its end, and is no note box).
+* Boxes that all end on the line of value 0 are no box plots but bars
+  hanging from (or standing on) zero with error bars: the cap inside a
+  bar looks like a median, the error bar beyond its end like a whisker
+  (2020.01.30.927558.full-023).
+
+* (A bar may be wider than a quarter of the plot on a category axis, up
+  to 90% of the categories' spacing: 2020.01.30.927558.full-030's panel
+  A, three bars 17 pt wide in a 64 pt plot.)
+* (Rectangles centred on a bar and as wide, within 20%, are its outline:
+  -048's short bars, outlined two drawing steps after their fills.)
 * **Bars**: filled axis-aligned rectangles standing on the graph's baseline
   (the x axis line or the line of value 0, or reaching below the plot's
   bottom edge with their clipping box ending there: on a log axis a bar's
@@ -1443,7 +1692,9 @@ For graphs without marker symbols:
   too; the soft shadows round 3485513-020's Google Sheets bars have corner
   points inside their box). Short bars
   that look like squares are bars too, when every square of the graph is
-  one of the bars or the bars outnumber the other squares (legend keys in
+  one of the bars (its path, or the path drawn right after a bar's fill
+  at the bar's place: VaskeBeaman2006-Lessonslearned-003's bars of 1,
+  as tall as wide, whose square is the outline) or the bars outnumber the other squares (legend keys in
   the bar colours) three to one; the other squares stay. Stacked bars: a
   rectangle as wide as a bar standing on its top is the stack's next
   segment, one point at its own top (2204.07073-010); it may be thin (0.1
@@ -1499,6 +1750,31 @@ For graphs without marker symbols:
   are stems of no height too (jordan-teh-026, 80 of graph 1's 100 atoms),
   and the graph is still a stem plot. With other markers (a stem plot with
   heads, drop lines to markers) the markers are the points.
+* **Violin plots with an inner box** (2355585.2355594-006: matplotlib
+  violins, every stroke a filled outline), before box plots: at one x
+  (within 0.3 pt) thin upright pieces (filled at most 1.5 pt wide and
+  0.02 pt tall or more - not wider than tall at 0.8 pt or more, the dots of
+  grid lines - or stroked lines; none starting on the plot's edge, the
+  ticks), of the colour of the group's widest piece (within 0.3 per channel:
+  not the slivers of a red reference line crossing them), some at least
+  0.5 pt tall; pieces 1.6 times as wide as the commonest width are the
+  inner box (the quartiles), all pieces together the whisker (minimum to
+  maximum). A violin outline holds them: a filled closed contour of 20
+  edges or more with curves, over 2 pt wide and 0.5 pt tall, centred on
+  that x (within 2 pt), holding the whisker (within 1 pt: the density runs
+  on past it); groups round one outline (the largest) are one. A short
+  level mark centred on the x between the quartiles (1.5 to 6 times the
+  box's width) is the median - unless marks at one height (within 0.5 pt)
+  are in 80% of the violins marked, a reference line's marks (every violin
+  there marked at 10^0, below some first quartiles): then none. Points
+  `box-min`, `box-q1`, (`box-median`,) `box-q3`, `box-max` at the violin's
+  x; a violin with no inner box gives its minimum and maximum (and median).
+  Three violins or more in a graph. The marks inside the violins' outlines
+  are no points.
+* **Letters of unread names**: a marker flanked closely (within 0.35 of
+  their height) on both sides by letters of unread outlined words is a
+  round letter ("o", "e") of one (the same page's slanted names); a legend
+  key has its name on one side only.
 * **Box plots** (first, before bars, stems and lines; the graph's other
   markers, such as outliers, stay points; never with their values along a
   category axis: Memory_systems_cacheDRAMdisk-051's stacked bar segments,
@@ -1536,13 +1812,74 @@ For graphs without marker symbols:
   importances, boxes 0.25 to 2.5 pt long with whisker stubs beside them,
   give all 10 features.
 * **Lines** (no stems either): the vertices of data lines, symbol `line`:
-  stroked polylines (pieces that continue each other joined first) and
+  stroked polylines (pieces that continue each other joined first; a
+  curve whose control points lie within 0.02 pt of its chord counts as a
+  straight segment: ArianeWuerbach-Phd-219's traces hold about 400 such),
   dashed lines drawn as many small filled dashes (chained; a vertex where
-  the direction changes). Axis-parallel straight lines (grid, axes, frames)
+  the direction changes), and **lines converted to outlines**
+  (978-3-031-36060-2_2-006: each d3 curve is one filled contour of 1 600 to
+  2 300 edges, a staircase of 0.42 pt steps, one loop per overlapping
+  short stroke): a filled, unstroked single closed contour of 40 edges or
+  more, wholly inside the plot, spanning a fifth of its width or height,
+  not an outlined axis-parallel line, long and thin (width = area / half
+  the perimeter, at most 3 pt and 2% of the plot's diagonal; half the
+  perimeter at least 15 widths). Its centre line is the middle of each
+  slice across it - vertical slices every half width, and level ones for
+  steep parts, each at most 6 widths long - chained from the end farthest
+  from the shape's centre (gaps of up to 12 widths bridged; 80% of the
+  middles must join), averaged along the chain over a width either way
+  (the slices' middles wobble on the steps), and simplified
+  (Douglas-Peucker) to within half a width. The original vertices cannot
+  be recovered: the points are the trace's corners (25 to 33 per curve
+  there; the last ones within 0.5% of the totals printed above the
+  charts). **Lines running out of the plot** (ESEUR-intro, R): a stroked
+  polyline drawn with the plot box as its clipping box (within the
+  tolerance) may have vertices outside the box - R draws every vertex of
+  `lines()` and lets the clip hide those beyond the axis limits (the
+  semiconductor sales of the smaller regions below the y range set by the
+  world total; Wang's counts from 1985, left of `xlim` 1987). It is a data
+  line when two or more vertices are inside, and all its vertices are
+  reported (as markers clipped out of view are; each vertex keeps the
+  clipping box, so it stays with its graph). A clipped piece wholly out of
+  view is kept when a line of its colour and width is in view (R breaks a
+  line at a missing value: each region's ten months of 1976, before two
+  missing months, lie below the plot). Where a line leaves the device
+  altogether R cuts it and starts a new polyline where it comes back; the
+  two cut ends lie outside the clip box at one x or one y (within 0.01
+  pt), are no data, and are dropped as the pieces are joined (E-Commerce
+  rises to 1 775 against a y limit of 175: its 1998-2002 counts are not in
+  the file, and 14 of its 19 vertices are reported). Lines need three
+  vertices; a graph with markers reports no lines: the user does not want
+  the regression lines drawn over R scatter plots, nor two-point chords,
+  reported. **Lines printed piece by piece** (Sovinsky-paper-017: Stata
+  through PDF-XChange): each piece a two-point stroke; an axis-parallel
+  piece is part of a line when drawn within two drawing steps of the piece
+  it touches (the line's level stretches), while a line made only of such
+  pieces is a grid line or frame. A dashed line stroked dash by dash: the
+  pieces of one colour and width, in drawing order, whose breaks are five
+  or more gaps of one length (0.5 to 1.3 times their median, which is at
+  most 3% of the plot's larger side) and otherwise touch, are chained into
+  one line; a corner in a gap is where the dashes either side meet when
+  extended (turning by more than 2 degrees, the meeting point within the
+  gap's x span and no farther from its ends than twice the gap). The
+  printer also splits lines into pieces of at most about 12 pt, adds a
+  vertex just before most corners, and rounds every vertex to about 0.2
+  pt: when one stroked line of a graph has a vertex at every point of an
+  evenly spaced x grid from its first to its last vertex (the finest such,
+  four steps or more, steps of 1 pt or more, within 0.35 pt), each
+  stroked line that runs left to right, starts and ends on that grid, is
+  read at the grid points, provided every one of its vertices lies within
+  0.4 pt of the line so read; of several grids the one reading the most
+  lines is used (a coarser one on a tie). Both lines give their 27
+  quarters. Axis-parallel straight lines (grid, axes, frames)
   are not data lines, nor lines inside a dark framed rectangle within the
   plot smaller than a third of it (an inset or a legend). A line legend (a short line sample in the series'
-  style with a label to its right) names the series; only samples centred
-in the graph's rectangle grown by a quarter of its size are used, so a
+  style with a label to its right; a row of short strokes 0.3 to 6 pt
+  apart, each under 10 pt and the last perhaps only 1 pt, is a dashed
+  sample: Sovinsky-paper-017) names the series; only samples centred
+in the graph's rectangle grown by a quarter of its size are used (half,
+when no other graph of the page is nearer: Sovinsky-paper-017's second
+legend row lies 49 pt below a 161 pt plot), so a
 neighbour's legend names nothing (logpaper5Rediscoveries-007's right
 chart takes Year 1 and Year 2 from its own legend). Arrowheads are no
   data lines: two strokes of one length (within 10%), each under 5% of the
@@ -1556,11 +1893,29 @@ chart takes Year 1 and Year 2 from its own legend). Arrowheads are no
   the other column of Statistical_Test_Coverage_for_Linux's pages 6 and
   11, nearest to the page's only graph, hid its curve; the drawings of
   song2025rigorous-002's panel e hid the phase plot's path.
+* **Stacked area charts** (economies-open-intelligence-005: plotly through
+  svg2pdf, download shares by developer and by country, 16 and 13
+  translucent bands). A band is one filled closed polygon of straight
+  segments (20 or more) inside the plot, spanning half its width or more,
+  whose outline runs left to right along one edge and back along the other
+  over the same x positions (within 0.01 pt; each position has one vertex,
+  where the band has no thickness, or two). Two or more bands of the same
+  x positions, each sharing an edge with another (one's bottom the other's
+  top, within 0.05 pt), are a stack; a lone band (a confidence band) is
+  not. Each vertex of a band's top is a point, symbol `area`, at the top,
+  with the band's bottom in `y_base`. Areas come before every other
+  reading of the graph (markers in it are legend keys or nothing); before,
+  the thin bands were traced as outlined lines (8 minutes, unnamed). An
+  area takes the name of a filled legend key of its colour in its graph,
+  whatever the key's shape (circles here), and is never a legend key.
 
 ### 12.1 Error bars (`--errbars`)
 
 An error bar is a straight line through a marker's centre along a page
-axis, reaching beyond the marker. The four columns `x_low, x_high, y_low,
+axis, reaching beyond the marker. A bar's error bar runs along it through
+the middle of its end (measured as a marker of 1 pt there): vertical for
+upright bars, horizontal for horizontal ones (2020.01.30.927558.full-023,
+-026). The four columns `x_low, x_high, y_low,
 y_high` give its ends as data values, written with the digits of `x_coord`
 / `y_coord`; both cells of a direction are empty when the point has no bar
 in that direction (also for zero errors, which programs draw as nothing or
@@ -1615,6 +1970,21 @@ its own value for the other side.
   is not taken again; a bar through several vertices (lines meeting at an
   x) goes to the vertex nearest its middle. A side ending at the vertex
   has no bar (its cells take the point's own value, as for markers).
+* **Lone capped bars** (BehavioralNetworkScience-121: the mean +/- standard
+  error of each group drawn as a capped bar, an "H" on its side, among
+  the jittered points of an R strip chart): a single vertical stroke (of
+  a path not also filled: 2401.16279-023's arrows) in a graph, 0.5 pt or longer and shorter than 90% of the plot's height, with
+  a cap centred on each end as above but up to 30% of the plot's width
+  long (a strip chart of two groups is narrow: these caps are 15%), and
+  no marker a quarter of the caps' length or bigger (or of any size
+  within 0.3 pt or 0.15 x its size of the bar's middle, when it is the
+  only marker on the bar: 120875-008's 2.5 pt dots with 10.2 pt caps;
+  jittered dots crowd a mean's bar), line vertex, bar or stem on it (those
+  bars are their points'; small jittered dots fall on it by chance, off
+  its middle). Graphs with box plots are skipped (whiskers). Each is
+  reported with or without `--errbars` as a point at the bar's middle,
+  symbol `errorbar`, in the stroke's colour, of no marker size; with
+  `--errbars` its ends give y_low and y_high.
 
 ### 12.2 Heat maps
 
@@ -1623,19 +1993,32 @@ its colour stands for (Maj-Petr_PhD-077: four ggplot geom_bin2d panels of
 grey tiles, counts on log colour bars). In a graph with fifty or more
 filled upright rectangles without outline, of one size (within 5%; at most
 a fifth of the plot), centred inside the plot, in three or more colours,
+half of them or more beside another one tile away (the dots of dotted grid
+lines stand apart: 2355585.2355594-006),
 each such tile is a point at its centre, symbol `tile`; other marks on the
-tiles' places go. Tiles are no legend keys.
+tiles' places go. Tiles are no legend keys. Tiles are found with or
+without `--heatmap`; their colour-bar values are reported only with it
+(the user found the option had no effect on 2308.04785-006, whose tiles
+were valued anyway).
 
 A colour bar is a gradient image one pixel wide or tall (ggplot draws it
 as an inline image, with a PNG predictor; the interpreter records such
 images, inline or not, with their placement and pixel colours), or a long
 thin image (5:1 or more, 20 pt or longer) whose rows across it are each
 one colour (matplotlib: 2308.04785-006's 47 × 945 indexed pixels; its
-middle column is the gradient), with two or
+middle column is the gradient), or such an image painted by a pattern
+(Cairo, Mohamed_Rakha_PhD-072: a clip box filled with a tiling pattern
+whose content is only "q 3 0 0 21 0 0 cm /x9 Do Q"; the pattern matrix
+places the image in the space of the stream using the pattern, and the
+image is cut to the clip box - across to its width, along to the pixels
+whose centres it shows, the padding rows at each end dropped), with two or
 more numeric labels along one long side (within 3 label sizes, within its
 length), fitted to a linear or log scale as for an axis; its title is the
-text just above it ("count"), the meta file's `value_name`. The graph's bar
-is the nearest one outside the plot, within half the plot's width. A
+text just above it ("count"), which names the value column (the meta
+file's `value_name`; section 12.3). The graph's bar is the nearest one beside
+the plot: outside it, an upright bar level with half the plot's height
+or more, a level bar over half its width or more, within half the plot's
+width, and no nearer to another graph. A
 tile's colour is matched along the bar's pixel centres (between the two
 neighbouring pixels nearest it in RGB, the image being drawn
 interpolated), the gradient carried on to the bar's edges (half a pixel
@@ -1649,8 +2032,73 @@ Marks on a tile's place (within a quarter of its size) go, whether or not
 inside the plot box (a category axis runs from tick to tick, so corner
 cells' centres lie on its edges). A tile may carry a data label (the
 value printed in it), and is no note box: 2308.04785-006's correlation
-matrices give 186 tiles, each with its printed coefficient as label and a
-colour-bar value within 0.011 of it.
+matrices give 186 tiles, each with its printed coefficient as label and
+(`--heatmap`) a colour-bar value within 0.011 of it, in a column named
+`correlation` (section 12.3).
+
+### 12.3 Points coloured along a colour bar (`--heatmap`)
+
+The user asked for an option to read the colour (or grey) of ordinary
+points through a colour bar beside their graph (horowitz2014-004: the
+bottom two graphs colour each processor's point by its year on an
+unlabelled jet bar, 1986 ... 2002, beside the right axis). With
+`--heatmap`, each graph without tiles that has a colour bar (found and
+assigned as in 12.2: beside the right axis, above the plot ...) gives
+each of its markers the value its colour stands for on the bar, matched
+as for tiles; a colour not on the bar (Figure 1.1.6's grey comparison
+points) has none. Lines, stems, box-plot parts and lone error bars get no
+value, nor do legend keys (their colour names a series); bars do when
+their colour is on the bar (2020.01.30.927558.full-048's "Average" bars,
+coloured by their length up to the bar's "≥50").
+
+**Heat maps stored as pictures** (`--heatmap` only; 2020.01.30.927558.
+full-048: MATLAB's 12 models by 408 datasets, a 556 x 319 pixel JPEG,
+read with Pillow when it is installed). A picture placed upright that
+fills a graph's plot (90% of it or more, within it but for 2 pt) is a
+heat map; its cells lie at a category axis's ticks, or on a linear axis
+one per whole unit when the picture spans a whole number of units (2 to
+its pixel count, within 5%); each cell is a tile at its centre coloured
+by the pixel there. Where no colour bar stands beside the graph, a bar
+level with it further right serves (over half the shorter height shared,
+80% of the cells' colours on it - a quarter for a picture whose bar's
+brightness reads the rest): the row's bar at its right end. A picture
+cell whose colour is not on the bar (JPEG keeps colour at half
+resolution, so cells under two pixels wide blend their neighbours) is
+valued by brightness when the bar's brightness rises or falls all along
+it (parula); where both readings exist they differ by 0.7 in median and
+1.6 at the 90th percentile on that bar's 0 to 50. The values are as
+good as the picture: a cell of 1.4 pixels is partly its neighbours.
+
+A colour bar's title may also be words turned along an upright bar's
+right side (within 40 pt), level with it, in one column ("Log likelihood
+difference"), starting within 1.2 of their sizes past the bar's labels
+(horowitz2014-004's right axis title, two sizes past its bar's years,
+belongs to the axis). An axis running along a colour bar's long side (within 1.5
+pt, over 80% of it) is the bar's scale, not a graph's axis (it was the
+bar chart's y axis beside it); it is dropped after it has claimed its
+labels, which would otherwise go to another axis (2308.04785-006). JPEG colour bars are read too.
+
+The value column follows `y_coord`. Its name is the value name shared by
+the graphs with values (else `value`, as when they differ or none is
+found, or the name is another column's):
+
+* the bar's title (the text just above it);
+* else what the graph's caption (or title) says colour shows: "colour
+  indicates the year", "points coloured by temperature", "colour
+  represents density" (the one or two words after the verb, trailing
+  small words dropped);
+* else what it calls the heat map ("heat map of latency": `latency`) or
+  the matrix ("Correlation matrices for ...": `correlation`,
+  2308.04785-006), in lower case;
+* else `year` when the bar's labels are all whole numbers from 1800 to
+  2100 (horowitz2014-004).
+
+The same name heads a heat map's tile values (12.2: Maj-Petr_PhD-077's
+column is `count`). The meta file's `value_name` gives each graph's.
+Colours are read as exactly as the bar's pixels allow: a 64-colour bar
+over 16 years resolves a quarter of a year, so horowitz2014-004's years
+come out as 1992.78 and the like; each lies within its legend series'
+range (85-90 ... 00-05).
 
 ## 13. Legends and series names
 
@@ -1666,6 +2114,18 @@ colour-bar value within 0.011 of it.
 * A swatch drawn as an outline only, among filled swatches of its size, is
   white: the legend box shows through (Memory_systems_cacheDRAMdisk-051's
   "System Overhead + DRAM").
+* **A chart's paper**: the smallest opaque filled rectangle holding a
+  plot box (within 0.5 pt), no other graph's plot, and no more than four
+  times the plot's area is that graph's paper (plotly draws each chart on
+  one, with its labels and legend). A shape outside every plot and on one
+  graph's paper alone belongs to that graph, for its row and its legend
+  (economies-open-intelligence-005: the developer legend under the upper
+  chart is nearer the lower plot; both legends use the same colours for
+  different series). Frames of legends (strays.mark_legend_frames) go
+  first.
+* A legend label may hold a number set as its own word when a word that
+  is no number follows it ("Top 20 (Inclusive)"); a number at the end is
+  still left out (it is a value, not part of the name).
 * Bars and stems stand on the baseline and are never legend keys (the
   tallest bars of Memory_systems_cacheDRAMdisk-051 reach the subtitle
   "(2 banks/channel)" beside them).
@@ -1749,6 +2209,13 @@ colour-bar value within 0.011 of it.
   their size; Memory_systems_cacheDRAMdisk-051's top key, inside a plot,
   reaches 0.01 pt past its edge) matched by marker or by colour (within
   0.03 per channel; only if unambiguous). Cache by (colour, signature).
+  Bars of a chart with no keys of its own and one bar at each of three or
+  more categories, no two of one colour, take no name from another
+  graph's or a figure's keys - unless those keys name three quarters of
+  the bars or more, each its own (3485513-020's chart of benchmarks, its
+  legend naming 6 of 7 bars): the colour stands for the category
+  (1356058.1356080-007's Figure 6: four greys, two of them those of Figure
+  5's legend and of a triangle key of Figure 4).
 
 Unreadable legend names: markers stacked in a column inside a graph,
 each followed by an outlined word, are keys when there are 3+ of them, all
@@ -1772,10 +2239,33 @@ swatches sample a continuous colour scale (symbols-on-axes, #ff0500,
 
 ### 14.1 Title (meta file, `--debug`; not in the points CSV)
 
-* Text centred above the plot (within 15% of its width), gap ≤ min(0.35 ×
-  height, 4 font sizes), at least 0.85 × the typical label size, not a
-  number, alone on its line (legend headings share their line with keys and
-  labels), not a sub-caption belonging to the graph above, not a later line
+* (A title's box may dip into the plot by up to 0.15 of its size, its
+  descent: 2020.01.30.927558.full-023's y axis lines end 1.2 pt into
+  "IIAB"; by up to 1.2 sizes when it is centred within 5% of the width
+  and no symbol under it - within its width and half a symbol - reaches
+  up to it: -030's "E1" ... "E8" inside the top of their panels,
+  Memory_systems_cacheDRAMdisk-051's "PERL" (now its title; ThomasBockPhD-
+  073's note "Goodness of fit: ...", 6% off centre, is none). A word less
+  than half a size beside a title candidate is the title's next word, not
+  a crowding legend label: -048's "Individual" and "results". Words
+  before the candidate on its line, a word space apart, open the title
+  (ThomasBockPhD-073's "QEMU (message-based, file-based, 𝜉 = 5)"), and a
+  word on a line that opens a sub-caption is that caption's, no title
+  (broken-axes's "a) LLVM" under the graph above).) Such a text is not the axis title of the graph
+  above, and bar tops beside it do not crowd it as legend keys would. A
+  graph's title is no point label.) A sub-caption below the plot must start its line and not
+  continue a figure caption: "(B) Model comparison ..." in the middle of
+  a line of -026's caption is part of it.)
+* Text centred above the plot (within 15% of its width) - or starting at
+  its left edge (within a tenth of its width) and not past its right one,
+  when it starts with a figure label ("Figure 1e."; not a note such as
+  Memory_systems_cacheDRAMdisk-051's "(GB/s = ...)"):
+  VaskeBeaman2006-Lessonslearned-003's left-aligned "Figure 1e. ..." -
+  gap ≤ min(0.35 × height, 4 font sizes), at least 0.85 × the typical
+  label size, not a number, alone on its line (legend headings share
+  their line with keys and labels), not a sub-caption belonging to the
+  graph above (unless within a font size of this graph and at least four
+  times as far from the one above), not a later line
   of a caption above, not a running header or footer (the topmost /
   bottommost line of the page's text, running from the left margin to the
   right one with a wide gap: "Paper title ...   Conference '25, ..."; side-
@@ -1783,13 +2273,17 @@ swatches sample a continuous colour scale (symbols-on-axes, #ff0500,
   another graph (text within that graph's width, at most 2.5 text sizes
   below its x tick labels: "Hours" under the panel above - unless another
   line, that graph's own axis title, lies between: Maj-Petr_PhD-077's
-  "Python" under "# of duplicate files"), not outside
+  "Python" under "# of duplicate files"; a graph above of the same width
+  counts: ESEUR-intro page 16's "x" under the upper panel was the lower
+  panel's title), not outside
   the box drawn round the chart (Excel's chart area: the smallest
   rectangle holding the plot box with at least 2 pt to spare, at most 1.6×
   its width and 2× its height; body text above it is no title). Prefer the
   biggest font, then the closest. Add
   continuation lines below and lines just above, words of the same line
-  drawn as separate texts, and sub/superscripts.
+  drawn as separate texts, and sub/superscripts (starting from 0.05 sizes
+  before the title's end: ArianeWuerbach-Phd-219's "11" begins exactly
+  where its turned "rho" ends, a rounding error before it).
 * Failing that, a sub-caption below the plot ("(a) ...", "(b). ...",
   "Fig. 3 ..."); but not the graph's own figure caption (a title starting
   with "Fig."/"Figure" and the caption's number), which is in `caption`.
@@ -1809,7 +2303,12 @@ swatches sample a continuous colour scale (symbols-on-axes, #ff0500,
 * When nothing follows the number ("Figure 1." in bold, a wide space, then
   the caption text), join the text further along the same baseline (within
   4 em).
-* Choose the nearest caption head below the graph that overlaps its width.
+* Choose the nearest caption head below the graph that overlaps its width,
+  but not one standing just above another graph (within a font size, over
+  half its width or more, at least four times nearer it than this graph): that is the other
+  graph's title (VaskeBeaman2006-Lessonslearned-003: "Figure 1c. Number of
+  Anglers ..." over Figure 1c is no caption of Figure 1a above it; the
+  page's "Figure 1. Response strategy ..." captions all six).
   Other graphs of the same figure may lie in between (the caption goes below
   the whole figure): allow a gap of max(2 × graph height, 150 pt) plus 1.5 ×
   the heights of graphs across the way.
@@ -1898,6 +2397,36 @@ vertically):
   coordinates resolve plus one guard digit, so rounding the output adds at
   most a tenth of the coordinates' own rounding), at least 6, at most 15.
   Unknown resolution, 0, non-finite → 6. Category values are labels.
+* **The drawing program's accuracy** (asked for by the user: when the
+  program that drew a graph is known and so is the accuracy of the x/y
+  coordinates it writes, values carry the digits that accuracy justifies,
+  unless `--digits` is given). Known programs (`tools._TOOL_ACCURACY`,
+  from their PDF writers' source):
+  * R's pdf() device (recorded tool `R`, `R x.y.z`): every coordinate
+    `%.2f` (grDevices devPS.c: lines, polylines, polygons, paths,
+    rectangles, circles' Bézier points, the Tm of text and Dingbats
+    markers) - 0.01 user space units.
+  * matplotlib: paths through `_path.convert_to_string` with precision 6
+    (backend_pdf); markers placed with `cm` at `%.10f`, their outlines,
+    which give their centres, at 6 decimals - 10^-6 units.
+  Only the recorded tool counts (the graphic's own producer when pdfTeX
+  kept it; the style guess is no knowledge; Adobe Illustrator and other
+  programs that rewrote a graphic have their own, unknown, rounding), and
+  only when the numbers as written are not finer than the program writes
+  them (under half its rounding: the synthetic test plots carry R's name
+  but 3 decimals). The accuracy times the CTM's scale (for Dingbats
+  markers the graphics CTM, not the font size) is the resolution, carried
+  through the axis mapping as above; the digits are then just those it
+  resolves, `floor(log10|v|) - floor(log10 rv) + 1`, at least 1 - no
+  guard digit and no floor of 6 (an R plot 0-100 over 400 pt: 42.342;
+  values near 0 get few digits, -0.05). A whole number longer than its
+  digits is rounded, not written with an exponent (39876 to 4 digits:
+  39880). Values from other programs, or from none recorded, keep the
+  rule above.
+* Tick positions are kept as drawn (they were rounded to 4 decimals,
+  which put matplotlib's 6-decimal ticks 5×10^-5 pt off and its values
+  off by more than its accuracy: mpl-errorbars' 4.9999987 for 5, now
+  4.99999999).
 * `--digits N` writes every number with N significant digits instead.
 * Other numbers (pdf_x, pdf_y, meta tick values) use `%g` unless `--digits`.
 * Expected accuracy on synthetic plots with axes 0–100 over 400 pt
@@ -2280,9 +2809,31 @@ expected files in a copy.
 | Memory_systems_cacheDRAMdisk-051 | tick labels in two rows: category ticks of numbers (bandwidths) and slanted group names (`x_group`) under or above the bars; text set last letter first; stacked bars with thick-stroke and thin segments; outline-only white swatch; tickless category axis of numbers |
 | cheyette2024limited-011 | four panels, all text outlined, no tick marks (labels as ticks: two labels at a plot's corner; minus signs no ticks; two-label fits do not block); markers drawn in layers (faces dropped); flattened translucent rings rebuilt from their white faces; a dotted diagonal in one path; two-key line legends with unreadable names |
 | ArianeWuerbach-Phd-064 | side-by-side lattice panels with alternating x axes: axis lines cut at the panel border; the right panel borrows the left y scale (counts and meta) |
-| Maj-Petr_PhD-077 | heat maps: a point per tile with its colour-bar value (`value`, meta `value_name`); colour bars from inline images; bar ticks no minus signs; titles below the axis title of the graph above; two-label log axis (10, 1000) |
+| Maj-Petr_PhD-077 | heat maps: a point per tile with its colour-bar value (now with `--heatmap`, in a column named after the bar, `count`; meta `value_name`); colour bars from inline images; bar ticks no minus signs; titles below the axis title of the graph above; two-label log axis (10, 1000) |
 | 10.5445IR1000121285-038 | six matplotlib log panels with numeric legends (V_DS values as series names, the heading no key); legend numbers no right axis or x axis; a key under the figure caption dropped |
 | 2305.15675v1-015 | speed (minus-sign search indexed); covers clipped; log bars clipped at the plot bottom stand there; powers-of-ten labels make a two-label log axis; short horizontal boxes; bar-legend patches as swatches (2401.16279-023's Figure 6 named) |
+| BehavioralNetworkScience-121 | two level words on an axis with exactly two ticks make a category axis (was "no vector graphics found"); lone capped bars (mean +/- SE, an H on its side) reported as `errorbar` points with y_low/y_high |
+| monotonicity-025 | dots under a smooth of their colour are data unless they are at least half the dots of their colour and size (194 Stata dots were dropped as curve vertices) |
+| horowitz2014-004 (--heatmap) | new `--heatmap` option: markers valued by the colour bar beside their graph, the column named from the bar title, the caption or (whole-year labels) `year`; grey points off the bar and legend keys have none; colour bars are assigned only to the graph they are beside; tile value columns named after their bar (`count`) |
+| 978-3-031-36060-2_2-006 | lines converted to outlines traced along their centre lines; `B` after a decimal number is billions; y axis on the right, nearly upright date labels |
+| 2308.04785-006 (--heatmap) | tile values reported only with `--heatmap` (the option had no effect); the value column named from the caption's "Correlation matrices": `correlation` |
+| Mohamed_Rakha_PhD-072 (--heatmap) | repeated copies of a text read once (88 s -> 3 s); colour bars painted by a tiling pattern (Cairo); hexagons valued by the log `count` bar |
+| ArianeWuerbach-Phd-219 | speed (56 s -> 10 s: tick groups visit only nearby lines and labels); CID fonts in Mac standard glyph order; straight curves in polylines; turned R labels (las = 0); one plot found twice kept once; subscripts starting at the title's end |
+| 1356058.1356080-007 | '+' of half strokes and 'x' of filled half-arms found; arrowheads dropped and arrow labels given to the points they point at; fill + slightly smaller outline one point; one-bar-per-category charts not named by other legends |
+| 2355585.2355594-006 | stacked panels on one axis line split at their borders; violin plots (inner box) as box points; fractional exponents and square '+' glyphs; constant marks no medians; unread names numbered by ticks; grid dots no tiles; letters no markers |
+| PsychologyToPhylogeny-AnalysisCultEvo-170 | captions numbered with an appendix letter ("Figure B.3") or three levels ("1.1.2", horowitz2014-004); whole-number `B` labels are billions unless the page names a byte unit (horowitz2014-004's "1B" transistors join its log scale); side-by-side graphs sharing a y axis (already read) |
+| w21074-035 | a graph lying across ruled tables is dropped; regression cells (stars, bracketed standard errors) count as numbers (no points, no meta file) |
+| VaskeBeaman2006-Lessonslearned-003 | two alternating rows of number labels merged into categories; frame-side two-label scales dropped; short bars matched by place; labels of a nearer axis left to it; left-aligned titles; a "Figure 1c." title over a graph is no caption of the one above |
+| ESEUR-intro (pages 2, 6, 7, 9, 10, 11, 16) | R line charts clipped to the plot: lines with vertices outside the box kept whole (four of five GSR regions and all eight Wang topics had given nothing), pieces wholly out of view joined to their colour, R's device-edge cuts dropped; the axis title of the upper of two same-width panels is no title. All points checked against values recomputed from the scripts' data: within 0.13% |
+| roache_fundamentals_2009-193 | a graph whose category axis names one category at every tick (a heading word repeated across columns or tables: R R, actual actual) is a table (no points, no meta file) |
+| Sovinsky-paper-017 | lines printed as one stroke per piece with extra vertices read back on their evenly spaced x grid; dashed lines stroked dash by dash chained; level pieces of a line kept; stroked-dash legend keys; legends below the plot farther off when no other graph is nearer; a form's /BBox clips its content (a hidden old caption) |
+| PhysRevResearch.3.033169-009 | text read from outlines keeps its colour, so outlined tick labels in a series' colour choose its scale; circles rebuilt from curved pieces outside every plot box (round letters of coloured labels) dropped |
+| Seongmin-PhD-036 | x category axes between facing y axes with no x line; one-name category axes rejected; twin scales whose axis lines differ in height; axis titles cut to the nearest column; bars beside markers; point labels: numbers side by side kept apart, points win over bars; plotmath colons joined; numbers in one run split |
+| 2020.01.30.927558.full-023 | panels sharing one x axis line split; row y scale borrowed; bars hanging from 0 with error bars not box plots; crosses on bars; zero-line title axes dropped; titles dipping into the plot; labels beyond a bar's foot or off its column refused; error bars of bars |
+| 2020.01.30.927558.full-026 | horizontal bars (and their error bars); flush-left y category labels; comma-joined names; square outlines of short horizontal bars; mid-line "(B)" no sub-caption |
+| 2020.01.30.927558.full-030 | bars up to 90% of the category spacing wide; titles inside the top of the plot (not the axis title above, not crowded by bar tops, not labels) |
+| 2020.01.30.927558.full-048 | heat map pictures (JPEG) read cell by cell, valued by colour or brightness on a colour bar at the row's right end; bars valued by colour; flush-left labels on ticked y axes; frame-hanging tick axes; category rows borrowed across a gap; colour-bar scales no axes; turned colour-bar titles; titles of separate words; short-bar outlines |
+| economies-open-intelligence-005 | stacked area bands (one point per top vertex, `y_base`); legend keys to the chart whose paper they are on; areas named by keys of any shape; numbers inside legend labels |
 | overflow-exponent | "10^602" in body text |
 | encrypted*, enc-* | RC4-40/128, AES-128/256, user password |
 | bad-stream, damaged, not-a-pdf, no-graph, many-shapes, zero-width-glyph, doubtful-axes | clean failures and "no graph" |

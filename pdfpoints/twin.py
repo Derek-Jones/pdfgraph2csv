@@ -55,6 +55,18 @@ def axis_title(axis, texts, side):
         c_along = (b[1 - k] + b[3 - k]) / 2
         if band[0] <= c_across <= band[1] and lo - 5 <= c_along <= hi + 5:
             picked.append(t)
+    # only the column (row) of text nearest the labels, and lines within
+    # 1.6 text sizes of it: Seongmin-PhD-036's "Executions" beside its right
+    # axis is followed, 11 pt further out, by the next chart's "Deletions(line)"
+    if picked:
+        def across(t):
+            return 0.5 * (t["bbox"][k] + t["bbox"][k + 2])
+        first = min(picked, key=lambda t: abs(across(t) - outer))
+        keep = [first]
+        for t in sorted(picked, key=lambda t: abs(across(t) - outer)):
+            if t is not first and any(abs(across(t) - across(o)) <= 1.6 * (o["size"] or 1.0) for o in keep):
+                keep.append(t)
+        picked = keep
     picked.sort(key=lambda t: (-t["bbox"][1], t["bbox"][0]) if k == 1 else
                 (t["bbox"][1], t["bbox"][0]))
     return picked

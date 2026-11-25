@@ -29,7 +29,11 @@ def drop_hidden_dots(symbols, paths):
     """Dots hardly wider than a line of their colour drawn through them
     (at most 1.3 times its width: points at the vertices of a model curve,
     the curve drawn about as thick as they are) cannot be told from the
-    line: they are not data points."""
+    line: they are not data points.  Only when they are at least half the
+    filled circles of their colour and size: those are the curve's
+    vertices.  A few of a scatter's dots that happen to lie under the
+    smooth drawn through it are data (monotonicity-025: 194 of 9 928 Stata
+    dots under the lowess curves, 17 of graph 1's 1 638)."""
     cell = 5.0
     segs = {}                            # (colour, cell) -> [(p, q, half width)]
     for p in paths:
@@ -57,7 +61,14 @@ def drop_hidden_dots(symbols, paths):
             if math.hypot(a[0] + t * dx - s["cx"], a[1] + t * dy - s["cy"]) <= 0.25 * lw:
                 return True
         return False
-    return [s for s in symbols if not hidden(s)]
+    gone = [s for s in symbols if hidden(s)]
+    if not gone:
+        return symbols
+    kind = lambda s: (s["rgb"], round(s["size"], 2))
+    total = collections.Counter(kind(s) for s in symbols if s["filled"] and s["shape"] == "circle")
+    under = collections.Counter(kind(s) for s in gone)
+    drop = {id(s) for s in gone if under[kind(s)] >= 0.5 * total[kind(s)]}
+    return [s for s in symbols if id(s) not in drop]
 
 
 def drop_covered_bits(symbols, paths):
@@ -695,10 +706,12 @@ def _containers(boxes):
     return out
 
 
-def find_symbols(paths, glyph_symbols=(), text_parts=frozenset()):
+def find_symbols(paths, glyph_symbols=(), text_parts=frozenset(), blob_parts=frozenset()):
     """All marker symbols of the page: vector shapes (filled, outlined or
     both), crossing strokes (+, x) and ZapfDingbats glyphs.  Outline parts
-    that belong to text (`text_parts`) are ignored."""
+    that belong to text (`text_parts`) are ignored - except that a part of
+    an unread "word" (`blob_parts`) that is a stroke drawn as its filled
+    outline may still be an arm of a '+' or 'x' (1356058.1356080-007)."""
     syms = [dict(g) for g in glyph_symbols]
     open_lines = []
     marker_edges = set()    # the edges of polygon markers
@@ -722,6 +735,11 @@ def find_symbols(paths, glyph_symbols=(), text_parts=frozenset()):
                 continue            # a word of outlined letters, not markers
         for k, sp in enumerate(p["subpaths"]):
             if (p["idx"], k) in text_parts or k in holes or (p["idx"], k) in doubled:
+                if (p["idx"], k) in blob_parts and p["fill"] and not p["stroke"] and \
+                        len(p["subpaths"]) == 1:
+                    ln = _outlined_stroke(sp)
+                    if ln:
+                        open_lines.append((p["idx"], ln[0], ln[1], p["fill_rgb"]))
                 continue
             c = cls[k]
             if c and k in hole_of:
@@ -760,6 +778,10 @@ def find_symbols(paths, glyph_symbols=(), text_parts=frozenset()):
             elif (p["stroke"] and not sp["closed"] and len(sp["segs"]) == 1
                   and sp["segs"][0][0] == "l"):
                 open_lines.append((p["idx"], sp["start"], sp["segs"][0][1], p["stroke_rgb"]))
+            elif p["fill"] and not p["stroke"] and len(p["subpaths"]) == 1:
+                ln = _outlined_stroke(sp)
+                if ln:
+                    open_lines.append((p["idx"], ln[0], ln[1], p["fill_rgb"]))
     # a marker's outline stroked as separate edges (seen with Excel via
     # Distiller: each filled diamond, then its four edges) is no '+' or 'x':
     # crossing edges of overlapping diamonds would read as such
@@ -770,10 +792,138 @@ def find_symbols(paths, glyph_symbols=(), text_parts=frozenset()):
     return merge_fill_outline(syms)
 
 
+def drop_arrowheads(symbols, paths, arrows=None):
+    """Triangles that are the heads of arrows pointing at points
+    (1356058.1356080-007: arrows from the labels "-O1" ... "-Os" to the '+'
+    markers, each a 6 pt shaft and an open triangle) are no points: a
+    triangle with a separate straight stroked shaft, drawn within two paths
+    of it, one end of the shaft within 0.7 of its size of the triangle's
+    centre, the shaft at least as long as the triangle is big, pointing
+    through it to its farthest corner (within 25 degrees), and no symbol at
+    the shaft's other end (a line joining markers leads to another one).
+    Each arrow (tip, unit direction, free end, head size) is added to
+    `arrows`, for labelling the point it points at."""
+    by_idx = {p["idx"]: p for p in paths}
+    tri = [s for s in symbols if s["shape"] == "triangle"]
+    if not tri:
+        return symbols
+    near = BoxGrid(5.0)
+    for i, s in enumerate(symbols):
+        near.add(i, (s["cx"], s["cy"], s["cx"], s["cy"]))
+    gone = set()
+    for s in tri:
+        size = s["size"]
+        for d in (-2, -1, 1, 2):
+            p = by_idx.get(s["idx"] + d)
+            if p is None or not p["stroke"] or p["fill"] or len(p["subpaths"]) != 1:
+                continue
+            sp = p["subpaths"][0]
+            if sp["closed"] or len(sp["segs"]) != 1 or sp["segs"][0][0] != "l":
+                continue
+            a, b = sp["start"], sp["segs"][0][1]
+            if math.dist(a, b) < size:
+                continue
+            if math.dist(b, (s["cx"], s["cy"])) < math.dist(a, (s["cx"], s["cy"])):
+                a, b = b, a                          # a: the end at the head
+            if math.dist(a, (s["cx"], s["cy"])) > 0.7 * size:
+                continue
+            p_head = by_idx.get(s["idx"])
+            corners = vertices(p_head["subpaths"][0]) if p_head else []
+            tip = a
+            if corners:
+                tip = max(corners, key=lambda q: math.dist(q, b))
+                v1 = (a[0] - b[0], a[1] - b[1])
+                v2 = (tip[0] - b[0], tip[1] - b[1])
+                n1, n2 = math.hypot(*v1), math.hypot(*v2)
+                if n1 == 0 or n2 == 0 or \
+                        (v1[0] * v2[0] + v1[1] * v2[1]) / (n1 * n2) < math.cos(math.radians(25)):
+                    continue
+            if any(symbols[i] is not s and
+                   math.dist((symbols[i]["cx"], symbols[i]["cy"]), b) <= max(1.0, 0.7 * symbols[i]["size"])
+                   for i in near.near((b[0] - 5, b[1] - 5, b[0] + 5, b[1] + 5))):
+                continue
+            gone.add(id(s))
+            if arrows is not None:
+                L = math.dist(b, tip) or 1.0
+                arrows.append((tip, ((tip[0] - b[0]) / L, (tip[1] - b[1]) / L), b, size))
+            break
+    return [s for s in symbols if id(s) not in gone]
+
+
+def _outlined_stroke(sp):
+    """The centre line (two ends) of a short stroke drawn as its filled
+    outline - one closed contour of 4 to 8 straight edges, its length
+    (along the line through its two farthest corners) at least 3 times its
+    width and at most 30 pt - or None (1356058.1356080-007: Excel's 'x'
+    marker drawn as four filled half-arms, thin hexagons 2.8 pt long)."""
+    if not all(s[0] == "l" for s in sp["segs"]):
+        return None
+    pts = vertices(sp)
+    if len(pts) > 2 and math.dist(pts[0], pts[-1]) < 1e-6:
+        pts = pts[:-1]
+    if not 4 <= len(pts) <= 8:
+        return None
+    a, b = max(((p, q) for i, p in enumerate(pts) for q in pts[i + 1:]),
+               key=lambda pq: math.dist(*pq))
+    L = math.dist(a, b)
+    if L <= 1e-6 or L > 30:
+        return None
+    ux, uy = (b[0] - a[0]) / L, (b[1] - a[1]) / L
+    cx = sum(p[0] for p in pts) / len(pts)
+    cy = sum(p[1] for p in pts) / len(pts)
+    along = [(p[0] - cx) * ux + (p[1] - cy) * uy for p in pts]
+    across = [(p[0] - cx) * -uy + (p[1] - cy) * ux for p in pts]
+    width = max(across) - min(across)
+    length = max(along) - min(along)
+    if width <= 0 or length < 3 * width:
+        return None
+    # (the ends: half a width in from the farthest corners, the caps)
+    lo, hi = min(along) + 0.5 * width, max(along) - 0.5 * width
+    if hi <= lo:
+        return None
+    return ((cx + lo * ux, cy + lo * uy), (cx + hi * ux, cy + hi * uy))
+
+
 def _edge_key(a, b):
     """A straight edge whichever way it is drawn (to 0.01 pt)."""
     a, b = (round(a[0], 2), round(a[1], 2)), (round(b[0], 2), round(b[1], 2))
     return (a, b) if a <= b else (b, a)
+
+
+def _join_stroke_halves(lines):
+    """Consecutive collinear halves of one stroke joined (match_crossing_strokes)."""
+    out = []
+    lines = sorted(lines, key=lambda ln: ln[0])
+    k = 0
+    while k < len(lines):
+        idx, a, b, rgb = lines[k]
+        if k + 1 < len(lines):
+            idx2, c, d, rgb2 = lines[k + 1]
+            L1, L2 = math.dist(a, b), math.dist(c, d)
+            if idx2 - idx == 1 and rgb2 == rgb and L1 > 1e-9 and L2 > 1e-9 and \
+                    abs(L1 / L2 - 1) < 0.2:
+                ux, uy = (b[0] - a[0]) / L1, (b[1] - a[1]) / L1
+                cross = lambda q: abs((q[0] - a[0]) * uy - (q[1] - a[1]) * ux)
+                vx, vy = (d[0] - c[0]) / L2, (d[1] - c[1]) / L2
+                if abs(ux * vy - uy * vx) < math.sin(math.radians(2)) and \
+                        cross(c) < 0.05 and cross(d) < 0.05:
+                    t = sorted([0.0, L1, (c[0] - a[0]) * ux + (c[1] - a[1]) * uy,
+                                (d[0] - a[0]) * ux + (d[1] - a[1]) * uy])
+                    s1 = (0.0, L1)
+                    s2 = tuple(sorted(((c[0] - a[0]) * ux + (c[1] - a[1]) * uy,
+                                       (d[0] - a[0]) * ux + (d[1] - a[1]) * uy)))
+                    gap = max(s1[0], s2[0]) - min(s1[1], s2[1])   # < 0: overlap
+                    # (halves extend each other; a stroke drawn again on
+                    # itself - a duplicate point - covers the same span)
+                    if gap <= 0.05 * min(L1, L2) and t[-1] - t[0] >= 1.5 * max(L1, L2):
+                        lo, hi = t[0], t[-1]
+                        out.append((idx, (a[0] + lo * ux, a[1] + lo * uy),
+                                    (a[0] + hi * ux, a[1] + hi * uy), rgb))
+                        k += 2
+                        continue
+        out.append(lines[k])
+        k += 1
+    return out
 
 
 def match_crossing_strokes(lines):
@@ -788,7 +938,17 @@ def match_crossing_strokes(lines):
     (axis aligned) or a cross (diagonal); three or more make an asterisk.
     Coincident symbols (duplicate data points) give several strokes per
     direction and are all reported.  Unmatched strokes (tick marks, legend
-    lines, ...) are ignored."""
+    lines, ...) are ignored.
+
+    A stroke may be drawn in two halves (1356058.1356080-007: Excel's '+'
+    drawn as four 2.8 pt arms, each pair of halves overlapping at the
+    centre): two consecutive strokes (drawing order) of one colour, in line
+    with each other (within 2 degrees and 0.05 pt), of lengths within 20%,
+    that overlap or touch end to end, together reaching 1.5 times the
+    longer or more (a stroke drawn twice over is a duplicate point), are
+    one stroke first.  Dashes of a dashed line leave gaps and are not
+    joined."""
+    lines = _join_stroke_halves(lines)
     segs = []
     for idx, a, b, rgb in lines:
         L = math.hypot(b[0] - a[0], b[1] - a[1])
@@ -953,7 +1113,8 @@ def merge_fill_outline(syms):
     A fill in a pattern (whose colour is unknown) of the outline drawn just
     before or after it is a texture laid over that marker, not another
     point: it is dropped first (white fill, pattern fill, black outline is
-    one marker)."""
+    one marker).  The two sizes may differ by 15% (the fill reaching the
+    outer edge of the stroke)."""
     syms = _drop_pattern_overlays(syms)
     out = []
     i = 0
@@ -965,7 +1126,9 @@ def merge_fill_outline(syms):
             if (a["shape"] == b["shape"] and a["filled"] != b["filled"] and
                     b["idx"] - a["idx"] <= 2 and
                     abs(a["cx"] - b["cx"]) <= tol and abs(a["cy"] - b["cy"]) <= tol and
-                    abs(a["size"] - b["size"]) <= 0.1 * max(a["size"], b["size"])):
+                    abs(a["size"] - b["size"]) <= 0.15 * max(a["size"], b["size"])):
+                # (sizes within 15%: 1356058.1356080-007's 2.21 pt dots carry
+                # a 1.97 pt outline, their centre line, 11% smaller)
                 fill = a if a["filled"] else b
                 m = dict(fill)
                 m["idx"] = min(a["idx"], b["idx"])

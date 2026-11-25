@@ -92,11 +92,16 @@ def _find_title(rect, texts, symbols):
             return o is not t and o["text"].strip() and not o["rotated"] and \
                 o["bbox"][0] < t["bbox"][2] and t["bbox"][0] < o["bbox"][2] and \
                 t["bbox"][3] <= o["bbox"][1] + 0.1 and o["bbox"][3] <= zb + 0.1 * t["size"]
-        if any(zx0 <= cx <= zx1 and zx1 - zx0 > 0 and
+        # (text inside this graph's box is not the axis title of the
+        # graph above: 2020.01.30.927558.full-030's "E5" ... "E8")
+        if t["bbox"][1] >= rect[3] - 0.15 * t["size"] and any(zx0 <= cx <= zx1 and zx1 - zx0 > 0 and
                -0.2 * t["size"] <= zb - t["bbox"][3] <= 2.5 * t["size"] and
-               not (zx0 == x0 and zx1 == x1) and not any(under(o, zb) for o in texts)
-               for zx0, zx1, zb in PAGE.xlabel_zones):
+               zr != tuple(rect) and not any(under(o, zb) for o in texts)
+               for zx0, zx1, zb, zr in PAGE.xlabel_zones):
             continue                  # the axis title of the graph above ("Hours")
+            # (zones are told apart by their graph, not by their width: the
+            # "x" under the upper of two same-width panels of ESEUR-intro
+            # page 16 was the lower panel's title)
         if t["size"] < 0.85 * PAGE.label_size:
             continue            # sub/superscripts and small print are no titles
         if any(o["size"] > 1.15 * t["size"] and not o["rotated"] and
@@ -105,11 +110,34 @@ def _find_title(rect, texts, symbols):
             continue            # a subscript, e.g. the "DS" of "V_DS"
         bx0, by0, bx1, by1 = t["bbox"]
         gap = by0 - y1
-        if not (0 <= gap <= min(0.35 * h, 4 * t["size"])) or \
-                abs(t["center"][0] - (x0 + x1) / 2) > 0.15 * w:
+        # centred over the plot, or starting at its left edge (within a
+        # tenth of its width: VaskeBeaman2006-Lessonslearned-003's
+        # left-aligned "Figure 1e. ..." titles), and not past its right edge
+        # (a figure label only: "(GB/s = ...)" set at the left of
+        # Memory_systems_cacheDRAMdisk-051's PERL chart is a note)
+        left = abs(bx0 - x0) <= 0.1 * w and bx1 <= x1 + 0.1 * w and bool(_FIGURE_RE.match(txt))
+        # (a title's box may dip into the plot by its descent: the line
+        # ends of 2020.01.30.927558.full-023's y axes reach 1.2 pt into
+        # "IIAB")
+        # (or by up to 1.2 text sizes when nothing plotted under it reaches
+        # up to it: 2020.01.30.927558.full-030's "E1" ... "E8" inside the
+        # top of their panels, over the bars)
+        # (centred within 5% of the width: ThomasBockPhD-073's note
+        # "Goodness of fit: ..." in the plot's top, 6% off, is no title)
+        inside_top = -1.2 * t["size"] <= gap < -0.15 * t["size"] and \
+            abs(t["center"][0] - (x0 + x1) / 2) <= 0.05 * w and not any(
+            bx0 - 0.5 * sy["size"] <= sy["cx"] <= bx1 + 0.5 * sy["size"] and
+            y0 <= sy["cy"] <= y1 and sy["cy"] >= by0 for sy in symbols)
+        if not (-0.15 * t["size"] <= gap <= min(0.35 * h, 4 * t["size"]) or inside_top) or \
+                (abs(t["center"][0] - (x0 + x1) / 2) > 0.15 * w and not left):
             continue
+        # (unless it stands within a font size of this graph and at least
+        # four times as far from the one above: VaskeBeaman2006-Lessons-
+        # learned-003's "Figure 1c. Number of Anglers ..." titles, 2 pt over
+        # their graphs and 25 pt under those above)
         if _CAPTION_RE.match(txt) and any(
                 r != rect and r[1] >= by1 and r[1] - by1 < 0.5 * (r[3] - r[1]) and
+                not (gap <= t["size"] and 4 * gap <= r[1] - by1) and
                 min(r[2], x1) - max(r[0], x0) > 0 for r in PAGE.graph_rects):
             continue            # sub-captions go below: this is the graph above's
         if _continues_caption(t, texts):
@@ -120,28 +148,56 @@ def _find_title(rect, texts, symbols):
                        and 0 <= o["bbox"][1] - r[3] <= 4 * o["size"] for r in PAGE.graph_rects)
         # legend headings share their line with legend keys (drawn right
         # next to the text) and key labels; titles stand alone
+        # (a neighbour less than half a size off is the next word of the
+        # title: Word sets "Individual" and "results" apart,
+        # 2020.01.30.927558.full-048)
         crowded = any(
             o is not t and o["size"] >= 0.85 * s and abs(o["p0"][1] - t["p0"][1]) < 0.5 * s and
-            0 <= max(o["bbox"][0] - bx1, bx0 - o["bbox"][2]) < 3 * s and not over_other_graph(o)
+            0.5 * s <= max(o["bbox"][0] - bx1, bx0 - o["bbox"][2]) < 3 * s and not over_other_graph(o)
             for o in texts) or any(
             abs(sy["cy"] - t["center"][1]) < s and abs(sy["idx"] - t["idx"]) <= 100 and
-            0 <= max(sy["cx"] - bx1, bx0 - sy["cx"]) < 3 * s for sy in symbols)
+            0 <= max(sy["cx"] - bx1, bx0 - sy["cx"]) < 3 * s and sy["shape"] != "bar"
+            for sy in symbols)       # (a bar's top beside a title inside the plot is no key: -030's E5)
         if crowded:
+            continue
+        # (words over the next panel are not on its line: histogram's
+        # "(s: 107.1 p: 0.00)" ends just before "f4")
+        # (but a word that follows others, a word space apart, on a line
+        # opening a sub-caption is part of that caption: broken-axes's
+        # "a) LLVM", ThomasBockPhD-073's "(a) QEMU (message-based, ...)",
+        # under the graphs above)
+        line, head = [t], t
+        while True:
+            prev = [o for o in texts if o not in line and abs(o["p0"][1] - t["p0"][1]) < 0.5 * s and
+                    0 <= head["bbox"][0] - o["bbox"][2] < 0.5 * s and o["bbox"][0] >= x0 - 0.1 * w]
+            if not prev:
+                break
+            head = max(prev, key=lambda o: o["bbox"][2])
+            line.append(head)
+        lead = " ".join(o["text"].strip() for o in reversed(line[1:]))
+        if lead and _CAPTION_RE.match(lead + " " + txt):
             continue
         key = (-round(s, 1), gap)          # biggest font first, then closest
         if best is None or key < best[0]:
-            best = (key, txt, s, t)
+            best = (key, txt, s, t, lead)
     if best:
         # a title may continue on further lines just below the first one
         title, s = best[1], best[2]
         line = best[3]
-        # subscripts / superscripts directly after the text (e.g. "f" + "4")
+        # (the words before it on its line, a word space apart, open the
+        # title: ThomasBockPhD-073's "QEMU" before "(message-based, ...)")
+        lead = best[4]
+        # subscripts / superscripts directly after the text (e.g. "f" + "4";
+        # one starting exactly at the text's end may lie a rounding error
+        # before it: ArianeWuerbach-Phd-219's "rho" + "11" in a turned frame)
         for o in sorted(texts, key=lambda o: o["bbox"][0]):
             if o is not line and o["size"] < 0.85 * s and \
-                    0 <= o["bbox"][0] - line["bbox"][2] < 0.3 * s and \
+                    -0.05 * s <= o["bbox"][0] - line["bbox"][2] < 0.3 * s and \
                     abs(o["center"][1] - line["center"][1]) < 0.6 * s:
                 title += o["text"].strip()
         title += _rest_of_line(line, texts, s)
+        if lead:
+            title = lead + " " + title
         # ... or start on a line just above it ("Vth" over "(s: 6.9 p: 0.03)")
         top = best[3]
         for _ in range(3):
@@ -181,6 +237,15 @@ def _find_title(rect, texts, symbols):
         if t["rotated"] or not _CAPTION_RE.match(txt):
             continue
         gap = y0 - t["bbox"][3]
+        # (a sub-caption starts its line: "(B) Model comparison ..." in the
+        # middle of a line of 2020.01.30.927558.full-026's figure caption,
+        # text just before it, is part of that caption)
+        sz = t["size"] or 1.0
+        if not re.match(r"(?i)fig(ure|\.)", txt) and (any(
+                o is not t and o["text"].strip() and not o["rotated"] and
+                abs(o["center"][1] - t["center"][1]) < 0.5 * sz and
+                0 <= t["bbox"][0] - o["bbox"][2] <= sz for o in texts) or _continues_caption(t, texts)):
+            continue                # (figure captions may stand side by side: 3485513-020)
         if 0 <= gap <= 0.8 * h and abs(t["center"][0] - (x0 + x1) / 2) <= 0.25 * w:
             if any(r != tuple(rect) and 0 <= t["bbox"][1] - r[3] < min(gap, 2 * t["size"]) and
                    r[0] - 6 * t["size"] <= t["bbox"][0] and t["bbox"][2] <= r[0] + 2 * t["size"]
@@ -208,15 +273,18 @@ def _rest_of_line(line, texts, s):
     return out
 
 
-_CAPTION_RE = re.compile(r"^(\(?[a-zA-Z]\)|Fig(ure|\.)?\s*\d)")
+# (an appendix figure's letter too: "Figure B.3", PsychologyToPhylogeny-
+# AnalysisCultEvo-170)
+_CAPTION_RE = re.compile(r"^(\(?[a-zA-Z]\)|Fig(ure|\.)?\s*(?:[A-Z]\.?)?\d)")
 
 
 # -- figure captions ----------------------------------------------------------
 
 # "Fig. 5.", "Figure 3:", "FIGURE 12 -", "Fig 2", "Figure S3", "Figure 4.2",
-# "Figure 3-6" (chapter and figure)
+# "Figure 3-6" (chapter and figure), "Figure B.3" (an appendix's),
+# "Figure 1.1.2" (horowitz2014-004: three levels)
 # (small-caps fonts may map the label to lower case: "figure 2.")
-_FIGURE_RE = re.compile(r"^\s*(?:Fig(?:ure)?|FIG(?:URE)?|fig(?:ure)?)\.?\s*([A-Z]?\d+(?:[.\-–]\d+)?[a-z]?)"
+_FIGURE_RE = re.compile(r"^\s*(?:Fig(?:ure)?|FIG(?:URE)?|fig(?:ure)?)\.?\s*((?:[A-Z]\.?)?\d+(?:[.\-–]\d+)*[a-z]?)"
                         r"\s*(?:[.:|–—-]\s*)?(.*)$", re.S)
 
 
@@ -241,7 +309,9 @@ def text_lines(texts):
         line = None
         for t in row:
             s = max(t["size"], 1e-6)
-            if line is not None and t["bbox"][0] - line["bbox"][2] <= 1.0 * max(s, *(sz for _, sz in line["sizes"])):
+            # (the line's largest size kept as it grows: a max over all its
+            # items made a line of many items quadratic)
+            if line is not None and t["bbox"][0] - line["bbox"][2] <= 1.0 * max(s, line["big"]):
                 gap = t["bbox"][0] - line["bbox"][2]
                 line["text"] += (" " if gap > 0.15 * s and not line["text"].endswith(" ")
                                  else "") + t["text"].strip()
@@ -249,14 +319,16 @@ def text_lines(texts):
                 line["bbox"] = (b[0], min(b[1], t["bbox"][1]), max(b[2], t["bbox"][2]),
                                 max(b[3], t["bbox"][3]))
                 line["sizes"].append((len(t["text"].strip()), t["size"]))
+                line["big"] = max(line["big"], t["size"])
                 continue
             line = {"text": t["text"].strip(), "bbox": tuple(t["bbox"]), "y": t["p0"][1],
-                    "sizes": [(len(t["text"].strip()), t["size"])]}
+                    "sizes": [(len(t["text"].strip()), t["size"])], "big": t["size"]}
             lines.append(line)
     for line in lines:
         # the size of most of the line's text (a word in another font, such
         # as a monospaced name, may be set larger)
         weight = {}
+        line.pop("big")
         for n, sz in line.pop("sizes"):
             weight[round(sz, 1)] = weight.get(round(sz, 1), 0) + n
         line["size"] = max(weight, key=lambda sz: (weight[sz], -sz))
@@ -298,10 +370,16 @@ def find_figure_caption(rect, lines, graph_rects):
         if not m or m.group(2)[:1] in (")", "]", ",", ";"):
             continue                           # none, or a reference: "(see Fig. 2)."
         ln = _caption_head(ln, m, lines)
-        bx0, _, bx1, by1 = ln["bbox"]
+        bx0, by0_, bx1, by1 = ln["bbox"]
         gap = y0 - by1
         if bx1 <= x0 or bx0 >= x1:
             continue                           # not across the graph's width
+        if any(r != rect and 0 <= by0_ - r[3] <= ln["size"] and 4 * (by0_ - r[3]) <= gap and
+               min(r[2], bx1) - max(r[0], bx0) >= 0.5 * min(r[2] - r[0], bx1 - bx0)
+               for r in graph_rects):
+            continue                           # the title of a graph below it
+            # (VaskeBeaman2006-Lessonslearned-003: "Figure 1c. ..." over
+            # Figure 1c, no caption of 1a above it)
         between = sum(r[3] - r[1] for r in graph_rects
                       if r != rect and r[3] <= y0 + 1 and r[1] >= by1 - 1 and
                       r[2] > bx0 and r[0] < bx1)

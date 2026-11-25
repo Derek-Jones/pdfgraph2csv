@@ -1,0 +1,55 @@
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex,axis
+1,1,line,"Payments to Dell, left axis",0,2002.74962,0.155446,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2002.74962,3.04368,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2002.99968,0.565865,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2002.99968,2.39851,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2003.24973,0.558094,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2003.24973,2.64265,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2003.49978,0.65238,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2003.49978,3.26213,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2003.74983,0.771115,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2003.74983,3.74602,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2003.99988,0.902316,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2003.99988,3.0348,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2004.24993,1.00566,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2004.24993,2.93965,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2004.49998,1.29762,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2004.49998,3.25613,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2004.75003,1.78337,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2004.75003,3.1849,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2005.00008,1.83497,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2005.00008,2.61033,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2005.25013,1.83508,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2005.25013,2.55799,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2005.50018,2.15868,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2005.50018,3.36312,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2005.75023,3.15519,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2005.75023,4.38243,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2006.00029,3.31992,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2006.00029,3.58495,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2006.25034,3.62774,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2006.25034,3.25383,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2006.50039,2.83516,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2006.50039,3.68288,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2006.75044,4.07545,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2006.75044,3.86042,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2007.00049,6.03236,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2007.00049,3.42698,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2007.25054,0.151208,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2007.25054,3.28272,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2007.50059,0.147202,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2007.50059,3.27365,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2007.75064,0.172557,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2007.75064,3.48495,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2008.00069,0.163645,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2008.00069,2.84951,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2008.25074,0.180573,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2008.25074,3.3273,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2008.50079,0.163432,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2008.50079,4.0971,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2008.75084,0.1634,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2008.75084,4.88662,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2009.00089,0.15537,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2009.00089,5.38525,brown,#90353b,right
+1,1,line,"Payments to Dell, left axis",0,2009.25095,0.129942,darkslategray,#1a476f,left
+1,1,line,"Avg payments to other firms, right axis",0,2009.25095,4.71338,brown,#90353b,right

@@ -861,10 +861,11 @@ t 'ArianeWuerbach-Phd-064, with meta file: two R lattice panels side by side (Fe
   --meta ArianeWuerbach-Phd-064.meta.csv \
   --counts '1 open-circle=41455|2 open-circle=45058'
 
-t 'Maj-Petr_PhD-077, with meta file: four ggplot heat maps (geom_bin2d): a point per tile, its value read off the log colour bar (an inline image) beside it, the bar ticks no minus signs; titles under the axis title of the graph above; a two-label log x axis (10, 1000)' \
+t 'Maj-Petr_PhD-077 (--heatmap), with meta file: four ggplot heat maps (geom_bin2d): a point per tile, its value read off the log colour bar (an inline image) beside it, the bar ticks no minus signs; titles under the axis title of the graph above; a two-label log x axis (10, 1000)' \
   --pdf Maj-Petr_PhD-077.pdf \
   --meta Maj-Petr_PhD-077.meta.csv \
-  --counts '1 tile=3017|2 tile=3705|3 tile=3137|4 tile=4526'
+  --counts '1 tile=3017|2 tile=3705|3 tile=3137|4 tile=4526' \
+  -- --heatmap
 
 t '10.5445IR1000121285-038, with meta file: six matplotlib panels of transfer curves (log y axes from 10^-11 to 10^-3), each with a legend of seven V_DS values in two columns: the numbers name the series (0.01 ... 1) and are no right y axis (no scale on both sides), the heading V_DS names no key, panel (f) is not split by its 10^-11 grid line; a grey square of the next figure under the caption is no legend key' \
   --pdf 10.5445IR1000121285-038.pdf \
@@ -876,6 +877,119 @@ t '2305.15675v1-015, with meta file: 85 MB of drawing (34 000 dashes no longer c
   --pdf 2305.15675v1-015.pdf \
   --expect 2305.15675v1-015.csv \
   --meta 2305.15675v1-015.meta.csv
+
+t 'BehavioralNetworkScience-121 (--errbars), with meta file: seven R strip charts, x jittered about two nominal tick labels (early, late) that sit on the only two ticks; each group mean and standard error drawn as a capped bar with no marker (an H on its side) is a point, symbol errorbar, with y_low and y_high' \
+  --pdf BehavioralNetworkScience-121.pdf \
+  --expect BehavioralNetworkScience-121.csv \
+  --meta BehavioralNetworkScience-121.meta.csv \
+  -- --errbars
+
+t 'monotonicity-025, with meta file: six Stata scatter plots of 1 628 to 1 729 dots (9 928 in all, many at the same place) under a lowess curve and confidence band; dots that happen to lie under the curve of their colour are data, no longer taken for its vertices' \
+  --pdf monotonicity-025.pdf \
+  --meta monotonicity-025.meta.csv \
+  --counts '1 filled-circle=1638|2 filled-circle=1729|3 filled-circle=1630|4 filled-circle=1637|5 filled-circle=1666|6 filled-circle=1628'
+
+t 'horowitz2014-004 (--heatmap), with meta file: the bottom two graphs colour their points along unlabelled jet colour bars (1986 ... 2002) beside the right axis; each point gets the year its colour stands for in a column named year (the bar labels are all whole years); the grey comparison points and the legend keys get none; the middle row is not given the bars below it' \
+  --pdf horowitz2014-004.pdf \
+  --expect horowitz2014-004-heatmap.csv \
+  --meta horowitz2014-004-heatmap.meta.csv \
+  -- --heatmap
+
+t '978-3-031-36060-2_2-006, with meta file: three d3 line charts with the y axis on the right and dates (01 Jan 2015 ...) on the x axis drawn nearly upright; each curve converted to one filled outline (overlapping short strokes) is traced along its centre line and simplified to its corners; y labels 2.00B ... 18.0B read as billions (a fraction of a byte is no size), 500M beside them' \
+  --pdf 978-3-031-36060-2_2-006.pdf \
+  --expect 978-3-031-36060-2_2-006.csv \
+  --meta 978-3-031-36060-2_2-006.meta.csv
+
+t 'Mohamed_Rakha_PhD-072 (--heatmap), with meta file: a ggplot hexbin plot (Cairo) of 268 grey hexagons, each valued by the log colour bar (count, 1 ... 8103.08) that Cairo paints as a clip box filled with a tiling pattern holding a 3 x 21 image; the four quadrant labels drawn 25 776 times each are read once (the page took 88 s, now about 3 s)' \
+  --pdf Mohamed_Rakha_PhD-072.pdf \
+  --expect Mohamed_Rakha_PhD-072.csv \
+  --meta Mohamed_Rakha_PhD-072.meta.csv \
+  -- --heatmap
+
+t 'ArianeWuerbach-Phd-219, with meta file: 19 R trace plots turned a quarter turn on the page (iteration labels at 90 degrees, value labels at 180); Arial tick labels with no ToUnicode map read through the Mac standard glyph order of the CID font; each trace a stroked polyline of 5 254 segments, some written as straight curves; one plot found twice (an axis scale borrowed down its column) kept once; titles rho1 ... rho19 with two-digit subscripts; the page took 56 s, now about 10 s' \
+  --pdf ArianeWuerbach-Phd-219.pdf \
+  --meta ArianeWuerbach-Phd-219.meta.csv \
+  --counts '1 line=3281|2 line=3317|3 line=3287|4 line=3322|5 line=3277|6 line=3277|7 line=3297|8 line=3315|9 line=3317|10 line=3318|11 line=3312|12 line=3315|13 line=3278|14 line=3310|15 line=3299|16 line=3281|17 line=3305|18 line=3317|19 line=3300'
+
+t '1356058.1356080-007, with meta file: an Excel scatter plot whose four + markers (GCC -O1, -O2, -O3, -Os) are drawn as four half-arm strokes and the x reference point as four filled half-arms; arrows from the labels -O1 ... -Os point at the + markers, their heads (open triangles) no points and their labels in the label column; small dots drawn as a fill and a slightly smaller outline are one point; the bars of Figure 6, one per category in four greys, take no names from other legends' \
+  --pdf 1356058.1356080-007.pdf \
+  --expect 1356058.1356080-007.csv \
+  --meta 1356058.1356080-007.meta.csv
+
+t '2355585.2355594-006, with meta file: four matplotlib violin panels stacked on one x axis, each its own log scale (outlined labels 10^+4.0 ... 10^-2.0, the plus as tall as the digits, fractional exponents); the shared y axis line split at the panel borders; 32 violins per panel, every stroke a filled outline, each giving box-min, box-q1, box-q3, box-max; the level marks at 10^0 in every violin a reference, not medians; categories numbered at the ticks (slanted outlined names, two run together); grid-line dots no heat-map tiles; round letters of the names no markers' \
+  --pdf 2355585.2355594-006.pdf \
+  --expect 2355585.2355594-006.csv \
+  --meta 2355585.2355594-006.meta.csv
+
+t 'PsychologyToPhylogeny-AnalysisCultEvo-170, with meta file: two ggplot scatter plots of 782 artists side by side sharing the y axis (the right one has no axis line, only grid lines and a small gap), the right x labels 0, 5M ... 20M in millions; the caption Figure B.3 (an appendix letter) found for both' \
+  --pdf PsychologyToPhylogeny-AnalysisCultEvo-170.pdf \
+  --expect PsychologyToPhylogeny-AnalysisCultEvo-170.csv \
+  --meta PsychologyToPhylogeny-AnalysisCultEvo-170.meta.csv
+
+t 'VaskeBeaman2006-Lessonslearned-003, with meta file: six bar charts without tick marks; the right-hand x axes labelled with nominal day counts in two alternating rows (1 3 5 ... over 2 4 6 ...) merged into one category per bar, 2.8 pt apart; the frame sides pairing the first and last labels are no scale; bars of 1, as tall as wide, are bars; the right frame of 1e takes none of 1f y labels; left-aligned titles Figure 1a ... 1f, each above its own graph and no caption of the one above' \
+  --pdf VaskeBeaman2006-Lessonslearned-003.pdf \
+  --expect VaskeBeaman2006-Lessonslearned-003.csv \
+  --meta VaskeBeaman2006-Lessonslearned-003.meta.csv
+
+t 'ESEUR-intro, with meta file: R line charts whose lines run outside the plot box they are clipped to; GSR lower regions below the y range (and their first ten months, broken off by missing values, wholly out of view) and Wang counts left of xlim kept with every vertex; E-Commerce cut by R where it leaves the device, the cut ends dropped and the pieces joined; fitted lines over markers and two-point chords not reported; the x axis title of the upper of two same-width panels is no title of the lower' \
+  --pdf ESEUR-intro.pdf \
+  --expect ESEUR-intro.csv \
+  --meta ESEUR-intro.meta.csv \
+  -- --pages 2,6,7,9,10,11,16
+
+t 'roache_fundamentals_2009-193: no graph, three Word tables (header rule and column rules only); one column of two tables taken for a plot whose category axes repeat one heading word (R R, actual actual) is a table, no meta file' \
+  --pdf roache_fundamentals_2009-193.pdf \
+  --meta - \
+  --stderr 'No vector graphics found'
+
+t 'Sovinsky-paper-017, with meta file: Stata line chart printed by PDF-XChange, two y scales; each line a two-point stroke per piece, with extra vertices and pieces of at most 12 pt, read back at the quarters (27 points each); the dashed line stroked dash by dash, chained (corners in gaps restored); level pieces kept; legend keys of stroked dashes below the plot name the series, left axis and right axis; the form BBox clips the old caption Figure 4' \
+  --pdf Sovinsky-paper-017.pdf \
+  --expect Sovinsky-paper-017.csv \
+  --meta Sovinsky-paper-017.meta.csv
+
+t 'PhysRevResearch.3.033169-009, with meta file: two graphs with a log scale on the left and a linear one on the right, tick labels drawn as outlines in the colour of the series they carry (blue left, red right), so each series takes its scale from the label colour; circles rebuilt from the round letters of those labels and of the unread epsilon title, outside the plots, are no points (10 points per series)' \
+  --pdf PhysRevResearch.3.033169-009.pdf \
+  --expect PhysRevResearch.3.033169-009.csv \
+  --meta PhysRevResearch.3.033169-009.meta.csv
+
+t 'Seongmin-PhD-036, with meta file: four R barplot charts with a y scale on each side and no x axis line, the bar groups named by slanted labels (VSM(γ : 0.6) joined across the spaced colon) between the facing axes; axis lines of different heights still one graph with two scales; each axis title names a legend entry (Compilations left, Executions right; Deletions(line) left, Time(sec) right), the title search stopping at the nearest column; bars reported beside the labelled CPD EPD TPD points, whose values go to the points, not the bars; tick labels 1000 ... 3500 set in one run split' \
+  --pdf Seongmin-PhD-036.pdf \
+  --expect Seongmin-PhD-036.csv \
+  --meta Seongmin-PhD-036.meta.csv
+
+t '2020.01.30.927558.full-023 (--errbars), with meta file: seven bar charts in two rows, each row on one x axis line with a y scale at its left end only, each panel ticked 1 to 8 (the line shared out between the panels, which borrow the row y scale); bars hanging from 0 with error bars, not box plots; a cross where an error bar crosses a bar of almost 0 is that bar; the zero line with the panel titles above the plot is no category axis; titles dipping into the plot; asterisks are no labels' \
+  --pdf 2020.01.30.927558.full-023.pdf \
+  --expect 2020.01.30.927558.full-023.csv \
+  --meta 2020.01.30.927558.full-023.meta.csv \
+  -- --errbars
+
+t '2020.01.30.927558.full-026 (--errbars), with meta file: four horizontal bar charts with error bars, model names set flush left up the y axes (no ticks), names in two fonts joined at the comma; a short bar outline taken for a square is the bar; a caption line starting mid-line with (B) is no sub-caption' \
+  --pdf 2020.01.30.927558.full-026.pdf \
+  --expect 2020.01.30.927558.full-026.csv \
+  --meta 2020.01.30.927558.full-026.meta.csv \
+  -- --errbars
+
+t '2020.01.30.927558.full-030 (--errbars), with meta file: nine bar charts with error bars; panel A beside two rows of four (E1 ... E8), its three bars wider than a quarter of its narrow plot (90% of the category spacing allowed); panel titles inside the top of their plots, beside bar tops, and below the slanted labels of the panels above, are titles and not labels' \
+  --pdf 2020.01.30.927558.full-030.pdf \
+  --expect 2020.01.30.927558.full-030.csv \
+  --meta 2020.01.30.927558.full-030.meta.csv \
+  -- --errbars
+
+t '2020.01.30.927558.full-048 (--heatmap), with meta file: a MATLAB heat map stored as a JPEG picture (12 models by 408 datasets, 556 x 319 pixels) read cell by cell (one per dataset, the x axis ticked only at the experiment borders and hanging from the frame), each cell valued on the JPEG colour bar at the right of the row (by brightness where the colour is lost); the Average bars beside it take its rows and their values from their colours; model names flush left beside ticks; the colour bar scale is no axis; its title turned beside it; titles of words set apart; short-bar outlines dropped; seven bar charts below' \
+  --pdf 2020.01.30.927558.full-048.pdf \
+  --expect 2020.01.30.927558.full-048.csv \
+  --meta 2020.01.30.927558.full-048.meta.csv \
+  -- --heatmap
+
+t 'economies-open-intelligence-005, with meta file: two plotly stacked area charts (svg2pdf), 16 and 13 translucent bands, each one polygon along its top and back along its bottom at the same 265 x positions; each top vertex a point (area) with the band bottom in y_base; bands named by the legend circles of their colour; each legend on its own chart paper (the developer legend is nearer the lower plot); a number inside a legend label (Top 20 (Inclusive)); the bands were read as outlined lines (8 minutes)' \
+  --pdf economies-open-intelligence-005.pdf \
+  --expect economies-open-intelligence-005.csv \
+  --meta economies-open-intelligence-005.meta.csv
+
+t 'w21074-035: no graph, two ruled regression tables one above another (coefficients with significance stars, standard errors in brackets); one column running through both is no plot, no meta file' \
+  --pdf w21074-035.pdf \
+  --meta - \
+  --stderr 'No vector graphics found'
 
 t 'unified-noise-bayes-019, with meta file: six MATLAB scatter panels whose markers are flattened into fragments, 510 circles rebuilt (each with a confidence) and no warning about it; log axes 0 (at the place of 1), 10, 100, 250' \
   --pdf unified-noise-bayes-019.pdf \
@@ -1060,10 +1174,11 @@ t 'sarroRE15-008, with meta file: eight R box plots (pdfTeX): boxes filled and o
   --expect sarroRE15-008.csv \
   --meta sarroRE15-008.meta.csv
 
-t '2308.04785-006, with meta file: two seaborn correlation matrices with category axes both ways; each cell a coloured square with its coefficient printed in it (a label per square, values in neighbouring cells run together are split, a value just after a y label is not lost with it); the grid of numbers is no table; the colour bar is an image (indexed colours): each cell a heat-map tile whose colour-bar value agrees with its printed coefficient' \
+t '2308.04785-006 (--heatmap), with meta file: two seaborn correlation matrices with category axes both ways; each cell a coloured square with its coefficient printed in it (a label per square, values in neighbouring cells run together are split, a value just after a y label is not lost with it); the grid of numbers is no table; the colour bar is an image (indexed colours): each cell a heat-map tile whose colour-bar value agrees with its printed coefficient, in a column named correlation (Correlation matrices in the caption)' \
   --pdf 2308.04785-006.pdf \
   --expect 2308.04785-006.csv \
-  --meta 2308.04785-006.meta.csv
+  --meta 2308.04785-006.meta.csv \
+  -- --heatmap
 
 t '3485513-020, with meta file: three Google Sheets charts without frames or x ticks; a dot chart of 30 benchmarks whose names, slanted 60 degrees, mark the categories with their ends (2mm read as a word, not a length); two bar charts with rounded bars and soft shadows, the tallest rising above the top grid line, whose bar edges must not split the grid; the right chart averages the middle one' \
   --pdf 3485513-020.pdf \

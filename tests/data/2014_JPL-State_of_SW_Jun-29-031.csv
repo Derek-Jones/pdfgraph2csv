@@ -1,13 +1,13 @@
 page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex,label
-1,1,open-diamond,Development,1,2007,5.2083720983922,steelblue,#4a7ebb,
+1,1,open-diamond,Development,1,2007,5.2083788759295,steelblue,#4a7ebb,
 1,1,filled-diamond,Development,0,2007,28.0183,steelblue,#4a7ebb,
 1,1,filled-square,Active Maintenance,0,2007,54.9442,indianred,#be4b48,55%
 1,1,filled-triangle,In Use No Budget,0,2007,16.9718,yellowgreen,#98b954,17%
-1,1,open-square,Active Maintenance,1,2009,5.2083720983922,indianred,#be4b48,
+1,1,open-square,Active Maintenance,1,2009,5.2083788759295,indianred,#be4b48,
 1,1,filled-diamond,Development,0,2009,25.9471,steelblue,#4a7ebb,
 1,1,filled-square,Active Maintenance,0,2009,45.9688,indianred,#be4b48,46%
 1,1,filled-triangle,In Use No Budget,0,2009,28.0183,yellowgreen,#98b954,28%
-1,1,open-triangle,In Use No Budget,1,2011,5.2083720983922,yellowgreen,#98b954,
+1,1,open-triangle,In Use No Budget,1,2011,5.2083788759295,yellowgreen,#98b954,
 1,1,filled-diamond,Development,0,2011,16.9718,steelblue,#4a7ebb,17%
 1,1,filled-square,Active Maintenance,0,2011,50.1113,indianred,#be4b48,50%
 1,1,filled-triangle,In Use No Budget,0,2011,33.0813,yellowgreen,#98b954,33%

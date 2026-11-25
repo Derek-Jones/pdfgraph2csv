@@ -13,13 +13,16 @@ from .scales import map_value, nominal_rank
 from .charts import BOX_SHAPES
 from .symbols import LINE_SHAPES
 from .twin import twin_key, twin_view
+from .tools import tool_accuracy
 
 
-def value_digits(m, v, res, least=6, most=15):
+def value_digits(m, v, res, least=6, most=15, guard=1):
     """Significant digits to write a value with: the digits the PDF's
     coordinates resolve (one unit of their last decimal, carried through the
-    axis mapping) and one more, so that rounding the output adds at most a
-    tenth of that resolution; never fewer than `least`."""
+    axis mapping) and `guard` more (one: rounding the output adds at most a
+    tenth of that resolution); never fewer than `least`.  With the
+    accuracy of the program that drew the graph (tools.tool_accuracy) the
+    digits are just those it resolves, at least one."""
     if res is None or not isinstance(v, float) or not math.isfinite(v) or v == 0:
         return least
     kind = m["kind"]
@@ -31,7 +34,7 @@ def value_digits(m, v, res, least=6, most=15):
         return least
     if not rv > 0:
         return least
-    sig = math.floor(math.log10(abs(v))) - math.floor(math.log10(rv)) + 2
+    sig = math.floor(math.log10(abs(v))) - math.floor(math.log10(rv)) + 1 + guard
     return max(least, min(most, sig))
 
 
@@ -48,8 +51,8 @@ def marker_sized(s, g, opts, keyed=frozenset()):
     passes.  A shape with the shape and colour of a legend key is a marker
     up to a quarter of the side (charts that print an id inside each big
     marker); the keys themselves are not (ggplot draws a big white square
-    behind each key).  Bars and line corners have no marker size."""
-    if s["shape"] in ("bar", "line", "stem") or s["shape"] in BOX_SHAPES:
+    behind each key).  Bars, line corners and lone error bars have no marker size."""
+    if s["shape"] in ("bar", "line", "stem", "errorbar") or s["shape"] in BOX_SHAPES:
         return True
     x0, y0, x1, y1 = g["rect"]
     side = min(x1 - x0, y1 - y0)
@@ -117,7 +120,8 @@ def make_rows(pno, graphs, symbols, legend, namer, opts, bars=None):
                 continue
             keys_seen.add(k)
         name, hexs = color_name(s["rgb"])
-        if s["shape"] in LINE_SHAPES or s["shape"] in ("bar", "line", "stem", "tile") or s["shape"] in BOX_SHAPES:
+        if s["shape"] in LINE_SHAPES or s["shape"] in ("bar", "line", "stem", "tile", "errorbar", "area") or \
+                s["shape"] in BOX_SHAPES:
             sym_name = s["shape"]
         else:
             sym_name = ("filled-" if s["filled"] else "open-") + s["shape"]
@@ -130,18 +134,29 @@ def make_rows(pno, graphs, symbols, legend, namer, opts, bars=None):
         if s.get("x_category") is not None and not g["rot"]:
             x = s["x_category"]           # a whole group of bars in one category
         y = map_value(g["y"]["map"], yc)
+        # digits: those the drawing program's accuracy resolves when it is
+        # known, else those of the PDF's numbers and a guard digit
+        dig = dict(res=s.get("res"))
+        sc = s.get("scale")
+        acc = tool_accuracy(g, s["res"] / sc if s.get("res") else None) if sc else None
+        if acc:
+            dig = dict(res=acc * sc, least=1, guard=0)
         rows.append({
             "page": pno, "graph": g["no"], "graph_title": g["title"],
             "symbol": sym_name,
             "x_coord": x, "y_coord": y,
             # significant digits the PDF's coordinates justify (at least 6)
-            "x_digits": value_digits(g["x"]["map"], x, s.get("res")),
-            "y_digits": value_digits(g["y"]["map"], y, s.get("res")),
+            "x_digits": value_digits(g["x"]["map"], x, **dig),
+            "y_digits": value_digits(g["y"]["map"], y, **dig),
             "color": name, "color_hex": hexs,
             "series": series, "axis": side, "label": s.get("label", ""),
             "confidence": s.get("confidence", ""),
             "x_group": s.get("x_group", ""),
-            "value": s.get("value", "") if s.get("value") is not None else "",
+            # (a legend key's colour names its series, not a value)
+            # (--heatmap only: tiles are points without it, their printed
+            # labels kept)
+            "value": "" if not opts.heatmap or s.get("value") is None or
+            (si in legend and s["shape"] != "tile") else s["value"],
             "rotation": (g["rot"] + PAGE.turn + 180) % 360 - 180 if PAGE.turn else g["rot"],
             "symbol_size": symbol_size(s),
             "legend_key": 1 if si in legend else 0,
@@ -149,6 +164,9 @@ def make_rows(pno, graphs, symbols, legend, namer, opts, bars=None):
             "pdf_y": PAGE.unturn((s["cx"], s["cy"]))[1] if PAGE.turn else s["cy"],
             "x_order": (1, s["x_rank"]) if s.get("x_category") is not None and not g["rot"]
             else x_order(g["x"]["map"], xc, x)})
+        if s.get("base_y") is not None and not g["rot"]:
+            # a band of a stacked area chart: the value at its bottom
+            rows[-1]["y_base"] = map_value(g["y"]["map"], s["base_y"])
         rows[-1].update(label_tick_ranges(g, xc, yc))
         if opts.errbars:
             rows[-1].update(error_bar_values(g, x, y, (bars or {}).get(si)))

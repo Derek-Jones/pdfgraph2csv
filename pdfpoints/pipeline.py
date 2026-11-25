@@ -9,17 +9,17 @@ import re
 import sys
 
 from .axes import drop_duplicate_axes, drop_scattered_tick_axes, find_axes
-from .charts import find_bars, find_boxes, find_line_series, find_stems
+from .charts import find_bars, find_boxes, find_line_series, find_stacked_areas, find_stems, find_violins
 from .context import PAGE
 from .datalabels import add_data_labels
 from .document import Document
-from .errbars import find_error_bars
+from .errbars import find_error_bars, lone_capped_bars
 from .fragments import rebuild_fragmented_circles, rebuild_strip_discs
 from .geometry import fmt_rect, median
-from .colourbar import add_heat_tiles
+from .colourbar import add_heat_tiles, heatmap_values
 from .grouplabels import group_categories, label_bar_groups
 from .graphs import (
-    add_panel_graphs, build_graphs, forget_graphs, graph_for_symbol, graph_rotation,
+    add_panel_graphs, build_graphs, drop_same_plot_graphs, forget_graphs, graph_for_symbol, graph_rotation,
     set_graph_backgrounds)
 from .image_marks import image_symbols
 from .interpreter import Interpreter
@@ -37,8 +37,9 @@ from .strays import (drop_box_dashes, drop_corner_ticks, drop_foreign_crowds, dr
 from .styles import guess_tool
 from .symbols import (drop_covered_bits, drop_lone_turned, drop_hidden_dots, drop_highlight_boxes,
                       drop_marker_faces,
-                      drop_outline_rings, drop_specks, find_symbols)
-from .text import attach_vector_minus, merge_texts, split_numbers
+                      drop_outline_rings, drop_specks, find_symbols, drop_arrowheads)
+from .text import (attach_vector_minus, billions_not_bytes, drop_repeated_texts, merge_texts,
+                   split_numbers)
 from .titles import find_figure_caption, text_lines
 from .tools import PathsByX, graph_tool
 from .twin import twin_axes, warn_twin_unsure
@@ -48,22 +49,23 @@ class Options:
     """What to report (from the command line)."""
 
     def __init__(self, inside_only=False, max_frac=0.1, debug=False, exclude_legend=False,
-                 errbars=False):
+                 errbars=False, heatmap=False):
         self.inside_only = inside_only        # drop symbols outside the axes box
         self.max_frac = max_frac              # largest marker, as part of the plot
         self.debug = debug                    # axis details on stderr
         self.exclude_legend = exclude_legend  # drop legend-key markers
         self.errbars = errbars                # low/high ends of error bars
+        self.heatmap = heatmap                # markers valued by a colour bar
 
 
 def extract(pdf_path, pages=None, inside_only=False, max_frac=0.1, debug=False,
-            exclude_legend=False, password=b"", info=None, errbars=False):
+            exclude_legend=False, password=b"", info=None, errbars=False, heatmap=False):
     """Return the data point rows of a PDF file (one dict per point).
     `pages` limits the work to a set of page numbers.  If `info` is a dict
     it receives 'graphs' (number of graphs found) and 'warnings'."""
     with open(pdf_path, "rb") as f:
         pdf = Document(f.read(), password)
-    opts = Options(inside_only, max_frac, debug, exclude_legend, errbars)
+    opts = Options(inside_only, max_frac, debug, exclude_legend, errbars, heatmap)
     if info is None:
         info = {}
     info["graphs"] = 0
@@ -186,6 +188,17 @@ def extract_page(pdf, pno, page, opts, info):
     # graphs are known (strays.py)
     symbols = find_page_symbols(pdf, it, text_parts)
     symbols = drop_plot_backgrounds(symbols, graphs)
+    # round letters of unread outlined names ("o", "e") outside every plot:
+    # flanked by letters of those names on both sides, close
+    # (2355585.2355594-006's slanted benchmark names; a legend key has its
+    # name on one side only, and markers inside a plot may crowd into
+    # unread "words" of marker shapes)
+    blob_boxes = [t["bbox"] for t in PAGE.nominal_labels if t.get("text") is None]
+    if blob_boxes:
+        symbols = [s for s in symbols if any(
+            g["rect"][0] - 0.5 * s["size"] <= s["cx"] <= g["rect"][2] + 0.5 * s["size"] and
+            g["rect"][1] - 0.5 * s["size"] <= s["cy"] <= g["rect"][3] + 0.5 * s["size"]
+            for g in graphs) or not _flanked_by_letters(s, blob_boxes)]
     symbols = drop_corner_ticks(symbols, graphs)
     symbols = drop_symbols_in_prose(symbols, texts, graphs)
     symbols = drop_box_dashes(symbols, texts, boxes, graphs)
@@ -210,13 +223,19 @@ def extract_page(pdf, pno, page, opts, info):
     line_names = add_bars_and_lines(graphs, symbols, it.paths, texts,
                                     lambda s, g, d: reportable(graphs, s, g, d, opts))
     # heat maps: a point per tile, valued by the colour bar beside it
-    add_heat_tiles(graphs, symbols, it.paths, it.colour_strips, texts)
+    add_heat_tiles(graphs, symbols, it.paths, it.colour_strips, texts, it.pictures, opts.heatmap)
+    # capped error bars with no marker: a group's mean (an "H" on its side)
+    symbols += lone_capped_bars(graphs, symbols, it.paths,
+                                lambda s: graph_for_symbol(graphs, s)[1])
     # the resolution of each symbol's coordinates (from the path drawing
     # it) decides how many digits its values are written with
-    res_of = {p["idx"]: p.get("res") for p in it.paths}
+    res_of = {p["idx"]: (p.get("res"), p.get("scale")) for p in it.paths}
     for s in symbols:
+        r, sc = res_of.get(s["idx"], (None, None))
         if s.get("res") is None:
-            s["res"] = res_of.get(s["idx"])
+            s["res"] = r
+        if s.get("scale") is None and not s.get("image"):
+            s["scale"] = sc
     # (bar-legend patches, too oblong to be markers, are swatches)
     symbols += patch_swatches(it.paths, texts, graphs)
     legend = find_page_legend(symbols, texts, blobs, graphs, it.paths)
@@ -231,6 +250,10 @@ def extract_page(pdf, pno, page, opts, info):
     twin_axes(graphs, symbols, namer, texts, opts.debug)
     bars = find_error_bars(symbols, it.paths,
                            lambda s: graph_for_symbol(graphs, s)[1]) if opts.errbars else {}
+    if opts.heatmap:
+        # markers coloured along a colour bar: the value each colour stands for
+        heatmap_values(graphs, symbols, it.colour_strips, texts,
+                       lambda s: graph_for_symbol(graphs, s)[1])
     rows = make_rows(pno, graphs, symbols, legend, namer, opts, bars)
     name_box_slots(rows)
     renumber_graphs(graphs, rows, info)
@@ -273,6 +296,21 @@ def _labellable(graphs, symbols, legend, opts):
             s, graph_for_symbol(graphs, s)[1], opts, keyed if id(s) not in keys else ())
     return test
 
+def drop_clipped_texts(texts):
+    """Text whose middle lies outside its clipping box or the /BBox of the
+    form drawing it (by more than 0.5 pt) is not seen: a figure included
+    with its edges trimmed off keeps them in the file (Sovinsky-paper-017: the Stata figure, printed to PDF
+    with its first caption "Figure 4: ...", clipped to the graph in the
+    paper, whose caption reads "Figure 5: ...")."""
+    out = []
+    for t in texts:
+        x, y = t["center"] if "center" in t else t["p0"]
+        if all(c is None or c[0] - 0.5 <= x <= c[2] + 0.5 and c[1] - 0.5 <= y <= c[3] + 0.5
+               for c in (t.get("clip"), t.get("form_box"))):
+            out.append(t)
+    return out
+
+
 def read_page_text(it):
     """All text of the page: real text (minus glyphs painted over by later
     boxes) and text drawn as glyph outlines, read by shape.  Returns
@@ -281,13 +319,18 @@ def read_page_text(it):
     of outlined text are not taken for markers; the unreadable words still
     serve as category and legend labels (numbered #1, #2, ...)."""
     covers = cover_rects(it.paths, it.images)
-    it.texts = drop_hidden_glyphs(it.texts, covers)
+    it.texts = drop_hidden_glyphs(drop_repeated_texts(drop_clipped_texts(it.texts)), covers)
     # (axis-break wiggles must be known before outlined text is read: they
     # are no glyphs)
     PAGE.break_marks = find_break_marks(it.paths)
     blobs = []
-    out_texts, text_parts = outlined_text(it.paths, blobs, covers)
+    read_parts = set()
+    out_texts, text_parts = outlined_text(it.paths, blobs, covers, read_parts)
+    # (parts of unread "words": a marker drawn as filled strokes may be
+    # grouped as one - 1356058.1356080-007's 'x' of four filled half-arms)
+    PAGE.blob_parts = text_parts - read_parts
     texts = merge_texts(it.texts) + merge_texts(out_texts)
+    billions_not_bytes(texts)
     attach_vector_minus(texts, it.paths)
     # short texts and unreadable words: the candidates for category labels
     # (several numbers set as one string, "12.8 25.6", one label each)
@@ -296,13 +339,40 @@ def read_page_text(it):
     return texts, text_parts, blobs
 
 
+def _off_colour_bars(axes, strips):
+    """Axes less those running along the long side of a colour bar (a
+    colour strip image; within 1.5 pt, over most of its length): the bar's
+    own scale, which is no graph's axis (2020.01.30.927558.full-048: the
+    ticks 0 ... 40 beside its bar were the y axis of the bar chart left of
+    it)."""
+    boxes = []
+    for st in strips or ():
+        a, b, c, d, e, f = st["ctm"]
+        cs = [(a * u + c * v + e, b * u + d * v + f) for u, v in ((0, 0), (1, 0), (0, 1), (1, 1))]
+        boxes.append((min(p[0] for p in cs), min(p[1] for p in cs),
+                      max(p[0] for p in cs), max(p[1] for p in cs)))
+
+    def along(ax):
+        for x0, y0, x1, y1 in boxes:
+            if ax["orient"] == "y" and y1 - y0 > x1 - x0:
+                if min(abs(ax["pos"] - x0), abs(ax["pos"] - x1)) <= 1.5 and \
+                        min(ax["hi"], y1) - max(ax["lo"], y0) >= 0.8 * (y1 - y0):
+                    return True
+            if ax["orient"] == "x" and x1 - x0 > y1 - y0:
+                if min(abs(ax["pos"] - y0), abs(ax["pos"] - y1)) <= 1.5 and \
+                        min(ax["hi"], x1) - max(ax["lo"], x0) >= 0.8 * (x1 - x0):
+                    return True
+        return False
+    return [ax for ax in axes if not along(ax)]
+
+
 def find_page_graphs(it, texts, boxes, pno, debug):
     """Axes (ticks + labels + value mapping) paired into graphs, less the
     candidates that are tables or text (nongraphs.py)."""
-    axes = drop_duplicate_axes(resolve_shared_labels(drop_scattered_tick_axes(
-        find_axes(it.paths, texts, debug))))
+    axes = drop_duplicate_axes(_off_colour_bars(resolve_shared_labels(drop_scattered_tick_axes(
+        find_axes(it.paths, texts, debug))), it.colour_strips))
     apply_axis_multipliers(axes, texts)
-    graphs = add_panel_graphs(build_graphs(axes), axes, it.paths)
+    graphs = drop_same_plot_graphs(add_panel_graphs(build_graphs(axes), axes, it.paths))
     graphs = drop_tables(graphs, texts, debug, boxes, it.paths)
     if debug:
         for g in graphs:
@@ -313,7 +383,7 @@ def find_page_graphs(it, texts, boxes, pno, debug):
         # where each graph's x tick labels end: text just below them is its
         # axis title, not the title of a graph further down
         PAGE.xlabel_zones = [(g["rect"][0], g["rect"][2],
-                              min(tx["bbox"][1] for _, tx in g["x"]["labels"]))
+                              min(tx["bbox"][1] for _, tx in g["x"]["labels"]), tuple(g["rect"]))
                              for g in graphs if g["x"].get("labels") and g["x"]["orient"] == "x"]
         # the page's typical tick-label size: a graph's title is set no
         # smaller than its labels (titles.py)
@@ -322,22 +392,68 @@ def find_page_graphs(it, texts, boxes, pno, debug):
     return graphs
 
 
+def _on_bar(s, b):
+    """Is shape s centred on bar b (its middle across the bar within 30%
+    of the bar's width, along it between its foot and its end)?  For a
+    horizontal bar, across is y (2020.01.30.927558.full-026: a short bar's
+    outline, as tall as long, taken for a square)."""
+    j, k = ("cy", "cx") if b.get("horizontal") else ("cx", "cy")
+    end, foot = b[k], b.get("base", b[k])
+    return abs(s[j] - b[j]) <= 0.3 * b["size"] and \
+        min(end, foot) - 0.5 <= s[k] <= max(end, foot) + 0.5
+
+
+def _flanked_by_letters(s, boxes):
+    """Is marker s a letter of an unread word: grey or black like text,
+    two of the word's letter boxes (`boxes`) of about its size (0.5 to 1.5
+    times their height... their height 0.67 to 2 times its size) within
+    0.35 of their height of it, on opposite sides of it?  (Not a yellow
+    note pointer among a note's letters: ITRS_2011ExecSum-031.)"""
+    if s["shape"] in ("line", "bar", "stem", "tile") or s["size"] <= 0:
+        return False
+    rgb = s.get("rgb") or (0.0, 0.0, 0.0)
+    if max(rgb) - min(rgb) > 0.1:
+        return False
+    near = []
+    for b in boxes:
+        h = b[3] - b[1]
+        if not 0.67 * s["size"] <= h <= 2.0 * s["size"]:
+            continue
+        gx = max(b[0] - s["cx"], s["cx"] - b[2], 0.0) - 0.5 * s["size"]
+        gy = max(b[1] - s["cy"], s["cy"] - b[3], 0.0) - 0.5 * s["size"]
+        if max(gx, gy) <= 0.35 * h:
+            near.append(((b[0] + b[2]) / 2 - s["cx"], (b[1] + b[3]) / 2 - s["cy"]))
+    return any(u[0] * v[0] + u[1] * v[1] < 0 for i, u in enumerate(near) for v in near[i + 1:])
+
+
 def find_page_symbols(pdf, it, text_parts):
     """The marker symbols of the page.  Markers outside the axis ranges are
     kept, even when the plot clips them out of view (the user asked for
     them); each symbol notes the clipping box it was drawn with ('clip'),
     which tells which graph it belongs to."""
-    symbols = drop_lone_turned(find_symbols(it.paths, it.glyph_symbols, text_parts))
+    symbols = drop_lone_turned(find_symbols(it.paths, it.glyph_symbols, text_parts,
+                                            getattr(PAGE, "blob_parts", frozenset())))
     # markers some programs break into pieces (flattened transparency,
     # strips of a disc) are put back together before the filters below,
     # which would take the pieces for specks
     symbols = rebuild_fragmented_circles(it.paths, symbols, text_parts, pdf.warnings)
+    # (circles rebuilt from curved pieces outside every plot box are the
+    # round letters of axis labels and titles drawn as outlines, not
+    # markers: PhysRevResearch.3.033169-009's blue and red tick labels -
+    # coloured, so the circle rebuilder may use their pieces - and its
+    # unread epsilon gave circles of the markers' size beside the axes)
+    symbols = [s for s in symbols if not s.get("rebuilt") or any(
+        r[0] - 0.5 * s["size"] <= s["cx"] <= r[2] + 0.5 * s["size"] and
+        r[1] - 0.5 * s["size"] <= s["cy"] <= r[3] + 0.5 * s["size"] for r in PAGE.graph_rects)]
     symbols = rebuild_strip_discs(it.paths, symbols)
     # shapes that are painted over, highlight boxes and rings round a
     # marker, specks and stray bits: none of them is a point of its own
     symbols = [s for s in symbols if s["idx"] not in PAGE.hiding_paths]
     symbols = drop_hidden_dots(drop_outline_rings(drop_marker_faces(drop_highlight_boxes(symbols), it.paths)), it.paths)
     symbols = drop_specks(drop_covered_bits(symbols, it.paths))
+    # heads of arrows pointing at points from their labels
+    PAGE.arrows = []
+    symbols = drop_arrowheads(symbols, it.paths, PAGE.arrows)
     # markers drawn as small pictures (shadows dropped)
     symbols += image_symbols(it.image_marks, it.paths)
     clip_of = {p["idx"]: p.get("clip") for p in it.paths}
@@ -416,6 +532,23 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
     for g in graphs:
         marks = owner.get(id(g), [])
         bars = None
+        # a stacked area chart: the bands' tops, whatever marks there are
+        # (economies-open-intelligence-005's legend circles stay keys)
+        areas = find_stacked_areas(g, paths)
+        if areas:
+            symbols += [a for a in areas if graph_for_symbol(graphs, a)[1] is g]
+            continue
+        # violin plots with inner boxes: five points each, instead of the
+        # marks their strokes made
+        violins = find_violins(g, paths)
+        if violins:
+            gone = {id(s) for s in marks if any(
+                r[0] - 0.5 <= s["cx"] <= r[2] + 0.5 and r[1] - 0.5 <= s["cy"] <= r[3] + 0.5
+                for r, _ in violins)}
+            symbols[:] = [s for s in symbols if id(s) not in gone]
+            for _, pts in violins:
+                symbols += pts
+            continue
         # a box plot: its boxes, instead of the square/rectangle "markers"
         # their rectangles made; other markers (outliers) stay
         boxes = find_boxes(g, paths)
@@ -439,10 +572,21 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
                 continue
         # (and so are the thin segments of stacked bars taken for dash
         # markers: Memory_systems_cacheDRAMdisk-051)
-        if marks and all(s["shape"] in ("square", "rectangle") for s in marks):
+        if marks and all(s["shape"] in ("square", "rectangle", "cross", "plus") for s in marks):
             bars = bars_of(g)
             bar_paths = {b["idx"] for b in bars}
-            short = [s for s in marks if s["idx"] in bar_paths]
+            # (by place too: a square of a bar's fill and outline may carry
+            # the outline's path - VaskeBeaman2006-Lessonslearned-003's bars
+            # of 1, as tall as wide, the outline drawn right after the fill)
+            # (a cross on a bar no longer than it is its error bar over the
+            # bar's edge: a bar of almost nothing with its error bar,
+            # 2020.01.30.927558.full-023; not plus markers on bar tops)
+            short = [s for s in marks if (s["shape"] in ("square", "rectangle") and (
+                s["idx"] in bar_paths or any(abs(s["idx"] - b["idx"]) == 1 and _on_bar(s, b)
+                                             for b in bars))) or
+                     (s["shape"] in ("cross", "plus") and any(
+                         _on_bar(s, b) and abs(b["cy" if not b.get("horizontal") else "cx"] -
+                                               b.get("base", 0.0)) <= s["size"] for b in bars))]
             # short bars taken for squares are bars; squares that are no
             # bars (legend keys of the bar colours) stay, if the bars are
             # most of the shapes
@@ -451,10 +595,35 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
                 symbols[:] = [s for s in symbols if id(s) not in gone]
                 marks = []
         if marks:
+            # bars under line-and-marker series in a graph with a scale on
+            # each side (Seongmin-PhD-036: R barplot()s with points() and
+            # lines() of ratios over them): three or more bars standing on
+            # the baseline are reported too, and squares that are short
+            # bars (by path, or the outline drawn next to the fill) are no
+            # markers
+            # (only in a graph with a scale on each side: elsewhere square
+            # markers and background grids pass for bars)
+            if "y2" in g or "x2" in g:
+                bars = bars_of(g) if bars is None else bars
+            if ("y2" in g or "x2" in g) and len(bars) >= 3:
+                bar_paths = {b["idx"] for b in bars}
+                short = {id(s) for s in marks if s["shape"] in ("square", "rectangle") and (
+                    s["idx"] in bar_paths or any(
+                        abs(s["idx"] - b["idx"]) == 1 and _on_bar(s, b) for b in bars))}
+                symbols[:] = [s for s in symbols if id(s) not in short]
+                symbols += bars
+                label_bar_groups(g, bars, texts)
+                group_categories(g, bars)
             continue
         bars = bars_of(g) if bars is None else bars
         symbols += bars
         if bars:
+            # (rectangles that are short bars' outlines, centred on a bar
+            # and as wide, go: 2020.01.30.927558.full-048)
+            outl = {id(s) for s in symbols if s["shape"] == "rectangle" and not s.get("marker") and
+                    any(abs(s["size"] - b["size"]) <= 0.2 * b["size"] and _on_bar(s, b) for b in bars)}
+            if outl:
+                symbols[:] = [s for s in symbols if id(s) not in outl]
             # a second row of x labels naming groups of bars; categories
             # that each stand for a set of groups
             label_bar_groups(g, bars, texts)
@@ -470,6 +639,9 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
             for q in line["points"]:
                 sym = {"shape": "line", "cx": q[0], "cy": q[1], "size": 0.0,
                        "filled": False, "rgb": line["rgb"], "idx": line["idx"]}
+                if line.get("clip"):
+                    # (a vertex clipped out of view stays with its graph)
+                    sym["clip"] = line["clip"]
                 if k in names:
                     line_names[id(sym)] = names[k]
                 symbols.append(sym)

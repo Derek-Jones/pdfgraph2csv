@@ -1,4 +1,4 @@
-page,graph,symbol,series,legend_key,x_coord,y_coord,value,color,color_hex,label
+page,graph,symbol,series,legend_key,x_coord,y_coord,correlation,color,color_hex,label
 1,1,tile,,0,ConstBound,ConstBound,0.99171,black,#03051a,1.00
 1,1,tile,,0,ConstBound,EST,0.25723,purple,#931c5b,0.26
 1,1,tile,,0,RelativeBound,RelativeBound,0.99171,black,#03051a,1.00

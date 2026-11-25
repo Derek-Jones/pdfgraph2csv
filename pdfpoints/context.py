@@ -22,7 +22,7 @@ class PageState:
         self.break_marks = []     # bboxes of small curved strokes (axis-break wiggles)
         self.hiding_paths = set() # drawing steps of boxes painted over text
         self.graph_rects = []     # rectangles of all graphs found on the page
-        self.xlabel_zones = []    # (x0, x1, bottom of the x tick labels) of each graph
+        self.xlabel_zones = []    # (x0, x1, bottom of the x tick labels, graph rect) of each graph
         self.label_size = 0.0     # typical tick-label font size on the page
         self.minus_paths = set()  # drawing steps of dashes that are minus signs of labels
         self.number = 0           # page number (for progress messages)

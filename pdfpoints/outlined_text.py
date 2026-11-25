@@ -159,12 +159,39 @@ def _read_glyph(polys, box, word_box):
         mid = ((y0 + y1) / 2 - word_box[1]) / H
         short = [t for t in _SHORT if (t[0] == "e" and bottom < 0.1 and h > 0.6 * H) or
                  (t[0] == "+" and 0.35 < mid < 0.65 and bottom > 0.05 and h > 0.45 * H)]
+    if 0.8 <= asp <= 1.25 and not any(t[0] == "+" for t in short):
+        # a '+' as tall as the digits: no digit is square (2355585.2355594-006's
+        # exponents "+4.0", the plus 3.15 x 3.14 pt like its digits)
+        short += [t for t in _SHORT if t[0] == "+"]
     for ch, tasp, bits in _TEMPLATES + short:
         agree = (_NCELLS - _popcount(cells ^ bits)) / float(_NCELLS)
         q = agree - 0.5 * abs(asp - tasp)
         if q > best[1]:
             best = (ch, q)
+    if any(t[0] == "+" for t in short) and _is_plus(polys, box):
+        best = max(best, ("+", 0.9), key=lambda b: b[1])
     return best
+
+
+def _is_plus(polys, box):
+    """Is the glyph a '+': one contour whose every corner lies near the
+    horizontal or the vertical centre line (within a fifth of the size),
+    reaching the middle of all four sides?  (Tested on the outline: the
+    0.19 pt bars of 2355585.2355594-006's exponent plus, 6% of the glyph,
+    are thinner than a raster cell, and the template scored it 0.75.)"""
+    if len(polys) != 1 or len(polys[0]) < 8:
+        return False
+    x0, y0, x1, y1 = box
+    w, h = x1 - x0, y1 - y0
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    pts = polys[0]
+    if not all(abs(q[0] - cx) <= 0.2 * w or abs(q[1] - cy) <= 0.2 * h for q in pts):
+        return False
+    def reaches(px, py):
+        return any(abs(q[0] - px) <= 0.1 * w + 1e-9 and abs(q[1] - py) <= 0.2 * h for q in pts) \
+            if px != cx else any(abs(q[1] - py) <= 0.1 * h + 1e-9 and abs(q[0] - px) <= 0.2 * w
+                                 for q in pts)
+    return reaches(x0, cy) and reaches(x1, cy) and reaches(cx, y0) and reaches(cx, y1)
 
 
 class _Dash(list):
@@ -260,7 +287,7 @@ def _strip_percent(fr):
     return fr, False
 
 
-def outlined_text(paths, blobs=None, covers=()):
+def outlined_text(paths, blobs=None, covers=(), read_parts=None):
     """Find words drawn as filled outlines and read the numeric ones.
 
     Returns (text items like those of the interpreter, set of
@@ -353,6 +380,8 @@ def outlined_text(paths, blobs=None, covers=()):
         rot, q, text, wb = best
         if q >= 0.75 and parse_number(text) is not None and not crowded(word):
             texts.append(_text_item(word, rot, text, wb))
+            if read_parts is not None:      # (the parts of words read as text)
+                read_parts.update(m for gl in word for m in gl["members"])
         else:
             word = [gl for gl in word if not set(gl["members"]) <= diamonds]
             if word and blobs is not None and not all(
@@ -823,7 +852,10 @@ def _text_item(word, rot, text, wb):
     return {"text": text, "p0": p0, "p1": p1,
             "up": (top[0] - p0[0], top[1] - p0[1]),
             "size": (wb[3] - wb[1]) / 0.7, "idx": min(gl["path"] for gl in word),
-            "outlined": True}
+            # (the glyphs of a word share one colour: an axis's labels in
+            # its series' colour say which scale the series uses -
+            # PhysRevResearch.3.033169-009's blue and red outlined labels)
+            "rgb": word[0].get("rgb"), "outlined": True}
 
 
 def _blob_items(word):

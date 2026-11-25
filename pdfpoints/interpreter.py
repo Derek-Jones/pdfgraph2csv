@@ -20,6 +20,7 @@ does not keep:
   * images are recorded as boxes (they may hide text drawn earlier);
   * a Form XObject inherits the graphics state of the page that draws it
     (as the PDF specification says; pdfminer starts it afresh);
+  * text outside a Form XObject's /BBox is hidden (Sovinsky-paper-017);
   * a malformed operator is skipped instead of ending the page.
 
 `Interpreter` collects the results of one page.
@@ -27,6 +28,7 @@ does not keep:
 
 import decimal
 import math
+import re
 import sys
 
 import zlib
@@ -35,7 +37,7 @@ import pikepdf
 from pdfminer.pdfdevice import PDFDevice
 from pdfminer.pdfinterp import PDFContentParser, PDFPageInterpreter
 from pdfminer.pdftypes import PDFStream, resolve1, stream_value
-from pdfminer.psparser import LIT, PSEOF, PSKeyword, keyword_name, literal_name
+from pdfminer.psparser import LIT, PSEOF, PSKeyword, PSLiteral, keyword_name, literal_name
 
 from .context import PAGE, SETTINGS
 from .fonts import DINGBAT_ANCHOR, DINGBAT_SYMBOLS, FontInfo, dingbat_code, register_fonts
@@ -64,6 +66,7 @@ class Interpreter:
         self.glyph_symbols = []
         self.image_marks = []
         self.colour_strips = []  # one-pixel images: colour bars (colourbar.py)
+        self.pictures = []       # big images: heat maps drawn as pictures (colourbar.py)
         self.images = []
         self.op_errors = {}      # (operator, exception type) -> [count, first message]
         self.order = 0
@@ -102,8 +105,10 @@ class ExtraState:
         self.stroke_cs = ("gray", None)
         self.ca = 1.0                     # fill opacity
         self.clip = None                  # clipping box (x0, y0, x1, y1), None = page
+        self.form_box = None              # the /BBox of the Form XObjects being run (page space)
         self.font = None                  # FontInfo of the current font
         self.gs_name = ""                 # name of the last ExtGState set (drawing style)
+        self.fill_pattern = None          # name of the fill colour's pattern, if one
 
     def copy(self):
         c = ExtraState.__new__(ExtraState)
@@ -145,6 +150,7 @@ class ContentInterpreter(PDFPageInterpreter):
 
     def init_state(self, ctm):
         super().init_state(ctm)
+        self.start_ctm = ctm              # the stream's own space: patterns are placed in it
         self.extra = ExtraState()
         self.extra_stack = []
         if self.inherit is not None:      # a Form XObject: continue the caller's state
@@ -302,6 +308,8 @@ class ContentInterpreter(PDFPageInterpreter):
         if close:
             self.curpath.append(("h",))
         subpaths = build_subpaths(self.curpath, self.ctm)
+        if fill and subpaths and self.extra.fill_pattern:
+            self._pattern_strip(self.extra.fill_pattern)
         if (fill or stroke) and subpaths:
             e = self.extra
             self.page.record("paths", {
@@ -309,6 +317,7 @@ class ContentInterpreter(PDFPageInterpreter):
                 "fill_rgb": e.fill, "stroke_rgb": e.stroke,
                 "opaque": e.ca >= 0.99, "clip": e.clip,
                 "res": _resolution(self.unit, self.ctm), "tool": self.tool,
+                "scale": _resolution(1.0, self.ctm),
                 "style": self._style()})
         if self.clip_next and subpaths:
             # (only the clip's bounding box is kept: enough to tell which
@@ -401,7 +410,12 @@ class ContentInterpreter(PDFPageInterpreter):
     def do_sc(self):
         self._set_colour(True)
 
-    do_scn = do_sc
+    def do_scn(self):
+        """A fill colour; in a Pattern space, a pattern by name."""
+        ops = self.operands
+        self.extra.fill_pattern = literal_name(ops[-1]) if ops and isinstance(ops[-1], PSLiteral) \
+            else None
+        self._set_colour(True)
 
     def do_SC(self):
         self._set_colour(False)
@@ -411,6 +425,7 @@ class ContentInterpreter(PDFPageInterpreter):
     def do_cs(self, name):
         self.extra.fill_cs = colour_space(name, self._resource("ColorSpace", name))
         self.extra.fill = (0.0, 0.0, 0.0)
+        self.extra.fill_pattern = None
 
     def do_CS(self, name):
         self.extra.stroke_cs = colour_space(name, self._resource("ColorSpace", name))
@@ -468,7 +483,12 @@ class ContentInterpreter(PDFPageInterpreter):
                     saw_space = True
                 elif not font.dingbats:
                     gend = pen + w * fs * th          # end of the visible glyph
-                    if last_end is None or not pieces or abs(pen - last_end) > em:
+                    # (numbers set wider apart than a space, 0.6 em, are
+                    # separate labels: Seongmin-PhD-036's tick labels 1000
+                    # ... 3500 in one run, 0.84 em apart)
+                    numgap = pieces and last_end is not None and pen - last_end > 0.6 * em and \
+                        pieces[-1][0][-1:].isdigit() and (u.isdigit() or u in "-\u2212.")
+                    if last_end is None or not pieces or abs(pen - last_end) > em or numgap:
                         pieces.append([u, pen, gend, [(u, pen, gend)]])
                     else:
                         if saw_space or pen - last_end > 0.15 * em:
@@ -486,7 +506,8 @@ class ContentInterpreter(PDFPageInterpreter):
             self.page.record("texts", {
                 "text": txt, "p0": p0, "p1": apply_matrix_pt(base, (s1, rise)),
                 "up": (top[0] - p0[0], top[1] - p0[1]), "size": size,
-                "font": font.name, "rgb": self.extra.fill,
+                "font": font.name, "rgb": self.extra.fill, "clip": self.extra.clip,
+                "form_box": getattr(self.extra, "form_box", None),
                 # each glyph: (char, start point, end point) on the page
                 "glyphs": [(c, apply_matrix_pt(base, (a, rise)), apply_matrix_pt(base, (b, rise)))
                            for c, a, b in gl]})
@@ -507,11 +528,52 @@ class ContentInterpreter(PDFPageInterpreter):
         filled = ts.render in (0, 2, 4, 6)    # modes 0/2/4/6 fill the glyph; 1/5 stroke it
         self.page.record("glyph_symbols", {
             "res": _resolution(self.unit, base), "tool": self.tool,
+            # (the glyph's place is written in user space: the CTM's scale
+            # carries the program's rounding to the page, not the font size)
+            "scale": _resolution(1.0, self.ctm),
             "shape": shape, "cx": c[0], "cy": c[1],
             "size": max(abs(e1[0] - e0[0]), abs(e1[1] - e0[1])),
             "filled": filled, "rgb": e.fill if filled else e.stroke, "clip": e.clip})
 
     # -- XObjects ----------------------------------------------------------------
+    _PATTERN_IMAGE = re.compile(
+        rb"^\s*q\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)"
+        rb"\s+cm\s+/(\S+)\s+Do\s+Q\s*$")
+
+    def _pattern_strip(self, name):
+        """A fill with a tiling pattern that only places an image: a colour
+        bar when the image is a strip (Mohamed_Rakha_PhD-072: Cairo draws
+        ggplot's gradient as a clip box filled with pattern p6, whose
+        content is "q 3 0 0 21 0 0 cm /x9 Do Q", a 3 x 21 image).  The
+        pattern matrix places it in the space of the stream using it; it is
+        cut to the clip box (the image runs a row past each end of the
+        visible bar, and is three times as wide)."""
+        pat = self._resource("Pattern", name)
+        if not isinstance(pat, PDFStream) or resolve1(pat.get("PatternType")) != 1:
+            return
+        try:
+            m = self._PATTERN_IMAGE.match(pat.get_data())
+        except Exception:
+            return
+        if not m:
+            return
+        res = resolve1(pat.get("Resources")) or {}
+        xobjs = resolve1(res.get("XObject")) if isinstance(res, dict) else None
+        img = resolve1(xobjs.get(m.group(7).decode("latin-1"))) if isinstance(xobjs, dict) else None
+        if not isinstance(img, PDFStream) or literal_name(img.get("Subtype") or "") != "Image":
+            return
+        cm = tuple(float(v) for v in m.groups()[:6])
+        pm = resolve1(pat.get("Matrix")) or list(IDENTITY)
+        pm = tuple(_num(resolve1(v)) for v in pm) if len(pm) == 6 else IDENTITY
+        ctm = mult_matrix(mult_matrix(cm, pm), self.start_ctm)
+        strip = colour_strip(read_image(img))
+        if not strip:
+            return
+        strip["ctm"] = _crop_strip(strip, ctm, self.extra.clip)
+        a, b, c, d, e, f = strip["ctm"]
+        if max(abs(a) + abs(c), abs(b) + abs(d)) >= 20:
+            self.page.record("colour_strips", strip)
+
     def do_Do(self, xobjid):
         """Run a Form XObject (with its own matrix and resources, inheriting
         this graphics state), or note where an image was placed."""
@@ -525,9 +587,28 @@ class ContentInterpreter(PDFPageInterpreter):
                 matrix = IDENTITY
             matrix = tuple(_num(resolve1(x)) for x in matrix)
             res = resolve1(xobj.get("Resources")) or self.resources
+            extra = self.extra.copy()
+            # the form's /BBox clips what it draws (Sovinsky-paper-017: a
+            # whole A4 page of a Stata graph and its old caption "Figure 4:
+            # ..." in a form whose box holds just the graph).  It is kept
+            # apart from the clip and used only to hide text: as a clip it
+            # gave every mark of a figure the figure's box, and the markers
+            # of log-inset's insets went to the main graph
+            bb = resolve1(xobj.get("BBox"))
+            if isinstance(bb, list) and len(bb) == 4:
+                try:
+                    bb = [_num(resolve1(v)) for v in bb]
+                    m = mult_matrix(matrix, self.ctm)
+                    cs = [apply_matrix_pt(m, (u, v)) for u in (bb[0], bb[2]) for v in (bb[1], bb[3])]
+                    b = (min(c[0] for c in cs), min(c[1] for c in cs),
+                         max(c[0] for c in cs), max(c[1] for c in cs))
+                    c = getattr(extra, "form_box", None)
+                    extra.form_box = b if c is None else (max(b[0], c[0]), max(b[1], c[1]),
+                                                          min(b[2], c[2]), min(b[3], c[3]))
+                except (TypeError, ValueError):
+                    pass
             sub = self.__class__(self.rsrcmgr, self.device, self.page, self.depth + 1,
-                                 (self.textstate.copy(), self.graphicstate.copy(),
-                                  self.extra.copy()))
+                                 (self.textstate.copy(), self.graphicstate.copy(), extra))
             sub.parent_stream_ids.update(self.parent_stream_ids | self.stream_ids)
             # an embedded graphic that records its own program (innermost wins)
             sub.tool = form_tool(xobj) or self.tool
@@ -548,6 +629,11 @@ class ContentInterpreter(PDFPageInterpreter):
                 if strip:
                     strip["ctm"] = self.ctm
                     self.page.record("colour_strips", strip)
+            if min(box[2] - box[0], box[3] - box[1]) >= 30.0 and isinstance(ww, int) and \
+                    isinstance(hh, int) and min(ww, hh) >= 4:
+                # (a heat map drawn as a picture: read only if a graph's
+                # plot is filled by it - colourbar.image_tiles)
+                self.page.pictures.append({"box": box, "xobj": xobj, "ctm": self.ctm})
             if 1.0 <= max(box[2] - box[0], box[3] - box[1]) <= 30.0:
                 # small enough to be a marker drawn as a picture (Excel for
                 # Mac draws gradient-filled markers this way): image_marks.py
@@ -555,6 +641,39 @@ class ContentInterpreter(PDFPageInterpreter):
                                                  "clip": self.extra.clip, "tool": self.tool})
             else:
                 self.page.order += 1
+
+
+def _crop_strip(strip, ctm, clip):
+    """The placement (unit square -> page) of colour strip `strip`, placed
+    by `ctm`, cut to clip box `clip`: across, to the clip's width; along,
+    to the pixels whose centres the clip shows (the strip's rgb shortened
+    to them).  Unchanged if the placement is not upright or there is no
+    clip."""
+    a, b, c, d, e, f = ctm
+    if clip is None or abs(b) > 1e-9 or abs(c) > 1e-9 or a == 0 or d == 0:
+        return ctm
+    x0, x1 = sorted((e, e + a))
+    y0, y1 = sorted((f, f + d))
+    cx0, cy0, cx1, cy1 = max(x0, clip[0]), max(y0, clip[1]), min(x1, clip[2]), min(y1, clip[3])
+    if cx1 <= cx0 or cy1 <= cy0:
+        return ctm
+    n = len(strip["rgb"])
+    if strip["h"] >= strip["w"]:          # upright: pixel i's centre at v = 1 - (i + 0.5) / n
+        keep = [i for i in range(n) if cy0 <= f + d * (1 - (i + 0.5) / n) <= cy1]
+        if len(keep) < 2:
+            return ctm
+        i0, i1 = keep[0], keep[-1] + 1
+        strip["rgb"] = strip["rgb"][i0:i1]
+        strip["h"] = i1 - i0
+        lo_v, hi_v = 1 - i1 / n, 1 - i0 / n
+        return (cx1 - cx0, 0.0, 0.0, d * (hi_v - lo_v), cx0, f + d * lo_v)
+    keep = [i for i in range(n) if cx0 <= e + a * ((i + 0.5) / n) <= cx1]
+    if len(keep) < 2:
+        return ctm
+    i0, i1 = keep[0], keep[-1] + 1
+    strip["rgb"] = strip["rgb"][i0:i1]
+    strip["w"] = i1 - i0
+    return (a * (i1 - i0) / n, 0.0, 0.0, cy1 - cy0, e + a * i0 / n, cy0)
 
 
 _FORM_TOOLS = {}                          # id(XObject stream) -> tool name

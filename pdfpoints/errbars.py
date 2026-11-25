@@ -18,6 +18,9 @@ a chain that does not reach beyond the marker (the stroke of a '+').  When
 several markers touch one chain, it belongs to the marker at which a piece
 of it starts or ends (Excel's halves), else to the one nearest its middle.
 
+A bar (symbol 'bar') is measured as a marker of 1 pt at the middle of its
+end, its error bar along it only.
+
 The vertices of lines without markers (symbol 'line') have no size to
 measure a bar against, so their vertical bars must be capped: a short
 horizontal stroke centred on each end (_vertex_bars).
@@ -100,6 +103,75 @@ def _chains(pieces, join):
     return [tuple(c) for c in chains]
 
 
+# a lone bar's caps may be long: a strip chart of two groups is narrow
+# (BehavioralNetworkScience-121's caps are 15% of the plot's width)
+_LONE_CAP_FRAC = 0.3
+
+
+def lone_capped_bars(graphs, symbols, paths, graph_of):
+    """Capped error bars standing alone, with no marker on them: a group's
+    mean and its error bar drawn as a capped vertical bar - an "H" on its
+    side - among the jittered points of an R strip chart
+    (BehavioralNetworkScience-121: the mean +/- standard error of each
+    group).  A vertical stroke inside a graph, 0.5 pt long or more and
+    shorter than 90% of the plot, with a cap (a horizontal stroke 0.5 pt
+    to 30% of the plot's width long) centred on each end, the two caps no
+    more than twice each other's length; no marker, line vertex or bar top
+    (a quarter of the caps' length or bigger, or of any size at its middle
+    when alone on it) lies on it (those bars are their points',
+    find_error_bars); the stroke is not also filled (2401.16279-023's
+    arrows); and the
+    graph has no box plot (a whisker meeting a box's edge looks alike).
+    Each is a point at its middle, symbol "errorbar", in the stroke's
+    colour, its ends kept for --errbars.  Returns the new symbols."""
+    segs = _segments(paths)
+    index = _index(segs["h"])
+    hidx = {"h": index}
+    boxed = {id(graph_of(s)) for s in symbols if s["shape"].startswith("box-")}
+    out, seen = [], set()
+    for p in paths:
+        if not p["stroke"] or p["fill"]:
+            continue                      # (filled and stroked: 2401.16279-023's arrows)
+        for sp in p["subpaths"]:
+            if sp["closed"] or len(sp["segs"]) != 1 or sp["segs"][0][0] != "l":
+                continue
+            aa = _nearly_aligned(sp["start"], sp["segs"][0][-1])
+            if not aa or aa[0] != "v":
+                continue
+            _, lo, hi, x = aa
+            key = (round(x, 2), round(lo, 2), round(hi, 2))
+            if key in seen:
+                continue
+            seen.add(key)
+            probe = {"cx": x, "cy": (lo + hi) / 2, "size": 0.0, "shape": "errorbar", "idx": p["idx"]}
+            g = graph_of(probe)
+            if g is None or id(g) in boxed:
+                continue
+            gx0, gy0, gx1, gy1 = g["rect"]
+            if not (gx0 <= x <= gx1) or hi - lo < 0.5 or hi - lo >= 0.9 * (gy1 - gy0):
+                continue
+            c_lo, c_hi = (_cap(hidx, x, e, gx1 - gx0, _LONE_CAP_FRAC) for e in (lo, hi))
+            if c_lo is None or c_hi is None or max(c_lo, c_hi) > 2 * min(c_lo, c_hi):
+                continue
+            # (a marker owning the bar is not much smaller than its caps, or
+            # sits at its middle: 120875-008's 2.5 pt dots with 10.2 pt caps;
+            # jittered dots, a seventh of the caps' length, fall on it by
+            # chance and off its middle)
+            cap, mid = max(c_lo, c_hi), (lo + hi) / 2
+            on = [s for s in symbols if not s["shape"].startswith("box-") and
+                  abs(s["cx"] - x) <= max(0.3, 0.15 * s["size"]) and
+                  lo - 0.5 * s["size"] <= s["cy"] <= hi + 0.5 * s["size"]]
+            if any(s["size"] >= 0.25 * cap or s["shape"] in ("line", "bar", "stem") or
+                   (len(on) == 1 and abs(s["cy"] - mid) <= max(0.3, 0.15 * s["size"]))
+                   for s in on):
+                continue                          # a marker's (or vertex's, bar's) error bar
+            out.append({"shape": "errorbar", "cx": x, "cy": (lo + hi) / 2,
+                        "size": max(c_lo, c_hi), "filled": False,
+                        "rgb": p.get("stroke_rgb") or (0.0, 0.0, 0.0), "idx": p["idx"],
+                        "clip": p.get("clip"), "vbar": (lo, hi)})
+    return out
+
+
 def find_error_bars(symbols, paths, graph_of):
     """{symbol index: {"v": (low, high) | None, "h": (low, high) | None}} in
     page coordinates, for the markers that have error bars.  `graph_of(s)`
@@ -108,19 +180,29 @@ def find_error_bars(symbols, paths, graph_of):
     segs = _segments(paths)
     index = {k: _index(v) for k, v in segs.items()}
     claims = {}                    # (direction, chain) -> [(score, symbol index, ends)]
+    out = {}
     for si, s in enumerate(symbols):
-        if s["shape"] in ("bar", "line", "stem") or s["shape"].startswith("box-"):
+        if s["shape"] == "errorbar":
+            out[si] = {"v": s["vbar"], "h": None}     # a lone capped bar: its own ends
+            continue
+        if s["shape"] in ("line", "stem") or s["shape"].startswith("box-"):
             continue
         g = graph_of(s)
         if g is None:
             continue
         x0, y0, x1, y1 = g["rect"]
-        size = max(s["size"], 0.5)
+        # (a bar's error bar crosses the middle of its end, along the bar:
+        # 2020.01.30.927558.full-023's bars hanging from 0, -026's
+        # horizontal bars; measured as a marker of 1 pt there)
+        is_bar = s["shape"] == "bar"
+        size = 1.0 if is_bar else max(s["size"], 0.5)
         tol = max(0.15 * size, 0.3)
+        dirs = (("v", s["cx"], s["cy"], y1 - y0), ("h", s["cy"], s["cx"], x1 - x0))
+        if is_bar:
+            dirs = dirs[1:] if s.get("horizontal") else dirs[:1]
         # k: the bar's direction; centre: the marker's position across the
         # bar, along: its position along it; span: the plot's extent that way
-        for k, centre, along, span in (("v", s["cx"], s["cy"], y1 - y0),
-                                       ("h", s["cy"], s["cx"], x1 - x0)):
+        for k, centre, along, span in dirs:
             pieces = []
             for b in range(math.floor((centre - tol) / _BUCKET),
                            math.floor((centre + tol) / _BUCKET) + 1):
@@ -151,7 +233,6 @@ def find_error_bars(symbols, paths, graph_of):
                 score = min(*(abs(q - along) for q in knots[1:-1] or [math.inf]), abs((lo + hi) / 2 - along))
                 key = (k, round(centre / tol), round(lo, 2), round(hi, 2))
                 claims.setdefault(key, []).append((score, si, (low, high)))
-    out = {}
     taken = set()                  # (x, low, high) of the markers' vertical bars
     for (k, *_), cands in claims.items():
         score, si, ends = min(cands)
@@ -170,15 +251,15 @@ _CAP_FRAC = 0.06
 _TOL = 0.3                         # pt
 
 
-def _cap(index, x, y, width):
+def _cap(index, x, y, width, frac=_CAP_FRAC):
     """Length of the short horizontal stroke centred on (x, y) - an error
-    bar's cap - or None."""
+    bar's cap, at most `frac` of the plot's `width` - or None."""
     best = None
     for b in range(math.floor((y - _TOL) / _BUCKET), math.floor((y + _TOL) / _BUCKET) + 1):
         for lo, hi, pos in index["h"].get(b, ()):
             n = hi - lo
             if (abs(pos - y) <= _TOL and abs((lo + hi) / 2 - x) <= max(_TOL, 0.1 * n)
-                    and 0.5 <= n <= _CAP_FRAC * width):
+                    and 0.5 <= n <= frac * width):
                 best = n if best is None else max(best, n)
     return best
 

@@ -1,0 +1,14 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+2,1,,1.4,Tycho Brahe’s observations of Mars and a fitted regression model. Data from Brahe,R 3.6.3,R,923,5360,5410,-30,20
+2,2,,1.5,Growth of transport and product distribution In January 2018 the U.S. Congress passed the Foundations for Evidence-Based Policywhose requirements include: “(1) A list of policy-relevant ques-,R 3.6.3,R,703,1800,2000,0,100
+6,3,,1.9,"Power consumed, in Watts, executing an instruction on a computer available in a given year. Data from Koomey et al.",R 3.6.3,R,84,1950,2010,1e-09,1000
+6,4,,1.10,Total investment in tangible and intangible Data from Goodridge et al.,R 3.6.3,R,33,1990,2010,0,140
+6,5,,1.11,Quarterly value of newly purchased and own,R 3.6.3,R,252,2000,2015,1.5,4.5
+7,6,,1.12,Billions of dollars of worldwide semiconductor sales per month. Data from World Semiconductor Trade Statistics.,R 3.6.3,R,2395,1980,2010,0.5,20
+7,7,,1.14,Spectral analysis of World GDP between Maddison.,R 3.6.3,R,72,2,100,10,50
+9,8,,1.15,Number of unique files and commits first ap- .,R 3.6.3,R,1442,1970,2030,1000,1e+07
+10,9,,1.16,Changing habits in men’s facial hair. Data from Robinson.,R 3.6.3,R,234,1860,1940,0,80
+10,10,,1.17,"Number of papers, in each year between 1987 and 2003, associated with a particular IT topic. The E-",R 3.6.3,R,155,1990,2000,0,150
+11,11,,1.18,"Number of articles appearing in a given year, cited in this book, plus number of corresponding",R 3.6.3,R,150,1920,2020,1,100
+16,12,,1.20,"Example convex, upper, and concave, A readable collection of papers on how people make use categories to solve problems Github–Local",R 3.6.3,R,81,2,8,0,15
+16,13,,1.20,"Example convex, upper, and concave, A readable collection of papers on how people make use categories to solve problems Github–Local",R 3.6.3,R,81,2,8,10,25

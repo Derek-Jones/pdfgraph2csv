@@ -1,0 +1,8 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,,7.4,"Small-world measures for early and late talkers. Telesford’s measure is closer to 0 when the measure is more small-world, making this consistent with the small-world index and",,Excel,238,early,late,8,18
+1,2,,7.4,"Small-world measures for early and late talkers. Telesford’s measure is closer to 0 when the measure is more small-world, making this consistent with the small-world index and",,Excel,238,early,late,0.5,0.9
+1,3,,7.4,"Small-world measures for early and late talkers. Telesford’s measure is closer to 0 when the measure is more small-world, making this consistent with the small-world index and",,Excel,238,early,late,0.2,0.7
+1,4,,7.5,Comparison of various measures that contribute to the small-world indices.,,Excel,238,early,late,0.15,0.3
+1,5,,7.5,Comparison of various measures that contribute to the small-world indices.,,Excel,238,early,late,4,5.5
+1,6,,7.5,Comparison of various measures that contribute to the small-world indices.,,Excel,238,early,late,0.2,0.7
+1,7,,7.5,Comparison of various measures that contribute to the small-world indices.,,Excel,238,early,late,0,0.15

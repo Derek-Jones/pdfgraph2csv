@@ -16,12 +16,15 @@ import re
 import sys
 
 from .context import SETTINGS
-from .geometry import box_of, encloses, fmt_rect, median, rect_area
+from .geometry import box_of, encloses, fmt_rect, median, overlap_area, rect_area
 from .text import WORD_RE
 
 # a number in a table cell: digits may come in groups split by thin spaces
 # (0.918 6), as some journals set them
-_CELL_NUM = re.compile(r"^[+-]?(\d[\d ]*)?\.?\d[\d ]*%?$")
+# (regression tables too: significance marks after a number, "-.895**",
+# and standard errors in brackets, "(.177)": w21074-035)
+_CELL_NUM = re.compile(r"^(?:[+-]?(\d[\d ]*)?\.?\d[\d ]*%?[*\u2020\u2021]*|"
+                       r"[(\[][+-]?(\d[\d ]*)?\.?\d[\d ]*%?[)\]][*\u2020\u2021]*)$")
 
 
 def axis_labels(g):
@@ -220,6 +223,9 @@ def ruled_tables(paths):
     for orient, other in (("h", "v"), ("v", "h")):
         groups = []
         for lo, hi, pos in rules[orient]:
+            if hi - lo <= 20:
+                continue        # (no table rule; a trace plot's thousands of
+                                # short strokes made this loop slow)
             for g in groups:
                 if abs(g[0] - lo) <= 1.0 and abs(g[1] - hi) <= 1.0:
                     g[2].append(pos)
@@ -238,6 +244,27 @@ def ruled_tables(paths):
     return out
 
 
+def _across_tables(rect, tables):
+    """Does `rect` lie 70% or more within the boxes `tables`, which overlap
+    it and together are twice its size or more?"""
+    a = rect_area(rect)
+    if a <= 0:
+        return False
+    hit = [t for t in tables if overlap_area(rect, t) > 0]
+    inside = sum(overlap_area(rect, t) for t in hit)
+    return bool(hit) and inside >= 0.7 * a and sum(rect_area(t) for t in hit) >= 2 * a
+
+
+def _one_name(m):
+    """Do all the labels of a category axis name the same category?
+    Categories differ; the same word at every tick is a heading repeated
+    in the columns or tables of a page (roache_fundamentals_2009-193: "R"
+    of the headings "R actual" and "R theory" across two tables, "actual"
+    of the two "R actual" headings one above the other)."""
+    names = {str(lab).strip().lower() for _, lab in m.get("ticks", ())}
+    return len(m.get("ticks", ())) >= 2 and len(names) == 1
+
+
 def drop_tables(graphs, texts, debug=False, boxes=(), paths=()):
     """The graphs that are graphs.  Dropped:
     - a 'plot' holding more words of running text than --max-words
@@ -246,14 +273,19 @@ def drop_tables(graphs, texts, debug=False, boxes=(), paths=()):
     - a plot holding a grid of numbers (numeric_grid): a table whose rules
       and row names passed for axes;
     - a graph with a category axis each way whose cells hold text in at
-      least half of them: a ruled table (its column headings and row names
+      least half of them, or one of whose axes names one category at every
+      tick (_one_name): a ruled table (its column headings and row names
       are the categories).  A chart with categories both ways, such as a
       dot matrix, holds markers in its cells, not text;
     - a graph lying inside a ruled table (ruled_tables) twice its size or
       more, whose box holds a grid of numbers: a few rows of the table
       taken for a plot
       (State_IT_Project_Management_in_UK-056: one row of a 24-rule table,
-      its cell values read as categories)."""
+      its cell values read as categories);
+    - a graph lying 70% or more within ruled tables of numbers twice its
+      size or more together: a column of cells running through tables one
+      above another (w21074-035: one column of two regression tables, its
+      x categories two words of the note below)."""
     out = []
     tables = None
     for g in graphs:
@@ -270,6 +302,8 @@ def drop_tables(graphs, texts, debug=False, boxes=(), paths=()):
                rect_area(g["rect"]) <= 0.5 * rect_area(t) for t in tables) and \
                 not _cell_numbers_boxed(g, texts, paths):
             why = "lies in a ruled table of numbers"
+        elif _across_tables(g["rect"], tables):
+            why = "lies across ruled tables of numbers"
         elif prose_inside(g, texts, boxes) > SETTINGS.max_words:
             why = "holds running text: no graph"
         elif numeric_grid(g, texts) and not _cell_numbers_boxed(g, texts, paths):
@@ -278,6 +312,8 @@ def drop_tables(graphs, texts, debug=False, boxes=(), paths=()):
             held, n = _text_in_cells(g, texts)
             if n >= 4 and held >= 0.5 * n:
                 why = "is a table: text in %d of its %d cells" % (held, n)
+            elif _one_name(mx) or _one_name(my):
+                why = "is a table: a category axis naming one category over and over"
         if why is None:
             out.append(g)
         elif debug:

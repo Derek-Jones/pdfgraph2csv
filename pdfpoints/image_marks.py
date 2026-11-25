@@ -77,17 +77,43 @@ def _filters(st):
     return [getattr(resolve1(x), "name", str(x)) for x in fs]
 
 
+def _jpeg_pixels(raw, w, h):
+    """(bytes, components) of a JPEG of w x h pixels, decoded with Pillow
+    (gray or RGB; CMYK made RGB); (None, None) if Pillow is missing or the
+    image does not decode to that size."""
+    if not raw:
+        return None, None
+    try:
+        import io
+        from PIL import Image
+        img = Image.open(io.BytesIO(raw))
+        img = img.convert("L" if img.mode in ("L", "1") else "RGB")
+    except Exception:
+        return None, None
+    if img.size != (w, h):
+        return None, None
+    return img.tobytes(), (1 if img.mode == "L" else 3)
+
+
 def read_image(xobj):
     """(width, height, [(r, g, b)] per pixel, [alpha 0..1] per pixel), rows
     top to bottom; None if the image cannot be read."""
-    if any(f in ("DCTDecode", "JPXDecode", "JBIG2Decode", "CCITTFaxDecode") for f in _filters(xobj)):
+    filters = _filters(xobj)
+    if any(f in ("JPXDecode", "JBIG2Decode", "CCITTFaxDecode") for f in filters):
         return None
     w, h = resolve1(xobj.get("Width")), resolve1(xobj.get("Height"))
     if resolve1(xobj.get("BitsPerComponent")) != 8 or not isinstance(w, int) or not isinstance(h, int):
         return None
     palette = _palette(xobj.get("ColorSpace"))
     n = 1 if palette else _components(xobj.get("ColorSpace"))
-    data = _decoded(xobj) if n else None
+    if "DCTDecode" in filters:
+        # a JPEG (Word's pictures of MATLAB heat maps and colour bars,
+        # 2020.01.30.927558.full-048), read with Pillow when installed
+        if palette or filters[-1] != "DCTDecode":
+            return None
+        data, n = _jpeg_pixels(_decoded(xobj), w, h)
+    else:
+        data = _decoded(xobj) if n else None
     if data is None or len(data) < w * h * n:
         return None
     if palette:

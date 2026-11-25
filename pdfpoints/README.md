@@ -29,7 +29,11 @@ Output columns: page, graph, symbol, series, legend_key, x_coord, y_coord, color
 (plus label, the text printed beside a point, when some point has one; axis,
 `left` or `right`, when a graph has a scale on both sides; confidence, 0 to 1,
 when some point was reconstructed from flattened marker fragments, empty for
-markers drawn whole; and x_group, after x_coord, when the x axis has a second
-row of labels naming groups of bars: the name of each bar's group).
+markers drawn whole; x_group, after x_coord, when the x axis has a second
+row of labels naming groups of bars: the name of each bar's group; and,
+with --heatmap, after y_coord, the value a heat map tile's or any
+point's colour stands for on the colour bar beside the graph, the column
+named after the bar: its title, what the caption says colour shows or
+calls the matrix ("correlation"), or "year").
 When no data points are found nothing is written (not even the header line),
 and an output file named with `-o` is not created.

@@ -1,0 +1,2 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max,axis2,axis2_tick_min,axis2_tick_max
+1,1,Intel Inside Program Payments,5,Evolution of Intel.s Payments to PC Firms,PDF-XChange 3.20.0055 (Windows),Stata,54,2003,2009,0,6,y right,0,6

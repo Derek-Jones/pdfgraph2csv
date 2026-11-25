@@ -21,7 +21,7 @@ If no images are extracted, then the process involves extracting the page contai
 `python3 pdfgraph2csv.py --help` lists the options.
 
     usage: pdfgraph2csv.py [--debug] [--digits N] [--errbars] [--exclude-legend] [--glyph-centre {marker,bbox}] [-h]
-                       [--inside-only] [--integer AXIS] [--internal] [--max-symbol-frac MAX_SYMBOL_FRAC] [--max-words N]
+                       [--heatmap] [--inside-only] [--integer AXIS] [--internal] [--max-symbol-frac MAX_SYMBOL_FRAC] [--max-words N]
                        [-meta FILE] [--meta-only] [-o OUTPUT] [--pages PAGES] [--password PASSWORD] [--rotation]
                        [--sizesymbol]
                        pdf
@@ -31,10 +31,13 @@ If no images are extracted, then the process involves extracting the page contai
 
     options:
       --debug               print axis detection details
-      --digits N            significant digits in numbers written (default: as many as the precision of the PDF's coordinates justifies, at least 6)
+      --digits N            significant digits in numbers written (default: as many as the accuracy of the program that drew the graph justifies when it is known, else the precision of the PDF's coordinates, at least 6)
       --errbars             output the ends of each point's error bars
       --exclude-legend      do not report the marker symbols of legend keys
       --glyph-centre {marker,bbox} data point of a ZapfDingbats marker glyph: the plotting convention (0.396, 0.347) em (default) or the centre of the glyph's bounding box
+      --heatmap             find a graded grey or colour scale beside a graph (a colour bar) and
+                            put the value each point's colour stands for on it in a new column,
+                            named after the scale (its title, or what the caption says colour shows)
       -h, --help            show this help message and exit
       --inside-only         only report symbols inside the axis rectangle
       --integer AXIS        round axis values (x or y; may be given twice) to whole numbers
@@ -49,7 +52,7 @@ If no images are extracted, then the process involves extracting the page contai
       --rotation            output the rotation of each point's graph (0, 90, -90 or 180 degrees)
       --sizesymbol          output the size of each point's marker in PDF points (1/72 inch) - the diameter of a circle, the average edge length of a box (other shapes: the mean of their bounding box's width and height)
 
-x/y values are written with as many significant digits as the precision of the PDF's own coordinates justifies, plus one (at least 6): a plot whose coordinates have 3 decimals gives about 6 or 7 digits, one written with 10 significant digits about 10; `--digits N` fixes the number of digits instead.
+x/y values are written with as many significant digits as the precision of the PDF's own coordinates justifies, plus one (at least 6): a plot whose coordinates have 3 decimals gives about 6 or 7 digits, one written with 10 significant digits about 10. When the program that drew the graph is recorded in the PDF and the accuracy of the coordinates it writes is known (R's pdf() device: 0.01 pt; matplotlib: 10^-6 pt), values carry just the digits that accuracy resolves, however few. `--digits N` fixes the number of digits instead.
 
 The program needs python 3.9+
 

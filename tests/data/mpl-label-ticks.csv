@@ -1,8 +1,8 @@
-page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
-1,1,filled-square,,0,0.985777,1,black,#000000
-1,1,filled-square,,0,200.985,1.2,black,#000000
-1,1,filled-square,,0,400.985,1.5,black,#000000
-1,1,filled-square,,0,600.985,2,black,#000000
-1,1,filled-square,,0,800.984,3,black,#000000
-1,1,filled-square,,0,1000.98,7,black,#000000
-1,1,filled-square,,0,1060.98,15,black,#000000
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex,x_coord_low,x_coord_high,y_coord_low,y_coord_high
+1,1,filled-square,,0,0.985777,1,black,#000000,-5.00301,6.97456,,
+1,1,filled-square,,0,200.985443,1.2,black,#000000,194.996657,206.974229,,
+1,1,filled-square,,0,400.98511,1.5,black,#000000,394.996324,406.973896,,
+1,1,filled-square,,0,600.984776,2,black,#000000,594.99599,606.973562,,
+1,1,filled-square,,0,800.984442,2.99999999,black,#000000,794.995656,806.973228,,
+1,1,filled-square,,0,1000.984109,7,black,#000000,994.9953227,1006.972895,,
+1,1,filled-square,,0,1060.984008,14.9999999,black,#000000,1054.995223,1066.972794,,

@@ -138,3 +138,36 @@ def graph_tool(g, paths, glyph_symbols):
         if t and x0 <= s["cx"] <= x1 and y0 <= s["cy"] <= y1:
             count[t] = count.get(t, 0) + 1
     return max(count, key=lambda t: (count[t], t)) if count else ""
+
+
+# How finely the programs whose PDF writers are known round the
+# coordinates they write, in their own user space units (multiplied by the
+# CTM's scale to give page units).  The user asked for values to carry the
+# digits the program's accuracy justifies when it is known (unless
+# --digits says otherwise).
+#   R, pdf() device: every coordinate "%.2f" (grDevices devPS.c: PDF_Line,
+#     PDF_Polyline, PDF_Polygon, PDF_Path, PDF_Rect, PDF_Circle's Bezier
+#     points, the Tm of text and Dingbats markers).
+#   matplotlib: paths through _path.convert_to_string with precision 6
+#     (backend_pdf.pathOperations); markers placed by cm with "%.10f"
+#     (pdfRepr), their outlines - which give their centres - 6 decimals.
+_TOOL_ACCURACY = (
+    (re.compile(r"^R(?: \d|$)"), 0.01),
+    (re.compile(r"(?i)^matplotlib\b"), 1e-6),
+)
+def tool_accuracy(g, unit=None):
+    """The rounding (user space units) of the coordinates written by the
+    program that drew graph g, as recorded for the graphic its paths were
+    drawn in (tools.graph_tool: the embedded PDF's own producer when pdfTeX
+    kept it); None when no program is recorded or its accuracy is not
+    known.  The style guess (styles.guess_tool) is no knowledge: the
+    synthetic test plots look like R's but are not its output, and a
+    program that rewrote the graphic (Adobe Illustrator) keeps its own
+    rounding.  Numbers written finer than the program writes them (`unit`,
+    one unit of their last decimal, under half its rounding) were not
+    written by it: the synthetic plots, 3 decimals under R's name."""
+    tool = (g.get("tool") or "").strip()
+    for pat, acc in _TOOL_ACCURACY:
+        if pat.match(tool):
+            return None if unit is not None and unit < 0.5 * acc else acc
+    return None

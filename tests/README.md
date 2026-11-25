@@ -110,6 +110,27 @@ identical text columns, numeric columns within the case's tolerance.
 | Maj-Petr_PhD-077.pdf | pdfTeX page of an ACM paper (Fig. 7): four ggplot heat maps of file-hash clones (Java, C/C++, Python, JavaScript), file size against number of duplicates on log axes, grey tiles counted on log colour bars |
 | 10.5445IR1000121285-038.pdf | pdfTeX thesis page (Figure 2.10): six matplotlib panels of transistor transfer curves, log current against gate voltage, seven series per panel named by V_DS values in a two-column legend inside each plot; diagrams of Figure 2.11 below |
 | 2305.15675v1-015.pdf | pdfTeX page of an ACM paper (Figs. 6, 7): a matplotlib horizontal box plot of permutation importances (10 features) and three histograms, the middle one log-log; 85 MB of drawing instructions |
+| BehavioralNetworkScience-121.pdf | Thesis page (Figs. 7.4, 7.5): seven R strip charts of early and late talkers, points jittered about two nominal x labels, each group mean and standard error drawn as a capped bar (an H on its side) |
+| monotonicity-025.pdf | Paper page (Figs. 3-8): six Stata scatter plots, each of over 1 600 dots with a lowess curve and confidence band |
+| horowitz2014-004.pdf (--heatmap) | The same page read with --heatmap: the points of the bottom two graphs valued by year from their unlabelled colour bars |
+| 978-3-031-36060-2_2-006.pdf | Book page (Fig. 2.3): three d3 line charts of the Software Heritage archive, y axis on the right in M and B, nearly upright date labels, each curve drawn as one filled outline |
+| Mohamed_Rakha_PhD-072.pdf | Thesis page (Fig. 4.4): a ggplot hexbin plot of 268 grey hexagons with a log count colour bar, quadrant labels drawn once per data row |
+| ArianeWuerbach-Phd-219.pdf | Thesis page (Fig. A.8): 19 R MCMC trace plots turned a quarter turn, Arial labels with no ToUnicode map |
+| 1356058.1356080-007.pdf | Paper page (Figs. 4-6): an Excel scatter plot with + and x markers, arrows labelling the + points, and two bar charts |
+| 2355585.2355594-006.pdf | Journal page (Fig. 1): four matplotlib violin-plot panels stacked on one x axis of 32 benchmarks, each with its own log scale, all text and strokes outlined |
+| PsychologyToPhylogeny-AnalysisCultEvo-170.pdf | Thesis page (Fig. B.3): two ggplot scatter plots sharing a y axis, the right without an axis line, x labels in millions (5M ... 20M) |
+| w21074-035.pdf | Working paper page (Table 3): two ruled regression tables, no graph |
+| VaskeBeaman2006-Lessonslearned-003.pdf | Journal page (Fig. 1a-1f): six bar charts without ticks, the right-hand ones labelled in two alternating rows of day counts |
+| ESEUR-intro.pdf | Book chapter (16 pages, Figs. 1.1-1.20; pages 2, 6, 7, 9, 10, 11 and 16 tested): R scatter and line charts, lines clipped to the plot running beyond its limits |
+| roache_fundamentals_2009-193.pdf | Book page (Tables 6.10.2-6.10.4): three Word tables ruled only under the headings and between columns, no graph |
+| Sovinsky-paper-017.pdf | Paper page (Fig. 5): Stata line chart with left and right y scales, a solid and a dashed line, printed to PDF by PDF-XChange |
+| PhysRevResearch.3.033169-009.pdf | Journal page (Fig. 6): a circuit diagram and two graphs with a log left scale and a linear right scale, tick labels outlined in blue and red, the colours of the series |
+| Seongmin-PhD-036.pdf | Thesis page (Fig. 2.3): four R bar charts, a y scale on each side titled with a legend entry, labelled CPD/EPD/TPD points over the bars, slanted category labels |
+| 2020.01.30.927558.full-023.pdf | Preprint page (Fig. 4): seven bar charts in two rows sharing each row's y scale, bars hanging from 0 with error bars, asterisks for the best levels |
+| 2020.01.30.927558.full-026.pdf | Preprint page (Fig. 6): four horizontal bar charts with error bars, model names flush left |
+| 2020.01.30.927558.full-030.pdf | Preprint page (Fig. 8): nine bar charts with error bars, a wide-barred panel A beside two rows of four, panel titles inside the plots |
+| 2020.01.30.927558.full-048.pdf | Preprint page (Fig. S2): a heat map stored as a JPEG picture and a bar chart coloured by value, sharing a colour bar at the right; seven bar charts with error bars below |
+| economies-open-intelligence-005.pdf | Paper page (Figure 2): two plotly stacked area charts of download shares, by developer and by country, each with its legend below it |
 | damaged.pdf (beyond qpdf's repair), not-a-pdf.pdf, no-graph.pdf, many-shapes.pdf, zero-width-glyph.pdf, doubtful-axes.pdf | must fail cleanly or report that no graph was found (cases without `--expect` check only the exit status and the message) |
 
 `schumpeter-001.reference.csv` is the reference supplied with the PDF

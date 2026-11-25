@@ -140,6 +140,43 @@ def _label_anchor(tx, orient, axis_pos):
     return tx["center"][i]
 
 
+def _flush_column(apos, places):
+    """(left edge, least gap) of y category labels set flush left beside a
+    y axis line at `apos` with ticks at `places`, or None: three or more
+    labels left of the line, each level with a tick (within 0.3 of the
+    ticks' spacing), within 25 text sizes of the line, whose left edges
+    agree within 2 pt (" IIAB, ε=|Δ|" starts 1.7 pt in), one of them within 4 text sizes of the line, their
+    distances from it differing by more than 0.6 of a size
+    (2020.01.30.927558.full-048: the model names beside the heat map's 12
+    ticks, "IIAB, ε=|Δ|" ending 35 pt short of them)."""
+    if len(places) < 3:
+        return None
+    ps = sorted(places)
+    spacing = min(b - a for a, b in zip(ps, ps[1:]))
+    cands = []
+    for tx in PAGE.nominal_labels:
+        b = tx["bbox"]
+        sz = tx["size"] or 1.0
+        gap = apos - b[2]
+        if not -1.0 <= gap <= 25 * sz:
+            continue
+        c = 0.5 * (b[1] + b[3])
+        if min(abs(c - p) for p in ps) <= 0.3 * spacing:
+            cands.append((b[0], gap, sz))
+    best = None
+    for x0, _, _ in cands:
+        col = [r for r in cands if abs(r[0] - x0) <= 2.0]
+        # (their distances from the line differing by more than 0.6 of a
+        # size: the one row at one distance would not take them)
+        if len(col) >= 3 and any(r[1] <= 4 * r[2] for r in col) and \
+                max(r[1] for r in col) - min(r[1] for r in col) > 0.6 * median(r[2] for r in col):
+            if best is None or len(col) > len(best):
+                best = col
+    if not best:
+        return None
+    return (median(r[0] for r in best), min(r[1] for r in best))
+
+
 def nominal_axis(g, orient, line, debug):
     """Ticks labelled with words (category names): the axis maps a position
     to the label of the nearest category.  Categories sit at the ticks or,
@@ -157,6 +194,11 @@ def nominal_axis(g, orient, line, debug):
         beyond it - the labels may be at the end with no axis line)."""
         b = tx["bbox"]
         lo, hi = (b[1], b[3]) if orient == "x" else (b[0], b[2])
+        # (labels set flush left in a column: the column's gap -
+        # 2020.01.30.927558.full-026's model names)
+        fl = g.get("flush_left")
+        if fl and orient == "y" and abs(b[0] - fl[0]) <= 2.0 and hi <= apos + 1.0:
+            return fl[1]
         if g.get("grid"):
             if hi <= g["lo"]:
                 return g["lo"] - hi
@@ -164,6 +206,11 @@ def nominal_axis(g, orient, line, debug):
                 return lo - g["hi"]
             return -1e9                       # across the grid: no label of it
         return max(lo - apos, apos - hi)
+
+    if orient == "y" and not g.get("flush_left"):
+        fl = _flush_column(apos, ticks)
+        if fl:
+            g = dict(g, flush_left=fl)
 
     def match(places):
         """Pair category positions with label candidates beside the axis:
@@ -230,33 +277,79 @@ def nominal_axis(g, orient, line, debug):
     on_ticks = match(ticks)
     between = match([(a + b) / 2 for a, b in zip(ticks, ticks[1:])])
     best = None
-    for pairs, n_places in ((on_ticks, len(ticks)), (between, len(ticks) - 1)):
+    # (ticks at the ends of the axis line - a frame's sides - carry no
+    # category label: 2355585.2355594-006's 31 benchmarks between its
+    # panels' sides)
+    n_on = len(ticks) - sum(1 for t in ticks if min(abs(t - alo), abs(t - ahi)) <= 0.5
+                            and not any(abs(t - p) < 1e-9 for p, _, _ in on_ticks))
+    for pairs, n_places in ((on_ticks, n_on), (between, len(ticks) - 1)):
         layout = "between" if pairs is between else "on"
         if len(pairs) < max(2, 0.6 * n_places):
             continue
         side = [1 if tx["bbox"][1 if orient == "x" else 0] > apos else -1 for _, tx, _ in pairs]
         if abs(sum(side)) < 0.8 * len(side):
             continue                          # labels on both sides: not a label row
-        key = (len(pairs) / n_places, -sum(d for _, _, d in pairs) / len(pairs))
-        if best is None or key > best[0]:
+        # (shares within 5% are alike: then the better centred layout -
+        # the same page's slanted names, 0.6 pt off their ticks and 1.3 pt
+        # off the midpoints)
+        key = (math.floor(len(pairs) / n_places * 20 + 1e-9) / 20,
+               -sum(d for _, _, d in pairs) / len(pairs))
+        if best is None:
             best = (key, pairs, layout, n_places)
+        elif min(key[0], best[0][0]) >= 0.85 and \
+                min(-key[1], -best[0][1]) <= 0.5 * max(-key[1], -best[0][1]):
+            # both label most of their places, one less than half as far
+            # off centre: that one (an outlined word may be anchored at
+            # any of its glyphs, which pairs it loosely with any place)
+            if -key[1] < -best[0][1]:
+                best = (key, pairs, layout, n_places)
+        elif key > best[0]:
+            best = (key, pairs, layout, n_places)
+    if g.get("label_pairs"):
+        # the labels are known: one at each position (axes.
+        # _number_category_ticks_axis, two alternating rows merged - too
+        # close together to be matched again: VaskeBeaman2006-Lessonslearned-003)
+        lp = g["label_pairs"]
+        best = ((1.0, 0.0), [(c, tx, 0.0) for c, tx in lp], "on", len(lp))
     if best is None:
         return None
     pairs = sorted(best[1], key=lambda p: p[0])
     # two stray words are no category axis; but two readable names, one in
     # each of the two gaps between three ticks on an axis line, are an Excel
-    # bar chart of two categories ("Yes", "No")
-    two = (len(pairs) == 2 and best[2] == "between" and best[3] == 2 and line is not None
+    # bar chart of two categories ("Yes", "No") - and two readable names on
+    # the only two ticks of an axis line, level with each other, are an R
+    # strip chart's two groups (BehavioralNetworkScience-121: "early",
+    # "late")
+    level = len(pairs) == 2 and abs(pairs[0][1]["bbox"][1 if orient == "x" else 0] -
+                                    pairs[1][1]["bbox"][1 if orient == "x" else 0]) <= \
+        0.3 * max(pairs[0][1]["size"] or 1.0, 1.0)
+    two = (len(pairs) == 2 and best[3] == 2 and line is not None and
+           (best[2] == "between" or (best[2] == "on" and len(ticks) == 2 and level))
            and all(tx.get("text") and not tx.get("outlined") and
                    any(ch.isalpha() for ch in tx["text"]) for _, tx, _ in pairs))
     if len(pairs) < 3 and not two:
         return None
     # categories are spread along a real axis, not crowded into specks
-    if ahi - alo < 30 or min(b[0] - a[0] for a, b in zip(pairs, pairs[1:])) < 3:
+    # (categories 3 pt apart at least - 1 pt when the labels are known, two
+    # rows of rising numbers merged: VaskeBeaman2006-Lessonslearned-003's
+    # Figure 1f, 2.8 pt apart)
+    if ahi - alo < 30 or min(b[0] - a[0] for a, b in zip(pairs, pairs[1:])) < \
+            (1.0 if g.get("label_pairs") else 3.0):
         return None
     out = []
     # names drawn as outlines cannot be read reliably: number them instead
     readable = all(tx.get("text") and not tx.get("outlined") for _, tx, _ in pairs)
+    if not readable and best[2] == "on":
+        # (numbered, the names may as well be the ticks: every tick inside
+        # the line's ends a category, when labels were found for 80% of
+        # them - two slanted names run together, or one lost, would leave a
+        # tick without one and give its points to a neighbour:
+        # 2355585.2355594-006's 32 benchmarks, 31 names made out)
+        inner = [t for t in ticks if min(abs(t - alo), abs(t - ahi)) > 0.5]
+        if len(pairs) >= 0.8 * len(inner) and len(inner) > len(pairs):
+            got = {round(t, 3): tx for t, tx, _ in pairs}
+            ref = pairs[0][1]
+            pairs = [(t, got.get(round(t, 3), ref), 0.0) for t in inner]
     for k, (t, tx, _) in enumerate(pairs, 1):
         out.append(((t, tx["text"].strip() if readable else "#%d" % k), tx))
     if debug:

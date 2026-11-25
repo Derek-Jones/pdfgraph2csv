@@ -1,461 +1,461 @@
-page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
-1,1,plus,,0,-0.0514684,0.0720292,aqua,#00ffff
-1,1,plus,,0,32.4308,0.0583388,aqua,#00ffff
-1,1,plus,,0,47.5892,0.0615102,aqua,#00ffff
-1,1,plus,,0,58.4166,0.0871796,aqua,#00ffff
-1,1,plus,,0,81.876,0.0756921,aqua,#00ffff
-1,1,plus,,0,118.689,0.0555316,aqua,#00ffff
-1,1,plus,,0,128.434,0.0682316,aqua,#00ffff
-1,1,plus,,0,148.284,0.0480711,aqua,#00ffff
-1,1,plus,,0,156.946,0.0478308,aqua,#00ffff
-1,1,plus,,0,184.376,0.0437892,aqua,#00ffff
-1,1,plus,,0,204.948,0.0524695,aqua,#00ffff
-1,1,plus,,0,229.49,0.0535691,aqua,#00ffff
-1,1,plus,,0,269.19,0.0433013,aqua,#00ffff
-1,1,plus,,0,286.153,0.0431811,aqua,#00ffff
-1,1,plus,,0,293.372,0.0452602,aqua,#00ffff
-1,1,plus,,0,314.666,0.0524695,aqua,#00ffff
-1,1,plus,,0,341.554,0.0497787,aqua,#00ffff
-1,1,plus,,0,346.787,0.0557683,aqua,#00ffff
-1,1,plus,,0,368.081,0.0628501,aqua,#00ffff
-1,1,plus,,0,387.209,0.0586993,aqua,#00ffff
-1,1,plus,,0,413.195,0.0428097,aqua,#00ffff
-1,1,plus,,0,427.271,0.0478198,aqua,#00ffff
-1,1,plus,,0,450.73,0.0508783,aqua,#00ffff
-1,1,plus,,0,470.941,0.0453803,aqua,#00ffff
-1,1,plus,,0,483.934,0.0518505,aqua,#00ffff
-1,1,plus,,0,517.499,0.0524585,aqua,#00ffff
-1,1,plus,,0,530.492,0.0590598,aqua,#00ffff
-1,1,plus,,0,579.577,0.0619908,aqua,#00ffff
-1,1,plus,,0,613.863,0.0461085,aqua,#00ffff
-1,1,plus,,0,626.134,0.0546614,aqua,#00ffff
-1,1,plus,,0,641.654,0.072011,aqua,#00ffff
-1,1,plus,,0,664.752,0.061259,aqua,#00ffff
-1,1,plus,,0,684.603,0.0560013,aqua,#00ffff
-1,1,plus,,0,705.175,0.0495311,aqua,#00ffff
-1,1,plus,,0,718.528,0.0556408,aqua,#00ffff
-1,1,plus,,0,745.236,0.0683408,aqua,#00ffff
-1,1,plus,,0,762.56,0.0523384,aqua,#00ffff
-1,1,plus,,0,787.102,0.0540497,aqua,#00ffff
-1,1,plus,,0,810.922,0.0416992,aqua,#00ffff
-1,1,plus,,0,837.269,0.0395,aqua,#00ffff
-1,1,plus,,0,852.428,0.0427988,aqua,#00ffff
-1,1,plus,,0,870.112,0.0412113,aqua,#00ffff
-1,1,plus,,0,887.797,0.0401081,aqua,#00ffff
-1,1,plus,,0,911.978,0.0421908,aqua,#00ffff
-1,1,plus,,0,928.941,0.0419505,aqua,#00ffff
-1,1,plus,,0,961.424,0.0595404,aqua,#00ffff
-1,1,plus,,0,963.589,0.0404795,aqua,#00ffff
-1,1,plus,,0,987.409,0.0434105,aqua,#00ffff
-1,1,plus,,0,1022.06,0.041448,aqua,#00ffff
-1,1,plus,,0,1048.04,0.0402282,aqua,#00ffff
-1,1,plus,,0,1070.78,0.0453585,aqua,#00ffff
-1,1,plus,,0,1090.99,0.0544101,aqua,#00ffff
-1,1,plus,,0,1107.23,0.0402282,aqua,#00ffff
-1,1,plus,,0,1131.78,0.0415681,aqua,#00ffff
-1,1,plus,,0,1159.57,0.0377887,aqua,#00ffff
-1,1,plus,,0,1168.59,0.0515883,aqua,#00ffff
-1,1,plus,,0,1186.27,0.0501283,aqua,#00ffff
-1,1,plus,,0,1225.25,0.0408399,aqua,#00ffff
-1,1,plus,,0,1233.91,0.0407198,aqua,#00ffff
-1,1,plus,,0,1254.49,0.0487811,aqua,#00ffff
-1,1,plus,,0,1264.59,0.04585,aqua,#00ffff
-1,1,plus,,0,1292.02,0.0424311,aqua,#00ffff
-1,1,plus,,0,1309.71,0.0410802,aqua,#00ffff
-1,1,plus,,0,1336.05,0.038881,aqua,#00ffff
-1,1,plus,,0,1364.38,0.0489012,aqua,#00ffff
-1,1,plus,,0,1385.14,0.0419395,aqua,#00ffff
-1,1,plus,,0,1387.66,0.0377778,aqua,#00ffff
-1,1,plus,,0,1404.27,0.0383895,aqua,#00ffff
-1,1,plus,,0,1437.11,0.0396093,aqua,#00ffff
-1,1,plus,,0,1450.46,0.0459702,aqua,#00ffff
-1,1,plus,,0,1468.51,0.043771,aqua,#00ffff
-1,1,plus,,0,1486.91,0.0410802,aqua,#00ffff
-1,1,plus,,0,1511.82,0.0423,aqua,#00ffff
-1,1,plus,,0,1531.67,0.0370387,aqua,#00ffff
-1,1,plus,,0,1556.57,0.0375302,aqua,#00ffff
-1,1,plus,,0,1566.32,0.035331,aqua,#00ffff
-1,1,plus,,0,1582.56,0.0365508,aqua,#00ffff
-1,1,plus,,0,1626.59,0.04865,aqua,#00ffff
-1,1,plus,,0,1634.89,0.0484097,aqua,#00ffff
-1,1,plus,,0,1654.38,0.0438911,aqua,#00ffff
-1,1,plus,,0,1677.12,0.0339911,aqua,#00ffff
-1,1,plus,,0,1684.33,0.0360592,aqua,#00ffff
-1,1,plus,,0,1710.32,0.0349596,aqua,#00ffff
-1,1,plus,,0,1729.45,0.0459593,aqua,#00ffff
-1,1,plus,,0,1750.38,0.0385097,aqua,#00ffff
-1,1,plus,,0,1764.46,0.0436399,aqua,#00ffff
-1,1,plus,,0,1791.89,0.0399697,aqua,#00ffff
-1,1,plus,,0,1810.65,0.0364306,aqua,#00ffff
-1,1,plus,,0,1825.45,0.0405796,aqua,#00ffff
-1,1,plus,,0,1851.8,0.0386298,aqua,#00ffff
-1,1,plus,,0,1869.48,0.0373991,aqua,#00ffff
-1,1,plus,,0,1892.94,0.04021,aqua,#00ffff
-1,1,plus,,0,1912.43,0.0360592,aqua,#00ffff
-1,1,plus,,0,1930.12,0.0347084,aqua,#00ffff
-1,1,plus,,0,1946.36,0.0356878,aqua,#00ffff
-1,1,plus,,0,1970.9,0.0370387,aqua,#00ffff
-1,1,plus,,0,1996.89,0.0360592,aqua,#00ffff
-1,1,plus,,0,2005.55,0.0354512,aqua,#00ffff
-1,1,plus,,0,2029.01,0.03875,aqua,#00ffff
-1,1,plus,,0,2054.27,0.0392306,aqua,#00ffff
-1,1,plus,,0,2067.26,0.0461996,aqua,#00ffff
-1,1,plus,,0,2112.38,0.0408181,aqua,#00ffff
-1,1,plus,,0,2125.73,0.0472992,aqua,#00ffff
-1,1,plus,,0,2148.47,0.0367911,aqua,#00ffff
-1,1,plus,,0,2171.21,0.0413096,aqua,#00ffff
-1,1,plus,,0,2211.63,0.0446084,aqua,#00ffff
-1,1,plus,,0,2221.37,0.042158,aqua,#00ffff
-1,1,plus,,0,2257.47,0.0382511,aqua,#00ffff
-1,1,plus,,0,2259.27,0.0354402,aqua,#00ffff
-1,1,plus,,0,2290.31,0.0403302,aqua,#00ffff
-1,1,plus,,0,2307.27,0.0399588,aqua,#00ffff
-1,1,plus,,0,2333.98,0.0377596,aqua,#00ffff
-1,1,plus,,0,2344.45,0.033729,aqua,#00ffff
-1,1,plus,,0,2377.65,0.0349487,aqua,#00ffff
-1,1,plus,,0,2389.56,0.0441096,aqua,#00ffff
-1,1,plus,,0,2406.16,0.0441096,aqua,#00ffff
-1,1,plus,,0,2427.46,0.05145,aqua,#00ffff
-1,1,plus,,0,2446.59,0.0475395,aqua,#00ffff
-1,1,plus,,0,2470.04,0.0358007,aqua,#00ffff
-1,1,plus,,0,2484.48,0.0401991,aqua,#00ffff
-1,1,plus,,0,2507.22,0.0452092,aqua,#00ffff
-1,1,plus,,0,2514.8,0.0468003,aqua,#00ffff
-1,1,plus,,0,2532.12,0.0457007,aqua,#00ffff
-1,1,plus,,0,2574.35,0.0460685,aqua,#00ffff
-1,1,plus,,0,2592.39,0.0439894,aqua,#00ffff
-1,1,plus,,0,2603.22,0.0392197,aqua,#00ffff
-1,1,plus,,0,2636.43,0.0405705,aqua,#00ffff
-1,1,plus,,0,2655.55,0.0367802,aqua,#00ffff
-1,1,plus,,0,2658.08,0.0318902,aqua,#00ffff
-1,1,plus,,0,2706.8,0.050831,aqua,#00ffff
-1,1,plus,,0,2732.07,0.036041,aqua,#00ffff
-1,1,plus,,0,2773.57,0.052291,aqua,#00ffff
-1,1,plus,,0,2788.73,0.0404394,aqua,#00ffff
-1,1,plus,,0,2807.14,0.0375084,aqua,#00ffff
-1,1,plus,,0,2828.07,0.0450781,aqua,#00ffff
-1,1,plus,,0,2866.69,0.0367692,aqua,#00ffff
-1,1,plus,,0,2895.92,0.044958,aqua,#00ffff
-1,1,plus,,0,2921.19,0.0453294,aqua,#00ffff
-1,1,plus,,0,2931.65,0.041539,aqua,#00ffff
-1,1,plus,,0,2950.06,0.0384805,aqua,#00ffff
-1,1,plus,,0,2961.25,0.0342096,aqua,#00ffff
-1,1,plus,,0,2999.87,0.0403083,aqua,#00ffff
-1,1,plus,,0,3002.75,0.0351781,aqua,#00ffff
-1,1,plus,,0,3019.72,0.0648818,aqua,#00ffff
-1,1,plus,,0,3028.38,0.0496003,aqua,#00ffff
-1,1,plus,,0,3052.2,0.0371406,aqua,#00ffff
-1,1,plus,,0,3076.38,0.0397003,aqua,#00ffff
-1,1,plus,,0,3091.54,0.0575414,aqua,#00ffff
-1,1,plus,,0,3114.46,0.0469096,aqua,#00ffff
-1,1,plus,,0,3135.21,0.0548507,aqua,#00ffff
-1,1,plus,,0,3158.67,0.0436108,aqua,#00ffff
-1,1,plus,,0,3185.74,0.040068,aqua,#00ffff
-1,1,plus,,0,3207.75,0.0465382,aqua,#00ffff
-1,1,plus,,0,3224.72,0.0460503,aqua,#00ffff
-1,1,plus,,0,3225.8,0.0442188,aqua,#00ffff
-1,1,plus,,0,3260.09,0.0436108,aqua,#00ffff
-1,1,plus,,0,3272.36,0.0366382,aqua,#00ffff
-1,1,plus,,0,3298.7,0.0349305,aqua,#00ffff
-1,1,plus,,0,3305.02,0.0386007,aqua,#00ffff
-1,1,plus,,0,3321.8,0.038841,aqua,#00ffff
-1,1,plus,,0,3372.33,0.038841,aqua,#00ffff
-1,1,plus,,0,3399.76,0.0354184,aqua,#00ffff
-1,1,plus,,0,3416,0.036518,aqua,#00ffff
-1,1,plus,,0,3439.82,0.0395692,aqua,#00ffff
-1,1,plus,,0,3460.39,0.0479982,aqua,#00ffff
-1,1,plus,,0,3473.75,0.054239,aqua,#00ffff
-1,1,plus,,0,3489.27,0.0414007,aqua,#00ffff
-1,1,plus,,0,3517.78,0.0509402,aqua,#00ffff
-1,1,plus,,0,3536.55,0.04727,aqua,#00ffff
-1,1,plus,,0,3554.23,0.0459192,aqua,#00ffff
-1,1,plus,,0,3576.25,0.0371297,aqua,#00ffff
-1,1,plus,,0,3600.79,0.0384696,aqua,#00ffff
-1,1,plus,,0,3614.5,0.0444591,aqua,#00ffff
-1,1,plus,,0,3644.46,0.035899,aqua,#00ffff
-1,1,plus,,0,3649.87,0.0414007,aqua,#00ffff
-1,1,plus,,0,3661.78,0.0355386,aqua,#00ffff
-1,1,plus,,0,3693.9,0.0380982,aqua,#00ffff
-1,1,plus,,0,3711.59,0.0369986,aqua,#00ffff
-1,1,plus,,0,3740.1,0.0461595,aqua,#00ffff
-1,1,plus,,0,3755.62,0.03382,aqua,#00ffff
-1,1,plus,,0,3784.13,0.0432285,aqua,#00ffff
-1,1,plus,,0,3795.68,0.0377305,aqua,#00ffff
-1,1,plus,,0,3815.17,0.0476305,aqua,#00ffff
-1,1,plus,,0,3838.27,0.036751,aqua,#00ffff
-1,1,plus,,0,3853.43,0.04017,aqua,#00ffff
-1,1,plus,,0,3884.47,0.0449398,aqua,#00ffff
-1,1,plus,,0,3889.16,0.036751,aqua,#00ffff
-1,1,plus,,0,3916.95,0.0319885,aqua,#00ffff
-1,1,plus,,0,3917.31,0.0315006,aqua,#00ffff
-1,1,plus,,0,3944.38,0.0434688,aqua,#00ffff
-1,1,plus,,0,3973.25,0.0374792,aqua,#00ffff
-1,1,plus,,0,3983.36,0.0495785,aqua,#00ffff
-1,1,plus,,0,4002.85,0.0448196,aqua,#00ffff
-1,1,plus,,0,4030.64,0.0405414,aqua,#00ffff
-1,1,plus,,0,4048.68,0.0384587,aqua,#00ffff
-1,1,plus,,0,4060.95,0.0462797,aqua,#00ffff
-1,1,plus,,0,4086.22,0.0470115,aqua,#00ffff
-1,1,plus,,0,4107.51,0.0390704,aqua,#00ffff
-1,1,plus,,0,4132.41,0.0394381,aqua,#00ffff
-1,1,plus,,0,4142.52,0.0517813,aqua,#00ffff
-1,1,plus,,0,4167.06,0.0384587,aqua,#00ffff
-1,1,plus,,0,4180.06,0.0454204,aqua,#00ffff
-1,1,plus,,0,4199.54,0.0402901,aqua,#00ffff
-1,1,plus,,0,4227.34,0.0363796,aqua,#00ffff
-1,1,plus,,0,4249.71,0.0412696,aqua,#00ffff
-1,1,plus,,0,4265.23,0.0440805,aqua,#00ffff
-1,1,plus,,0,4285.08,0.0384587,aqua,#00ffff
-1,1,plus,,0,4302.04,0.0388191,aqua,#00ffff
-1,1,plus,,0,4369.54,0.0689998,aqua,#00ffff
-1,1,plus,,0,4391.55,0.0446885,aqua,#00ffff
-1,1,plus,,0,4402.38,0.0401591,aqua,#00ffff
-1,1,plus,,0,4434.5,0.043578,aqua,#00ffff
-1,1,plus,,0,4454.71,0.037228,aqua,#00ffff
-1,1,plus,,0,4482.5,0.04798,aqua,#00ffff
-1,1,plus,,0,4495.49,0.0400389,aqua,#00ffff
-1,1,plus,,0,4509.57,0.045049,aqua,#00ffff
-1,1,plus,,0,4522.92,0.051399,aqua,#00ffff
-1,1,plus,,0,4537.72,0.0401591,aqua,#00ffff
-1,1,plus,,0,4562.99,0.0401591,aqua,#00ffff
-1,1,plus,,0,4583.2,0.049451,aqua,#00ffff
-1,1,plus,,0,4591.14,0.0505506,aqua,#00ffff
-1,1,plus,,0,4638.42,0.0562889,aqua,#00ffff
-1,1,plus,,0,4653.21,0.0449197,aqua,#00ffff
-1,1,plus,,0,4670.9,0.0438183,aqua,#00ffff
-1,1,plus,,0,4712.76,0.0441897,aqua,#00ffff
-1,1,plus,,0,4726.12,0.0353893,aqua,#00ffff
-1,1,plus,,0,4742,0.0526187,aqua,#00ffff
-1,1,plus,,0,4797.94,0.0432103,aqua,#00ffff
-1,1,plus,,0,4806.6,0.04297,aqua,#00ffff
-1,1,plus,,0,4850.63,0.0397913,aqua,#00ffff
-1,1,plus,,0,4861.1,0.0357497,aqua,#00ffff
-1,1,plus,,0,4875.54,0.0555498,aqua,#00ffff
-1,1,plus,,0,4899.72,0.0425986,aqua,#00ffff
-1,1,plus,,0,4920.65,0.035138,aqua,#00ffff
-1,1,plus,,0,4945.91,0.0356296,aqua,#00ffff
-1,1,plus,,0,4952.05,0.0394199,aqua,#00ffff
-1,1,plus,,0,4985.25,0.0403994,aqua,#00ffff
-1,1,plus,,0,5004.38,0.0368493,aqua,#00ffff
-1,1,plus,,0,5026.04,0.042959,aqua,#00ffff
-1,1,plus,,0,5036.87,0.0391687,aqua,#00ffff
-1,1,plus,,0,5047.33,0.0355094,aqua,#00ffff
-1,1,plus,,0,5086.67,0.0406397,aqua,#00ffff
-1,1,plus,,0,5106.16,0.0361211,aqua,#00ffff
-1,1,plus,,0,5115.18,0.035138,aqua,#00ffff
-1,1,plus,,0,5139.73,0.0513899,aqua,#00ffff
-1,1,plus,,0,5155.61,0.0379489,aqua,#00ffff
-1,1,plus,,0,5177.98,0.0433195,aqua,#00ffff
-1,1,plus,,0,5189.17,0.0383094,aqua,#00ffff
-1,1,plus,,0,5227.07,0.031588,aqua,#00ffff
-1,1,plus,,0,5239.34,0.0396602,aqua,#00ffff
-1,1,plus,,0,5273.99,0.0383094,aqua,#00ffff
-1,1,plus,,0,5275.43,0.0357497,aqua,#00ffff
-1,1,plus,,0,5303.58,0.0456388,aqua,#00ffff
-1,1,plus,,0,5325.6,0.0365981,aqua,#00ffff
-1,1,plus,,0,5350.14,0.0375812,aqua,#00ffff
-1,1,plus,,0,5359.88,0.0353784,aqua,#00ffff
-1,1,plus,,0,5380.09,0.0446594,aqua,#00ffff
-1,1,plus,,0,5395.25,0.0476014,aqua,#00ffff
-1,1,plus,,0,5432.43,0.0416082,aqua,#00ffff
-1,1,plus,,0,5441.81,0.0397804,aqua,#00ffff
-1,1,plus,,0,5451.19,0.0383094,aqua,#00ffff
-1,1,plus,,0,5477.18,0.0370896,aqua,#00ffff
-1,1,plus,,0,5494.14,0.0374501,aqua,#00ffff
-1,1,plus,,0,5538.54,0.0330481,aqua,#00ffff
-1,1,plus,,0,5539.98,0.0455187,aqua,#00ffff
-1,1,plus,,0,5551.53,0.0401409,aqua,#00ffff
-1,1,plus,,0,5568.85,0.039409,aqua,#00ffff
-1,1,plus,,0,5611.08,0.0395292,aqua,#00ffff
-1,1,plus,,0,5617.94,0.04234,aqua,#00ffff
-1,2,plus,Liberty ships,0,1942.41228,1.408923,red,#ff0000
-1,2,plus,Liberty ships,0,1942.48074,1.293488,red,#ff0000
-1,2,plus,Liberty ships,0,1942.51346,1.266351,red,#ff0000
-1,2,plus,Liberty ships,0,1942.55178,1.27393,red,#ff0000
-1,2,plus,Liberty ships,0,1942.57374,1.135698,red,#ff0000
-1,2,plus,Liberty ships,0,1942.59828,1.062734,red,#ff0000
-1,2,plus,Liberty ships,0,1942.63111,1.15433,red,#ff0000
-1,2,plus,Liberty ships,0,1942.65857,1.005393,red,#ff0000
-1,2,plus,Liberty ships,0,1942.67773,0.950597,red,#ff0000
-1,2,plus,Liberty ships,0,1942.69677,0.956731,red,#ff0000
-1,2,plus,Liberty ships,0,1942.71582,0.901935,red,#ff0000
-1,2,plus,Liberty ships,0,1942.73498,0.968072,red,#ff0000
-1,2,plus,Liberty ships,0,1942.74596,0.940298,red,#ff0000
-1,2,plus,Liberty ships,0,1942.7761,0.908011,red,#ff0000
-1,2,plus,Liberty ships,0,1942.80344,0.942902,red,#ff0000
-1,2,plus,Liberty ships,0,1942.82541,0.799057,red,#ff0000
-1,2,plus,Liberty ships,0,1942.83078,0.944464,red,#ff0000
-1,2,plus,Liberty ships,0,1942.84457,0.800098,red,#ff0000
-1,2,plus,Liberty ships,0,1942.85812,0.749816,red,#ff0000
-1,2,plus,Liberty ships,0,1942.88009,0.793328,red,#ff0000
-1,2,plus,Liberty ships,0,1942.89644,0.765613,red,#ff0000
-1,2,plus,Liberty ships,0,1942.90743,0.764166,red,#ff0000
-1,2,plus,Liberty ships,0,1942.93196,0.792055,red,#ff0000
-1,2,plus,Liberty ships,0,1942.94295,0.680266,red,#ff0000
-1,2,plus,Liberty ships,0,1942.96211,0.693459,red,#ff0000
-1,2,plus,Liberty ships,0,1942.97846,0.770531,red,#ff0000
-1,2,plus,Liberty ships,0,1942.99505,0.678067,red,#ff0000
-1,2,plus,Liberty ships,0,1942.99762,0.690334,red,#ff0000
-1,2,plus,Liberty ships,0,1943.02777,0.738244,red,#ff0000
-1,2,plus,Liberty ships,0,1943.03875,0.707288,red,#ff0000
-1,2,plus,Liberty ships,0,1943.05511,0.729449,red,#ff0000
-1,2,plus,Liberty ships,0,1943.07707,0.644854,red,#ff0000
-1,2,plus,Liberty ships,0,1943.07988,0.637101,red,#ff0000
-1,2,plus,Liberty ships,0,1943.09343,0.661519,red,#ff0000
-1,2,plus,Liberty ships,0,1943.11259,0.653881,red,#ff0000
-1,2,plus,Liberty ships,0,1943.12895,0.72158,red,#ff0000
-1,2,plus,Liberty ships,0,1943.14811,0.701444,red,#ff0000
-1,2,plus,Liberty ships,0,1943.15909,0.673033,red,#ff0000
-1,2,plus,Liberty ships,0,1943.20559,0.621768,red,#ff0000
-1,2,plus,Liberty ships,0,1943.21377,0.654633,red,#ff0000
-1,2,plus,Liberty ships,0,1943.23036,0.660014,red,#ff0000
-1,2,plus,Liberty ships,0,1943.23854,0.610195,red,#ff0000
-1,2,plus,Liberty ships,0,1943.24391,0.709891,red,#ff0000
-1,2,plus,Liberty ships,0,1943.27125,0.586153,red,#ff0000
-1,2,plus,Liberty ships,0,1943.28504,0.653476,red,#ff0000
-1,2,plus,Liberty ships,0,1943.3042,0.651219,red,#ff0000
-1,2,plus,Liberty ships,0,1943.30958,0.653418,red,#ff0000
-1,2,plus,Liberty ships,0,1943.30958,0.611237,red,#ff0000
-1,2,plus,Liberty ships,0,1943.32593,0.596077,red,#ff0000
-1,2,plus,Liberty ships,0,1943.33972,0.632298,red,#ff0000
-1,2,plus,Liberty ships,0,1943.3479,0.558987,red,#ff0000
-1,2,plus,Liberty ships,0,1943.35888,0.625124,red,#ff0000
-1,2,plus,Liberty ships,0,1943.37804,0.524096,red,#ff0000
-1,2,plus,Liberty ships,0,1943.38622,0.603367,red,#ff0000
-1,2,plus,Liberty ships,0,1943.3944,0.611063,red,#ff0000
-1,2,plus,Liberty ships,0,1943.40538,0.578197,red,#ff0000
-1,2,plus,Liberty ships,0,1943.40819,0.624024,red,#ff0000
-1,2,plus,Liberty ships,0,1943.4409,0.604756,red,#ff0000
-1,2,plus,Liberty ships,0,1943.46006,0.643755,red,#ff0000
-1,2,plus,Liberty ships,0,1943.47385,0.710239,red,#ff0000
-1,2,plus,Liberty ships,0,1943.47922,0.579933,red,#ff0000
-1,2,plus,Liberty ships,0,1943.4874,0.658683,red,#ff0000
-1,2,plus,Liberty ships,0,1943.50937,0.665048,red,#ff0000
-1,2,filled-rectangle,Liberty ships,1,1943.52619,1.389336,red,#ff0000
-1,2,filled-rectangle,Colliers,1,1943.52619,1.334367,lime,#00ff00
-1,2,filled-rectangle,Tankers,1,1943.52619,1.279341,blue,#0000ff
-1,2,plus,Tankers,0,1943.6734,0.935148,blue,#0000ff
-1,2,plus,Tankers,0,1943.69817,0.967927,blue,#0000ff
-1,2,plus,Tankers,0,1943.70635,0.887239,blue,#0000ff
-1,2,plus,Tankers,0,1943.72271,0.932544,blue,#0000ff
-1,2,plus,Tankers,0,1943.73907,0.895339,blue,#0000ff
-1,2,plus,Tankers,0,1943.76103,0.91183,blue,#0000ff
-1,2,plus,Tankers,0,1943.76641,0.987976,blue,#0000ff
-1,2,plus,Tankers,0,1943.78837,0.920104,blue,#0000ff
-1,2,plus,Tankers,0,1943.79935,0.843553,blue,#0000ff
-1,2,plus,Tankers,0,1943.81291,0.855299,blue,#0000ff
-1,2,plus,Tankers,0,1943.82669,0.820119,blue,#0000ff
-1,2,plus,Tankers,0,1943.84866,0.75919,blue,#0000ff
-1,2,plus,Tankers,0,1943.84866,0.80195,blue,#0000ff
-1,2,plus,Tankers,0,1943.86221,0.765092,blue,#0000ff
-1,2,plus,Tankers,0,1943.86502,0.841759,blue,#0000ff
-1,2,plus,Tankers,0,1943.87039,0.76243,blue,#0000ff
-1,2,plus,Tankers,0,1943.87319,0.780541,blue,#0000ff
-1,2,plus,Tankers,0,1943.88955,0.759595,blue,#0000ff
-1,2,plus,Tankers,0,1943.9225,0.722505,blue,#0000ff
-1,2,plus,Tankers,0,1943.9225,0.69207,blue,#0000ff
-1,2,plus,Tankers,0,1943.95264,0.716546,blue,#0000ff
-1,2,plus,Tankers,0,1943.95521,0.685011,blue,#0000ff
-1,2,plus,Tankers,0,1943.9662,0.737029,blue,#0000ff
-1,2,plus,Tankers,0,1943.97718,0.741773,blue,#0000ff
-1,2,plus,Tankers,0,1944.00732,0.683159,blue,#0000ff
-1,2,plus,Tankers,0,1944.0127,0.685821,blue,#0000ff
-1,2,plus,Tankers,0,1944.03186,0.740038,blue,#0000ff
-1,2,plus,Tankers,0,1944.03723,0.723373,blue,#0000ff
-1,2,plus,Tankers,0,1944.06738,0.773482,blue,#0000ff
-1,2,plus,Tankers,0,1944.08116,0.691607,blue,#0000ff
-1,2,plus,Tankers,0,1944.08116,0.710412,blue,#0000ff
-1,2,plus,Tankers,0,1944.1085,0.749874,blue,#0000ff
-1,2,plus,Liberty ships,0,1944.16318,0.654055,red,#ff0000
-1,2,plus,Liberty ships,0,1944.17416,0.659494,red,#ff0000
-1,2,plus,Liberty ships,0,1944.17697,0.691376,red,#ff0000
-1,2,plus,Liberty ships,0,1944.17954,0.617659,red,#ff0000
-1,2,plus,Liberty ships,0,1944.17954,0.711512,red,#ff0000
-1,2,plus,Liberty ships,0,1944.21517,0.602094,red,#ff0000
-1,2,plus,Liberty ships,0,1944.22066,0.64254,red,#ff0000
-1,2,plus,Liberty ships,0,1944.22604,0.68854,red,#ff0000
-1,2,plus,Liberty ships,0,1944.23983,0.700923,red,#ff0000
-1,2,plus,Liberty ships,0,1944.27254,0.620379,red,#ff0000
-1,2,plus,Liberty ships,0,1944.30268,0.61465,red,#ff0000
-1,2,plus,Liberty ships,0,1944.31086,0.667826,red,#ff0000
-1,2,plus,Liberty ships,0,1944.31647,0.660709,red,#ff0000
-1,2,plus,Liberty ships,0,1944.32745,0.633687,red,#ff0000
-1,2,plus,Liberty ships,0,1944.37395,0.648905,red,#ff0000
-1,2,plus,Liberty ships,0,1944.37933,0.664585,red,#ff0000
-1,2,plus,Liberty ships,0,1944.3847,0.635712,red,#ff0000
-1,2,plus,Liberty ships,0,1944.41204,0.696352,red,#ff0000
-1,2,plus,Liberty ships,0,1944.42583,0.661519,red,#ff0000
-1,2,plus,Liberty ships,0,1944.47233,0.636059,red,#ff0000
-1,2,plus,Liberty ships,0,1944.50785,0.692706,red,#ff0000
-1,2,plus,Liberty ships,0,1944.51065,0.683275,red,#ff0000
-1,2,plus,Liberty ships,0,1944.54079,0.64769,red,#ff0000
-1,2,plus,Liberty ships,0,1944.54897,0.633687,red,#ff0000
-1,2,plus,Liberty ships,0,1944.55435,0.675637,red,#ff0000
-1,2,plus,Liberty ships,0,1944.56533,0.708734,red,#ff0000
-1,2,plus,Liberty ships,0,1944.58169,0.625413,red,#ff0000
-1,2,plus,Liberty ships,0,1944.59267,0.695252,red,#ff0000
-1,2,plus,Liberty ships,0,1944.63917,0.676968,red,#ff0000
-1,2,plus,Liberty ships,0,1944.63917,0.632241,red,#ff0000
-1,2,plus,Liberty ships,0,1944.65015,0.687036,red,#ff0000
-1,2,plus,Liberty ships,0,1944.65576,0.65689,red,#ff0000
-1,2,plus,Liberty ships,0,1944.66394,0.685069,red,#ff0000
-1,2,plus,Liberty ships,0,1944.67469,0.643003,red,#ff0000
-1,2,plus,Liberty ships,0,1944.69665,0.656311,red,#ff0000
-1,2,plus,Liberty ships,0,1944.70483,0.61303,red,#ff0000
-1,2,plus,Liberty ships,0,1944.71581,0.605624,red,#ff0000
-1,2,plus,Liberty ships,0,1944.73498,0.640573,red,#ff0000
-1,2,plus,Liberty ships,0,1944.75133,0.649021,red,#ff0000
-1,2,plus,Liberty ships,0,1944.75694,0.627264,red,#ff0000
-1,2,plus,Liberty ships,0,1944.78966,0.651451,red,#ff0000
-1,2,plus,Liberty ships,0,1944.79246,0.631951,red,#ff0000
-1,2,plus,Liberty ships,0,1944.79783,0.603483,red,#ff0000
-1,2,plus,Liberty ships,0,1944.81442,0.651335,red,#ff0000
-1,2,plus,Liberty ships,0,1944.8198,0.591795,red,#ff0000
-1,2,plus,Liberty ships,0,1944.83078,0.624371,red,#ff0000
-1,2,plus,Liberty ships,0,1944.84994,0.657121,red,#ff0000
-1,2,plus,Liberty ships,0,1944.8663,0.615808,red,#ff0000
-1,2,plus,Liberty ships,0,1944.8691,0.59382,red,#ff0000
-1,2,plus,Liberty ships,0,1944.88009,0.606666,red,#ff0000
-1,2,plus,Liberty ships,0,1944.88546,0.576404,red,#ff0000
-1,2,plus,Liberty ships,0,1944.89925,0.590927,red,#ff0000
-1,2,plus,Liberty ships,0,1944.9128,0.581958,red,#ff0000
-1,2,plus,Liberty ships,0,1944.93734,0.598565,red,#ff0000
-1,2,plus,Liberty ships,0,1944.94575,0.616647,red,#ff0000
-1,2,plus,Liberty ships,0,1944.97028,0.597408,red,#ff0000
-1,2,plus,Liberty ships,0,1944.98384,0.611005,red,#ff0000
-1,2,plus,Liberty ships,0,1944.98664,0.619222,red,#ff0000
-1,2,plus,Liberty ships,0,1944.98944,0.582537,red,#ff0000
-1,2,plus,Liberty ships,0,1944.99762,0.578371,red,#ff0000
-1,2,plus,Liberty ships,0,1945.03314,0.655327,red,#ff0000
-1,2,plus,Liberty ships,0,1945.0523,0.627901,red,#ff0000
-1,2,plus,Liberty ships,0,1945.08245,0.60493,red,#ff0000
-1,2,plus,Liberty ships,0,1945.10698,0.602037,red,#ff0000
-1,2,plus,Colliers,0,1945.11259,0.946374,lime,#00ff00
-1,2,plus,Liberty ships,0,1945.14273,0.622925,red,#ff0000
-1,2,plus,Liberty ships,0,1945.15909,0.588439,red,#ff0000
-1,2,plus,Colliers,0,1945.1918,1.163356,lime,#00ff00
-1,2,plus,Liberty ships,0,1945.19461,0.579181,red,#ff0000
-1,2,plus,Liberty ships,0,1945.2084,0.623098,red,#ff0000
-1,2,plus,Colliers,0,1945.29041,0.936595,lime,#00ff00
-1,2,plus,Colliers,0,1945.31775,1.163356,lime,#00ff00
-1,2,plus,Liberty ships,0,1945.33692,0.573337,red,#ff0000
-1,2,plus,Colliers,0,1945.3479,0.809877,lime,#00ff00
-1,2,plus,Colliers,0,1945.36963,0.752362,lime,#00ff00
-1,2,plus,Colliers,0,1945.39159,0.741542,lime,#00ff00
-1,2,plus,Colliers,0,1945.41076,0.787427,lime,#00ff00
-1,2,plus,Colliers,0,1945.42992,0.72563,lime,#00ff00
-1,2,plus,Colliers,0,1945.45445,0.727597,lime,#00ff00
-1,2,plus,Colliers,0,1945.47922,0.683101,lime,#00ff00
-1,2,plus,Colliers,0,1945.49277,0.692938,lime,#00ff00
-1,2,plus,Colliers,0,1945.51754,0.677547,lime,#00ff00
-1,2,plus,Colliers,0,1945.54208,0.67124,lime,#00ff00
-1,2,plus,Colliers,0,1945.56124,0.686862,lime,#00ff00
-1,2,plus,Colliers,0,1945.5776,0.718397,lime,#00ff00
-1,2,plus,Colliers,0,1945.6241,0.70208,lime,#00ff00
-1,2,plus,Colliers,0,1945.64606,0.719381,lime,#00ff00
-1,2,plus,Colliers,0,1945.66242,0.685011,lime,#00ff00
-1,2,plus,Colliers,0,1945.69537,0.72401,lime,#00ff00
-1,2,plus,Colliers,0,1945.72808,0.734193,lime,#00ff00
-1,2,plus,Colliers,0,1945.74187,0.756933,lime,#00ff00
-1,2,plus,Colliers,0,1945.77178,0.769547,lime,#00ff00
-1,2,plus,Colliers,0,1945.78019,0.785633,lime,#00ff00
+page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex,label
+1,1,plus,,0,-0.05,0.072029,aqua,#00ffff,
+1,1,plus,,0,32.4,0.058339,aqua,#00ffff,
+1,1,plus,,0,47.6,0.06151,aqua,#00ffff,
+1,1,plus,,0,58.4,0.08718,aqua,#00ffff,
+1,1,plus,,0,81.9,0.075692,aqua,#00ffff,
+1,1,plus,,0,118.7,0.055532,aqua,#00ffff,
+1,1,plus,,0,128.4,0.068232,aqua,#00ffff,
+1,1,plus,,0,148.3,0.048071,aqua,#00ffff,
+1,1,plus,,0,156.9,0.047831,aqua,#00ffff,
+1,1,plus,,0,184.4,0.043789,aqua,#00ffff,
+1,1,plus,,0,204.9,0.052469,aqua,#00ffff,
+1,1,plus,,0,229.5,0.053569,aqua,#00ffff,
+1,1,plus,,0,269.2,0.043301,aqua,#00ffff,
+1,1,plus,,0,286.2,0.043181,aqua,#00ffff,
+1,1,plus,,0,293.4,0.04526,aqua,#00ffff,
+1,1,plus,,0,314.7,0.052469,aqua,#00ffff,
+1,1,plus,,0,341.6,0.049779,aqua,#00ffff,
+1,1,plus,,0,346.8,0.055768,aqua,#00ffff,
+1,1,plus,,0,368.1,0.06285,aqua,#00ffff,
+1,1,plus,,0,387.2,0.058699,aqua,#00ffff,
+1,1,plus,,0,413.2,0.04281,aqua,#00ffff,
+1,1,plus,,0,427.3,0.04782,aqua,#00ffff,
+1,1,plus,,0,450.7,0.050878,aqua,#00ffff,
+1,1,plus,,0,470.9,0.04538,aqua,#00ffff,
+1,1,plus,,0,483.9,0.05185,aqua,#00ffff,
+1,1,plus,,0,517.5,0.052459,aqua,#00ffff,
+1,1,plus,,0,530.5,0.05906,aqua,#00ffff,
+1,1,plus,,0,579.6,0.061991,aqua,#00ffff,
+1,1,plus,,0,613.9,0.046109,aqua,#00ffff,
+1,1,plus,,0,626.1,0.054661,aqua,#00ffff,
+1,1,plus,,0,641.7,0.072011,aqua,#00ffff,
+1,1,plus,,0,664.8,0.061259,aqua,#00ffff,
+1,1,plus,,0,684.6,0.056001,aqua,#00ffff,
+1,1,plus,,0,705.2,0.049531,aqua,#00ffff,
+1,1,plus,,0,718.5,0.055641,aqua,#00ffff,
+1,1,plus,,0,745.2,0.068341,aqua,#00ffff,
+1,1,plus,,0,762.6,0.052338,aqua,#00ffff,
+1,1,plus,,0,787.1,0.05405,aqua,#00ffff,
+1,1,plus,,0,810.9,0.041699,aqua,#00ffff,
+1,1,plus,,0,837.3,0.0395,aqua,#00ffff,
+1,1,plus,,0,852.4,0.042799,aqua,#00ffff,
+1,1,plus,,0,870.1,0.041211,aqua,#00ffff,
+1,1,plus,,0,887.8,0.040108,aqua,#00ffff,
+1,1,plus,,0,912,0.042191,aqua,#00ffff,
+1,1,plus,,0,928.9,0.04195,aqua,#00ffff,
+1,1,plus,,0,961.4,0.05954,aqua,#00ffff,
+1,1,plus,,0,963.6,0.040479,aqua,#00ffff,
+1,1,plus,,0,987.4,0.043411,aqua,#00ffff,
+1,1,plus,,0,1022.1,0.041448,aqua,#00ffff,
+1,1,plus,,0,1048,0.040228,aqua,#00ffff,
+1,1,plus,,0,1070.8,0.045358,aqua,#00ffff,
+1,1,plus,,0,1091,0.05441,aqua,#00ffff,
+1,1,plus,,0,1107.2,0.040228,aqua,#00ffff,
+1,1,plus,,0,1131.8,0.041568,aqua,#00ffff,
+1,1,plus,,0,1159.6,0.037789,aqua,#00ffff,
+1,1,plus,,0,1168.6,0.051588,aqua,#00ffff,
+1,1,plus,,0,1186.3,0.050128,aqua,#00ffff,
+1,1,plus,,0,1225.3,0.04084,aqua,#00ffff,
+1,1,plus,,0,1233.9,0.04072,aqua,#00ffff,
+1,1,plus,,0,1254.5,0.048781,aqua,#00ffff,
+1,1,plus,,0,1264.6,0.04585,aqua,#00ffff,
+1,1,plus,,0,1292,0.042431,aqua,#00ffff,
+1,1,plus,,0,1309.7,0.04108,aqua,#00ffff,
+1,1,plus,,0,1336.1,0.038881,aqua,#00ffff,
+1,1,plus,,0,1364.4,0.048901,aqua,#00ffff,
+1,1,plus,,0,1385.1,0.04194,aqua,#00ffff,
+1,1,plus,,0,1387.7,0.037778,aqua,#00ffff,
+1,1,plus,,0,1404.3,0.03839,aqua,#00ffff,
+1,1,plus,,0,1437.1,0.039609,aqua,#00ffff,
+1,1,plus,,0,1450.5,0.04597,aqua,#00ffff,
+1,1,plus,,0,1468.5,0.043771,aqua,#00ffff,
+1,1,plus,,0,1486.9,0.04108,aqua,#00ffff,
+1,1,plus,,0,1511.8,0.0423,aqua,#00ffff,
+1,1,plus,,0,1531.7,0.037039,aqua,#00ffff,
+1,1,plus,,0,1556.6,0.03753,aqua,#00ffff,
+1,1,plus,,0,1566.3,0.035331,aqua,#00ffff,
+1,1,plus,,0,1582.6,0.036551,aqua,#00ffff,
+1,1,plus,,0,1626.6,0.04865,aqua,#00ffff,
+1,1,plus,,0,1634.9,0.04841,aqua,#00ffff,
+1,1,plus,,0,1654.4,0.043891,aqua,#00ffff,
+1,1,plus,,0,1677.1,0.033991,aqua,#00ffff,
+1,1,plus,,0,1684.3,0.036059,aqua,#00ffff,
+1,1,plus,,0,1710.3,0.03496,aqua,#00ffff,
+1,1,plus,,0,1729.4,0.045959,aqua,#00ffff,
+1,1,plus,,0,1750.4,0.03851,aqua,#00ffff,
+1,1,plus,,0,1764.5,0.04364,aqua,#00ffff,
+1,1,plus,,0,1791.9,0.03997,aqua,#00ffff,
+1,1,plus,,0,1810.7,0.036431,aqua,#00ffff,
+1,1,plus,,0,1825.5,0.04058,aqua,#00ffff,
+1,1,plus,,0,1851.8,0.03863,aqua,#00ffff,
+1,1,plus,,0,1869.5,0.037399,aqua,#00ffff,
+1,1,plus,,0,1892.9,0.04021,aqua,#00ffff,
+1,1,plus,,0,1912.4,0.036059,aqua,#00ffff,
+1,1,plus,,0,1930.1,0.034708,aqua,#00ffff,
+1,1,plus,,0,1946.4,0.035688,aqua,#00ffff,
+1,1,plus,,0,1970.9,0.037039,aqua,#00ffff,
+1,1,plus,,0,1996.9,0.036059,aqua,#00ffff,
+1,1,plus,,0,2005.5,0.035451,aqua,#00ffff,
+1,1,plus,,0,2029,0.03875,aqua,#00ffff,
+1,1,plus,,0,2054.3,0.039231,aqua,#00ffff,
+1,1,plus,,0,2067.3,0.0462,aqua,#00ffff,
+1,1,plus,,0,2112.4,0.040818,aqua,#00ffff,
+1,1,plus,,0,2125.7,0.047299,aqua,#00ffff,
+1,1,plus,,0,2148.5,0.036791,aqua,#00ffff,
+1,1,plus,,0,2171.2,0.04131,aqua,#00ffff,
+1,1,plus,,0,2211.6,0.044608,aqua,#00ffff,
+1,1,plus,,0,2221.4,0.042158,aqua,#00ffff,
+1,1,plus,,0,2257.5,0.038251,aqua,#00ffff,
+1,1,plus,,0,2259.3,0.03544,aqua,#00ffff,
+1,1,plus,,0,2290.3,0.04033,aqua,#00ffff,
+1,1,plus,,0,2307.3,0.039959,aqua,#00ffff,
+1,1,plus,,0,2334,0.03776,aqua,#00ffff,
+1,1,plus,,0,2344.4,0.033729,aqua,#00ffff,
+1,1,plus,,0,2377.7,0.034949,aqua,#00ffff,
+1,1,plus,,0,2389.6,0.04411,aqua,#00ffff,
+1,1,plus,,0,2406.2,0.04411,aqua,#00ffff,
+1,1,plus,,0,2427.5,0.05145,aqua,#00ffff,
+1,1,plus,,0,2446.6,0.047539,aqua,#00ffff,
+1,1,plus,,0,2470,0.035801,aqua,#00ffff,
+1,1,plus,,0,2484.5,0.040199,aqua,#00ffff,
+1,1,plus,,0,2507.2,0.045209,aqua,#00ffff,
+1,1,plus,,0,2514.8,0.0468,aqua,#00ffff,
+1,1,plus,,0,2532.1,0.045701,aqua,#00ffff,
+1,1,plus,,0,2574.3,0.046068,aqua,#00ffff,
+1,1,plus,,0,2592.4,0.043989,aqua,#00ffff,
+1,1,plus,,0,2603.2,0.03922,aqua,#00ffff,
+1,1,plus,,0,2636.4,0.040571,aqua,#00ffff,
+1,1,plus,,0,2655.6,0.03678,aqua,#00ffff,
+1,1,plus,,0,2658.1,0.03189,aqua,#00ffff,11.6
+1,1,plus,,0,2706.8,0.050831,aqua,#00ffff,
+1,1,plus,,0,2732.1,0.036041,aqua,#00ffff,
+1,1,plus,,0,2773.6,0.052291,aqua,#00ffff,
+1,1,plus,,0,2788.7,0.040439,aqua,#00ffff,
+1,1,plus,,0,2807.1,0.037508,aqua,#00ffff,
+1,1,plus,,0,2828.1,0.045078,aqua,#00ffff,
+1,1,plus,,0,2866.7,0.036769,aqua,#00ffff,
+1,1,plus,,0,2895.9,0.044958,aqua,#00ffff,
+1,1,plus,,0,2921.2,0.045329,aqua,#00ffff,
+1,1,plus,,0,2931.7,0.041539,aqua,#00ffff,
+1,1,plus,,0,2950.1,0.038481,aqua,#00ffff,
+1,1,plus,,0,2961.2,0.03421,aqua,#00ffff,6.53.8
+1,1,plus,,0,2999.9,0.040308,aqua,#00ffff,
+1,1,plus,,0,3002.8,0.035178,aqua,#00ffff,
+1,1,plus,,0,3019.7,0.064882,aqua,#00ffff,
+1,1,plus,,0,3028.4,0.0496,aqua,#00ffff,
+1,1,plus,,0,3052.2,0.037141,aqua,#00ffff,
+1,1,plus,,0,3076.4,0.0397,aqua,#00ffff,
+1,1,plus,,0,3091.5,0.057541,aqua,#00ffff,
+1,1,plus,,0,3114.5,0.04691,aqua,#00ffff,
+1,1,plus,,0,3135.2,0.054851,aqua,#00ffff,
+1,1,plus,,0,3158.7,0.043611,aqua,#00ffff,
+1,1,plus,,0,3185.7,0.040068,aqua,#00ffff,
+1,1,plus,,0,3207.8,0.046538,aqua,#00ffff,
+1,1,plus,,0,3224.7,0.04605,aqua,#00ffff,
+1,1,plus,,0,3225.8,0.044219,aqua,#00ffff,
+1,1,plus,,0,3260.1,0.043611,aqua,#00ffff,
+1,1,plus,,0,3272.4,0.036638,aqua,#00ffff,
+1,1,plus,,0,3298.7,0.034931,aqua,#00ffff,
+1,1,plus,,0,3305,0.038601,aqua,#00ffff,
+1,1,plus,,0,3321.8,0.038841,aqua,#00ffff,
+1,1,plus,,0,3372.3,0.038841,aqua,#00ffff,
+1,1,plus,,0,3399.8,0.035418,aqua,#00ffff,
+1,1,plus,,0,3416,0.036518,aqua,#00ffff,
+1,1,plus,,0,3439.8,0.039569,aqua,#00ffff,
+1,1,plus,,0,3460.4,0.047998,aqua,#00ffff,
+1,1,plus,,0,3473.7,0.054239,aqua,#00ffff,
+1,1,plus,,0,3489.3,0.041401,aqua,#00ffff,
+1,1,plus,,0,3517.8,0.05094,aqua,#00ffff,
+1,1,plus,,0,3536.5,0.04727,aqua,#00ffff,
+1,1,plus,,0,3554.2,0.045919,aqua,#00ffff,
+1,1,plus,,0,3576.2,0.03713,aqua,#00ffff,
+1,1,plus,,0,3600.8,0.03847,aqua,#00ffff,
+1,1,plus,,0,3614.5,0.044459,aqua,#00ffff,
+1,1,plus,,0,3644.5,0.035899,aqua,#00ffff,
+1,1,plus,,0,3649.9,0.041401,aqua,#00ffff,
+1,1,plus,,0,3661.8,0.035539,aqua,#00ffff,
+1,1,plus,,0,3693.9,0.038098,aqua,#00ffff,
+1,1,plus,,0,3711.6,0.036999,aqua,#00ffff,
+1,1,plus,,0,3740.1,0.04616,aqua,#00ffff,
+1,1,plus,,0,3755.6,0.03382,aqua,#00ffff,
+1,1,plus,,0,3784.1,0.043228,aqua,#00ffff,
+1,1,plus,,0,3795.7,0.03773,aqua,#00ffff,
+1,1,plus,,0,3815.2,0.047631,aqua,#00ffff,
+1,1,plus,,0,3838.3,0.036751,aqua,#00ffff,
+1,1,plus,,0,3853.4,0.04017,aqua,#00ffff,
+1,1,plus,,0,3884.5,0.04494,aqua,#00ffff,
+1,1,plus,,0,3889.2,0.036751,aqua,#00ffff,
+1,1,plus,,0,3916.9,0.031989,aqua,#00ffff,
+1,1,plus,,0,3917.3,0.031501,aqua,#00ffff,4.7
+1,1,plus,,0,3944.4,0.043469,aqua,#00ffff,
+1,1,plus,,0,3973.3,0.037479,aqua,#00ffff,
+1,1,plus,,0,3983.4,0.049578,aqua,#00ffff,
+1,1,plus,,0,4002.8,0.04482,aqua,#00ffff,
+1,1,plus,,0,4030.6,0.040541,aqua,#00ffff,
+1,1,plus,,0,4048.7,0.038459,aqua,#00ffff,
+1,1,plus,,0,4061,0.04628,aqua,#00ffff,
+1,1,plus,,0,4086.2,0.047012,aqua,#00ffff,
+1,1,plus,,0,4107.5,0.03907,aqua,#00ffff,
+1,1,plus,,0,4132.4,0.039438,aqua,#00ffff,
+1,1,plus,,0,4142.5,0.051781,aqua,#00ffff,
+1,1,plus,,0,4167.1,0.038459,aqua,#00ffff,
+1,1,plus,,0,4180.1,0.04542,aqua,#00ffff,
+1,1,plus,,0,4199.5,0.04029,aqua,#00ffff,
+1,1,plus,,0,4227.3,0.03638,aqua,#00ffff,
+1,1,plus,,0,4249.7,0.04127,aqua,#00ffff,
+1,1,plus,,0,4265.2,0.04408,aqua,#00ffff,
+1,1,plus,,0,4285.1,0.038459,aqua,#00ffff,
+1,1,plus,,0,4302,0.038819,aqua,#00ffff,
+1,1,plus,,0,4369.5,0.069,aqua,#00ffff,
+1,1,plus,,0,4391.6,0.044689,aqua,#00ffff,
+1,1,plus,,0,4402.4,0.040159,aqua,#00ffff,
+1,1,plus,,0,4434.5,0.043578,aqua,#00ffff,
+1,1,plus,,0,4454.7,0.037228,aqua,#00ffff,
+1,1,plus,,0,4482.5,0.04798,aqua,#00ffff,
+1,1,plus,,0,4495.5,0.040039,aqua,#00ffff,
+1,1,plus,,0,4509.6,0.045049,aqua,#00ffff,
+1,1,plus,,0,4522.9,0.051399,aqua,#00ffff,
+1,1,plus,,0,4537.7,0.040159,aqua,#00ffff,
+1,1,plus,,0,4563,0.040159,aqua,#00ffff,
+1,1,plus,,0,4583.2,0.049451,aqua,#00ffff,
+1,1,plus,,0,4591.1,0.050551,aqua,#00ffff,
+1,1,plus,,0,4638.4,0.056289,aqua,#00ffff,
+1,1,plus,,0,4653.2,0.04492,aqua,#00ffff,
+1,1,plus,,0,4670.9,0.043818,aqua,#00ffff,
+1,1,plus,,0,4712.8,0.04419,aqua,#00ffff,
+1,1,plus,,0,4726.1,0.035389,aqua,#00ffff,
+1,1,plus,,0,4742,0.052619,aqua,#00ffff,
+1,1,plus,,0,4797.9,0.04321,aqua,#00ffff,
+1,1,plus,,0,4806.6,0.04297,aqua,#00ffff,
+1,1,plus,,0,4850.6,0.039791,aqua,#00ffff,
+1,1,plus,,0,4861.1,0.03575,aqua,#00ffff,
+1,1,plus,,0,4875.5,0.05555,aqua,#00ffff,
+1,1,plus,,0,4899.7,0.042599,aqua,#00ffff,
+1,1,plus,,0,4920.7,0.035138,aqua,#00ffff,
+1,1,plus,,0,4945.9,0.03563,aqua,#00ffff,
+1,1,plus,,0,4952,0.03942,aqua,#00ffff,
+1,1,plus,,0,4985.3,0.040399,aqua,#00ffff,
+1,1,plus,,0,5004.4,0.036849,aqua,#00ffff,
+1,1,plus,,0,5026,0.042959,aqua,#00ffff,
+1,1,plus,,0,5036.9,0.039169,aqua,#00ffff,
+1,1,plus,,0,5047.3,0.035509,aqua,#00ffff,
+1,1,plus,,0,5086.7,0.04064,aqua,#00ffff,
+1,1,plus,,0,5106.2,0.036121,aqua,#00ffff,
+1,1,plus,,0,5115.2,0.035138,aqua,#00ffff,
+1,1,plus,,0,5139.7,0.05139,aqua,#00ffff,
+1,1,plus,,0,5155.6,0.037949,aqua,#00ffff,
+1,1,plus,,0,5178,0.043319,aqua,#00ffff,
+1,1,plus,,0,5189.2,0.038309,aqua,#00ffff,
+1,1,plus,,0,5227.1,0.031588,aqua,#00ffff,
+1,1,plus,,0,5239.3,0.03966,aqua,#00ffff,
+1,1,plus,,0,5274,0.038309,aqua,#00ffff,
+1,1,plus,,0,5275.4,0.03575,aqua,#00ffff,
+1,1,plus,,0,5303.6,0.045639,aqua,#00ffff,
+1,1,plus,,0,5325.6,0.036598,aqua,#00ffff,
+1,1,plus,,0,5350.1,0.037581,aqua,#00ffff,
+1,1,plus,,0,5359.9,0.035378,aqua,#00ffff,
+1,1,plus,,0,5380.1,0.044659,aqua,#00ffff,
+1,1,plus,,0,5395.3,0.047601,aqua,#00ffff,
+1,1,plus,,0,5432.4,0.041608,aqua,#00ffff,
+1,1,plus,,0,5441.8,0.03978,aqua,#00ffff,
+1,1,plus,,0,5451.2,0.038309,aqua,#00ffff,
+1,1,plus,,0,5477.2,0.03709,aqua,#00ffff,
+1,1,plus,,0,5494.1,0.03745,aqua,#00ffff,
+1,1,plus,,0,5538.5,0.033048,aqua,#00ffff,
+1,1,plus,,0,5540,0.045519,aqua,#00ffff,
+1,1,plus,,0,5551.5,0.040141,aqua,#00ffff,
+1,1,plus,,0,5568.9,0.039409,aqua,#00ffff,
+1,1,plus,,0,5611.1,0.039529,aqua,#00ffff,
+1,1,plus,,0,5617.9,0.04234,aqua,#00ffff,
+1,2,plus,Liberty ships,0,1942.4123,1.40892,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.4807,1.29349,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.5135,1.26635,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.5518,1.27393,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.5737,1.1357,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.5983,1.06273,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.6311,1.15433,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.6586,1.00539,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.6777,0.9506,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.6968,0.95673,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.7158,0.90194,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.735,0.96807,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.746,0.9403,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.7761,0.90801,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.8034,0.9429,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.8254,0.79906,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.8308,0.94446,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.8446,0.8001,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.8581,0.74982,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.8801,0.79333,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.8964,0.76561,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.9074,0.76417,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.932,0.79206,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.9429,0.68027,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.9621,0.69346,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.9785,0.77053,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.9951,0.67807,red,#ff0000,
+1,2,plus,Liberty ships,0,1942.9976,0.69033,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.0278,0.73824,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.0388,0.70729,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.0551,0.72945,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.0771,0.64485,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.0799,0.6371,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.0934,0.66152,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.1126,0.65388,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.1289,0.72158,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.1481,0.70144,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.1591,0.67303,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.2056,0.62177,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.2138,0.65463,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.2304,0.66001,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.2385,0.6102,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.2439,0.70989,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.2713,0.58615,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.285,0.65348,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.3042,0.65122,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.3096,0.65342,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.3096,0.61124,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.3259,0.59608,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.3397,0.6323,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.3479,0.55899,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.3589,0.62512,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.378,0.5241,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.3862,0.60337,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.3944,0.61106,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.4054,0.5782,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.4082,0.62402,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.4409,0.60476,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.4601,0.64376,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.4738,0.71024,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.4792,0.57993,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.4874,0.65868,red,#ff0000,
+1,2,plus,Liberty ships,0,1943.5094,0.66505,red,#ff0000,
+1,2,filled-rectangle,Liberty ships,1,1943.5262,1.38934,red,#ff0000,
+1,2,filled-rectangle,Colliers,1,1943.5262,1.33437,lime,#00ff00,
+1,2,filled-rectangle,Tankers,1,1943.5262,1.27934,blue,#0000ff,
+1,2,plus,Tankers,0,1943.6734,0.93515,blue,#0000ff,
+1,2,plus,Tankers,0,1943.6982,0.96793,blue,#0000ff,
+1,2,plus,Tankers,0,1943.7064,0.88724,blue,#0000ff,
+1,2,plus,Tankers,0,1943.7227,0.93254,blue,#0000ff,
+1,2,plus,Tankers,0,1943.7391,0.89534,blue,#0000ff,
+1,2,plus,Tankers,0,1943.761,0.91183,blue,#0000ff,
+1,2,plus,Tankers,0,1943.7664,0.98798,blue,#0000ff,
+1,2,plus,Tankers,0,1943.7884,0.9201,blue,#0000ff,
+1,2,plus,Tankers,0,1943.7994,0.84355,blue,#0000ff,
+1,2,plus,Tankers,0,1943.8129,0.8553,blue,#0000ff,
+1,2,plus,Tankers,0,1943.8267,0.82012,blue,#0000ff,
+1,2,plus,Tankers,0,1943.8487,0.75919,blue,#0000ff,
+1,2,plus,Tankers,0,1943.8487,0.80195,blue,#0000ff,
+1,2,plus,Tankers,0,1943.8622,0.76509,blue,#0000ff,
+1,2,plus,Tankers,0,1943.865,0.84176,blue,#0000ff,
+1,2,plus,Tankers,0,1943.8704,0.76243,blue,#0000ff,
+1,2,plus,Tankers,0,1943.8732,0.78054,blue,#0000ff,
+1,2,plus,Tankers,0,1943.8896,0.75959,blue,#0000ff,
+1,2,plus,Tankers,0,1943.9225,0.72251,blue,#0000ff,
+1,2,plus,Tankers,0,1943.9225,0.69207,blue,#0000ff,
+1,2,plus,Tankers,0,1943.9526,0.71655,blue,#0000ff,
+1,2,plus,Tankers,0,1943.9552,0.68501,blue,#0000ff,
+1,2,plus,Tankers,0,1943.9662,0.73703,blue,#0000ff,
+1,2,plus,Tankers,0,1943.9772,0.74177,blue,#0000ff,
+1,2,plus,Tankers,0,1944.0073,0.68316,blue,#0000ff,
+1,2,plus,Tankers,0,1944.0127,0.68582,blue,#0000ff,
+1,2,plus,Tankers,0,1944.0319,0.74004,blue,#0000ff,
+1,2,plus,Tankers,0,1944.0372,0.72337,blue,#0000ff,
+1,2,plus,Tankers,0,1944.0674,0.77348,blue,#0000ff,
+1,2,plus,Tankers,0,1944.0812,0.69161,blue,#0000ff,
+1,2,plus,Tankers,0,1944.0812,0.71041,blue,#0000ff,
+1,2,plus,Tankers,0,1944.1085,0.74987,blue,#0000ff,
+1,2,plus,Liberty ships,0,1944.1632,0.65405,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.1742,0.65949,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.177,0.69138,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.1795,0.61766,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.1795,0.71151,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.2152,0.60209,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.2207,0.64254,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.226,0.68854,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.2398,0.70092,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.2725,0.62038,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.3027,0.61465,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.3109,0.66783,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.3165,0.66071,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.3275,0.63369,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.374,0.6489,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.3793,0.66459,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.3847,0.63571,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.412,0.69635,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.4258,0.66152,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.4723,0.63606,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.5078,0.69271,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.5107,0.68327,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.5408,0.64769,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.549,0.63369,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.5543,0.67564,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.5653,0.70873,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.5817,0.62541,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.5927,0.69525,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.6392,0.67697,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.6392,0.63224,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.6502,0.68704,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.6558,0.65689,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.6639,0.68507,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.6747,0.643,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.6967,0.65631,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.7048,0.61303,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.7158,0.60562,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.735,0.64057,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.7513,0.64902,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.7569,0.62726,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.7897,0.65145,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.7925,0.63195,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.7978,0.60348,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.8144,0.65134,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.8198,0.5918,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.8308,0.62437,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.8499,0.65712,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.8663,0.61581,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.8691,0.59382,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.8801,0.60667,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.8855,0.5764,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.8992,0.59093,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.9128,0.58196,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.9373,0.59857,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.9457,0.61665,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.9703,0.59741,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.9838,0.61101,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.9866,0.61922,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.9894,0.58254,red,#ff0000,
+1,2,plus,Liberty ships,0,1944.9976,0.57837,red,#ff0000,
+1,2,plus,Liberty ships,0,1945.0331,0.65533,red,#ff0000,
+1,2,plus,Liberty ships,0,1945.0523,0.6279,red,#ff0000,
+1,2,plus,Liberty ships,0,1945.0824,0.60493,red,#ff0000,
+1,2,plus,Liberty ships,0,1945.107,0.60204,red,#ff0000,
+1,2,plus,Colliers,0,1945.1126,0.94637,lime,#00ff00,
+1,2,plus,Liberty ships,0,1945.1427,0.62292,red,#ff0000,
+1,2,plus,Liberty ships,0,1945.1591,0.58844,red,#ff0000,
+1,2,plus,Colliers,0,1945.1918,1.16336,lime,#00ff00,
+1,2,plus,Liberty ships,0,1945.1946,0.57918,red,#ff0000,
+1,2,plus,Liberty ships,0,1945.2084,0.6231,red,#ff0000,
+1,2,plus,Colliers,0,1945.2904,0.93659,lime,#00ff00,
+1,2,plus,Colliers,0,1945.3178,1.16336,lime,#00ff00,
+1,2,plus,Liberty ships,0,1945.3369,0.57334,red,#ff0000,
+1,2,plus,Colliers,0,1945.3479,0.80988,lime,#00ff00,
+1,2,plus,Colliers,0,1945.3696,0.75236,lime,#00ff00,
+1,2,plus,Colliers,0,1945.3916,0.74154,lime,#00ff00,
+1,2,plus,Colliers,0,1945.4108,0.78743,lime,#00ff00,
+1,2,plus,Colliers,0,1945.4299,0.72563,lime,#00ff00,
+1,2,plus,Colliers,0,1945.4545,0.7276,lime,#00ff00,
+1,2,plus,Colliers,0,1945.4792,0.6831,lime,#00ff00,
+1,2,plus,Colliers,0,1945.4928,0.69294,lime,#00ff00,
+1,2,plus,Colliers,0,1945.5175,0.67755,lime,#00ff00,
+1,2,plus,Colliers,0,1945.5421,0.67124,lime,#00ff00,
+1,2,plus,Colliers,0,1945.5612,0.68686,lime,#00ff00,
+1,2,plus,Colliers,0,1945.5776,0.7184,lime,#00ff00,
+1,2,plus,Colliers,0,1945.6241,0.70208,lime,#00ff00,
+1,2,plus,Colliers,0,1945.6461,0.71938,lime,#00ff00,
+1,2,plus,Colliers,0,1945.6624,0.68501,lime,#00ff00,
+1,2,plus,Colliers,0,1945.6954,0.72401,lime,#00ff00,
+1,2,plus,Colliers,0,1945.7281,0.73419,lime,#00ff00,
+1,2,plus,Colliers,0,1945.7419,0.75693,lime,#00ff00,
+1,2,plus,Colliers,0,1945.7718,0.76955,lime,#00ff00,
+1,2,plus,Colliers,0,1945.7802,0.78563,lime,#00ff00,

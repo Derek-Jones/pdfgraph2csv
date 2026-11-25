@@ -23,7 +23,8 @@ WORD_RE = re.compile(r"[^\W\d_]{3,}")
 
 # a number followed by a unit or scale suffix: byte sizes (SI kB, MB, ...
 # and binary KiB, MiB, ...; the value is in bytes), thousands / millions
-# ("10k", "2M": ggplot2's label_number(scale_cut)), factors ("1.5x")
+# ("10k", "2M": ggplot2's label_number(scale_cut)), factors ("1.5x");
+# "B" with a decimal point is billions ("2.00B": no fraction of a byte)
 _SUFFIX = {"b": 1.0, "kb": 1e3, "mb": 1e6, "gb": 1e9, "tb": 1e12, "pb": 1e15,
            "kib": 1024.0, "mib": 1024.0 ** 2, "gib": 1024.0 ** 3, "tib": 1024.0 ** 4,
            "k": 1e3, "m": 1e6, "x": 1.0, "\u00d7": 1.0}
@@ -149,9 +150,11 @@ def parse_number(s, decimal_comma=False):
     t = (s.strip().replace("\u2212", "-").replace("\u2013", "-")
          .replace("\u2014", "-").replace("\u00a0", "").replace(" ", ""))
     t = t.replace(",", "").replace("$", "").replace("%", "")
-    m = re.fullmatch(r"([+-]?[\d.]+)?[x\u00d7\*]?10\^([+-]?\d+)", t)
+    # (fractional exponents too: 2355585.2355594-006's "10^+0.2",
+    # "10^-1.0")
+    m = re.fullmatch(r"([+-]?[\d.]+)?[x\u00d7\*]?10\^([+-]?(?:\d+(?:\.\d*)?|\.\d+))", t)
     if m:  # 10^3  or 2x10^3
-        exp = int(m.group(2))
+        exp = float(m.group(2))
         if abs(exp) > 300:                 # beyond the range of a float
             return None
         try:
@@ -164,6 +167,11 @@ def parse_number(s, decimal_comma=False):
         return v if math.isfinite(v) else None
     m = _SUFFIX_RE.fullmatch(t)
     if m:  # 10kB, 1MB, 10k, 1.5x
+        if m.group(2) == "B" and "." in m.group(1):
+            # a fraction of a byte is no size: "2.00B", "18.0B" are billions
+            # (d3's number format; 978-3-031-36060-2_2-006's y labels, with
+            # "500M" on the same axis)
+            return float(m.group(1)) * 1e9
         return float(m.group(1)) * _SUFFIX[m.group(2).lower()]
     m = SHORT_YEAR_RE.fullmatch(t)
     if m:  # '95 = 1995, '05 = 2005 (century checked per axis)
@@ -310,6 +318,47 @@ def _goes_before(t, o):
     return None
 
 
+_BYTE_UNIT = re.compile(r"\d\s*(?:[kKMGTP]i?B|bytes?)\b|\b(?:[kKMGTP]i?B|bytes?)\b")
+_WHOLE_B = re.compile(r"[+-]?\d+B")
+
+
+def billions_not_bytes(texts):
+    """A whole number followed by "B" ("5B", "20B") is billions - as K is
+    thousands and M millions (PsychologyToPhylogeny-AnalysisCultEvo-170:
+    the user's rule) - unless the page names a byte unit somewhere ("KB",
+    "MiB", "bytes": then "512B" is a size).  (A fraction of a byte is no
+    size, so "2.00B" is billions anyway: parse_number.)  Sets the texts'
+    values in place."""
+    if any(_BYTE_UNIT.search(t["text"]) for t in texts):
+        return
+    for t in texts:
+        s = t["text"].strip()
+        if _WHOLE_B.fullmatch(s):
+            t["value"] = float(s[:-1]) * 1e9
+
+
+def drop_repeated_texts(texts):
+    """Copies of a text drawn again on (nearly) the same spot - same
+    string, font, size and colour, its start within a tenth of its size -
+    are one text (Mohamed_Rakha_PhD-072: each of ggplot's four quadrant
+    labels drawn 25 776 times, once per data row, 0.01 - 0.04 pt apart;
+    103 133 texts made the page take minutes).  Keeps the first."""
+    kept, seen = [], {}
+    for t in texts:
+        s = max(t["size"], 1e-6)
+        key = (t["text"], t.get("font"), round(s, 2), t.get("rgb"))
+        x, y = t["p0"]
+        cell = (round(x / s), round(y / s))
+        near = seen.setdefault(key, {})
+        if any(abs(x - qx) <= 0.1 * s and abs(y - qy) <= 0.1 * s
+               for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+               for qx, qy in near.get((cell[0] + dx, cell[1] + dy), ())):
+            continue
+        near.setdefault(cell, []).append((x, y))
+        kept.append(t)
+    return kept
+
+
 def merge_texts(texts):
     """Join text pieces that continue each other on the same baseline."""
     out = []
@@ -331,11 +380,23 @@ def merge_texts(texts):
             # log-axis labels)
             times = (t["text"].strip() == "\u00d7" and o["text"].strip()[-1:].isdigit()) or \
                 (o["text"].strip().endswith("\u00d7") and t["text"].strip()[:1].isdigit())
-            gap = 0.45 if times else 0.15
+            # (R's plotmath spaces ":" and "=" as operators too:
+            # Seongmin-PhD-036's slanted "VSM(γ : 0.6)" labels, 1.2 pt gaps
+            # at 6.6 pt)
+            spaced = (t["text"].strip() in (":", "=") and o["text"].strip()[-1:].isalnum()) or \
+                (o["text"].strip().endswith((":", "=")) and t["text"].strip()[:1].isalnum()) or \
+                o["text"].rstrip().endswith(",")
+            # (a comma and a word space go on: "M-Avg," and "ε=|Δ|" in two
+            # fonts, 2020.01.30.927558.full-026's model names)
+            gap = 0.45 if times or spaced else 0.15
             if (abs(t["size"] - o["size"]) < 0.05 * max(t["size"], 1e-6) and
                     d < gap * max(t["size"], 1e-6) and t["text"].strip() and
                     o["text"].strip()):
                 o = dict(o)
+                # (a spaced operator keeps its space: "G = 0.9")
+                if spaced and d >= 0.15 * max(t["size"], 1e-6) and not o["text"].endswith(" ") \
+                        and not t["text"].startswith(" "):
+                    o["text"] += " "
                 o["text"] += t["text"]
                 o["p1"] = t["p1"]
                 if "glyphs" in o and "glyphs" in t:

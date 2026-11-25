@@ -63,7 +63,12 @@ def build_graphs(axes):
     xs = [a for a in axes if a["orient"] == "x"]
     ys = [a for a in axes if a["orient"] == "y"]
     if any(a["has_line"] for a in xs) and any(a["has_line"] for a in ys):
-        xs = [a for a in xs if a["has_line"]]
+        lined = [a for a in xs if a["has_line"]]
+        # (an x axis of ticks only that no lined x axis covers stays: the
+        # heat map of 2020.01.30.927558.full-048, its ticks hanging from the
+        # frame, beside lined axes elsewhere on the page)
+        xs = lined + [a for a in xs if not a["has_line"] and not any(
+            abs(b["pos"] - a["pos"]) <= 3.0 and b["lo"] < a["hi"] and a["lo"] < b["hi"] for b in lined)]
         ys = [a for a in ys if a["has_line"]]
 
     def corner(xa, ya):
@@ -75,6 +80,8 @@ def build_graphs(axes):
         dx = min(abs(ya["pos"] - xa["lo"]), abs(ya["pos"] - xa["hi"]))
         if not xa["has_line"] and xa["lo"] - 1 <= ya["pos"] <= xa["hi"] + 1:
             dx = 0.0
+        if _foot_of(xa, ya):
+            dx = dy = 0.0
         return dx, dy
 
     def tol(xa, ya):
@@ -123,6 +130,7 @@ def build_graphs(axes):
         if i is not None:
             pairs.add((i, j))
     stack_on_shared_x(xs, ys, pairs)
+    row_on_shared_y(xs, ys, pairs)
     # axes that cross inside the plot (Excel's log axes crossing at 1, axes
     # through the origin): each line runs across the other one, well inside
     # its ends, with the crossing point inside both; only for axes that
@@ -151,9 +159,67 @@ def build_graphs(axes):
     graphs = []
     for i, j in pairs:
         xa, ya = xs[i], ys[j]
+        x0 = ya["pos"] if _foot_of(xa, ya) else xa["lo"]
         graphs.append({"x": xa, "y": ya,
-                       "rect": (xa["lo"], ya["lo"], xa["hi"], ya["hi"])})
+                       "rect": (x0, ya["lo"], xa["hi"], ya["hi"])})
     return order_graphs(merge_twin_axes(graphs))
+
+
+def _foot_of(xa, ya):
+    """An x axis of ticks only (no line) at the foot of a y axis (within
+    2 pt), the y axis left of its first tick by at most half its length:
+    ticks hanging from a frame whose bottom edge the axis builder did not
+    take (2020.01.30.927558.full-048's heat map, ticked only at the
+    experiments' borders, 100 ... 408).  The y axis has its line (the
+    frame's edge): 978-3-031-36060-2_2-006's lineless right-hand y axes
+    stand left of the next chart's x axis."""
+    return not xa["has_line"] and ya["has_line"] and abs(xa["pos"] - ya["lo"]) <= 2.0 and \
+        ya["pos"] < xa["lo"] and xa["lo"] - ya["pos"] <= 0.5 * (xa["hi"] - xa["lo"])
+
+
+def drop_same_plot_graphs(graphs):
+    """Two graphs whose plot boxes overlap by 85% or more of each are one
+    plot found twice (ArianeWuerbach-Phd-219: a trace plot's own axis, and
+    the scale of the plot at the foot of its column borrowed along the
+    shared iteration axis): the one whose axes carry more labels stays (on
+    a tie, the first)."""
+    def labels(g):
+        return sum(g[k]["map"].get("n", 0) for k in ("x", "y"))
+    out = []
+    for g in sorted(graphs, key=lambda g: -labels(g)):
+        a = rect_area(g["rect"])
+        if a > 0 and any(overlap_area(g["rect"], o["rect"]) >= 0.85 * max(a, rect_area(o["rect"]))
+                         for o in out):
+            continue
+        out.append(g)
+    keep = {id(g) for g in out}
+    return [g for g in graphs if id(g) in keep]
+
+
+def row_on_shared_y(xs, ys, pairs):
+    """A panel's x axis left without a graph, on the line of a graph's x
+    axis (within 1 pt) and continuing it (beginning within 2 pt of where
+    that one ends), takes that graph's y axis: a row of panels with the y
+    scale drawn at the left only (2020.01.30.927558.full-023).  Repeated
+    along the row.  Adds the pairs to `pairs`."""
+    changed = True
+    while changed:
+        changed = False
+        used_x = {i for i, _ in pairs}
+        for i, xa in enumerate(xs):
+            if i in used_x or not xa["has_line"]:
+                continue
+            for k, j in list(pairs):
+                xb = xs[k]
+                # (or beginning after a gap of at most a quarter of its own
+                # length, the y axis of category rows: the "Average" bars of
+                # 2020.01.30.927558.full-048 beside its heat map's rows)
+                gap = xa["lo"] - xb["hi"]
+                if abs(xb["pos"] - xa["pos"]) <= 1.0 and (abs(gap) <= 2.0 or (
+                        ys[j]["map"]["kind"] == "nominal" and 0 < gap <= 0.25 * (xa["hi"] - xa["lo"]))):
+                    pairs.add((i, j))
+                    changed = True
+                    break
 
 
 def stack_on_shared_x(xs, ys, pairs):
@@ -214,8 +280,15 @@ def merge_twin_axes(graphs):
                 span = g[shared]["hi"] - g[shared]["lo"]
                 tol = max(1.0, 0.02 * span)
                 ends = (g[shared]["lo"], g[shared]["hi"])
+                # (the far ends may differ when both axes start on the shared
+                # axis line: R draws each axis() only as far as its last
+                # tick - Seongmin-PhD-036's 0 ... 2000 left, 0 ... 25000
+                # right, 22 pt higher)
+                base = g[shared]["pos"]
                 if h[shared] is g[shared] and a is not b and \
-                        abs(a["lo"] - b["lo"]) <= tol and abs(a["hi"] - b["hi"]) <= tol and \
+                        abs(a["lo"] - b["lo"]) <= tol and (
+                            abs(a["hi"] - b["hi"]) <= tol or
+                            abs(a["lo"] - base) <= tol and abs(b["lo"] - base) <= tol) and \
                         abs(a["pos"] - b["pos"]) > 0.8 * span and \
                         all(min(abs(ax["pos"] - e) for e in ends) <= tol for ax in (a, b)) and \
                         other + "2" not in g and other + "2" not in h:
@@ -394,13 +467,21 @@ def frame_symbols(symbols, rot):
 def graph_rotation(g, texts, symbols):
     """0, or the angle by which the whole graph is turned.  A graph is turned
     when the tick labels of both axes read in the same non-horizontal
-    direction and the title found in the turned frame is at least as large
+    direction (or the page-y axis's at r and the page-x axis's, not
+    horizontal, at r + 90: labels along a turned y axis) and the title found in the turned frame is at least as large
     as any title found in the page frame (a turned graph's former y-axis
     title reads horizontally, so a horizontal heading alone proves nothing)."""
     ax, ay = g["x"].get("label_angle"), g["y"].get("label_angle")
-    if ax is None or ax != ay or ax == 0:
+    if ax is not None and ay is not None and ax == ay and ax != 0:
+        rot = ax
+    elif ax is not None and ay is not None and ax != 0 and ay != 0 and (ax - ay) % 360 == 90:
+        # R's default labels (las = 0) turned with the graph: the x labels
+        # read across the turned frame, the y labels along their axis, a
+        # quarter turn further (ArianeWuerbach-Phd-219's trace plots, turned
+        # 90 degrees on the page: iteration labels at 90, the values at 180)
+        rot = ay
+    else:
         return 0, find_title(g["rect"], texts, symbols)
-    rot = ax
     t_rot = find_title(frame_rect(g["rect"], rot), frame_texts(texts, rot),
                        frame_symbols(symbols, rot), with_size=True)
     t_0 = find_title(g["rect"], texts, symbols, with_size=True)
@@ -414,6 +495,7 @@ def set_graph_backgrounds(graphs, paths):
     painted (an inset is painted over its parent graph), or -1."""
     boxes = []                       # (box, drawing step) of filled single shapes
     rects = []                       # boxes of single rectangles, filled or stroked
+    papers = []                      # boxes of opaque filled single rectangles
     for p in paths:
         if len(p["subpaths"]) != 1:
             continue
@@ -428,6 +510,26 @@ def set_graph_backgrounds(graphs, paths):
                 min(abs(x - b[0]), abs(x - b[2])) < 0.1 and min(abs(y - b[1]), abs(y - b[3])) < 0.1
                 for x, y in pts):
             rects.append(b)
+            if p["fill"] and p.get("opaque", True):
+                papers.append(b)
+    # the paper a chart is drawn on (plotly: an opaque rectangle round the
+    # plot, its labels and its legend): the smallest such rectangle holding
+    # the plot box (within 0.5 pt), no other graph's plot, and no more
+    # than four times the plot's area.  Legend keys outside every plot go
+    # to the graph whose paper they are on (economies-open-intelligence-
+    # 005: the developer legend under the upper chart is nearer the lower
+    # plot, on the upper chart's paper)
+    for g in graphs:
+        x0, y0, x1, y1 = g["rect"]
+        best = None
+        for b in papers:
+            if min(x0 - b[0], y0 - b[1], b[2] - x1, b[3] - y1) >= -0.5 and \
+                    rect_area(b) <= 4 * rect_area(g["rect"]) and not any(
+                        o is not g and b[0] <= (o["rect"][0] + o["rect"][2]) / 2 <= b[2] and
+                        b[1] <= (o["rect"][1] + o["rect"][3]) / 2 <= b[3] for o in graphs) and (
+                    best is None or rect_area(b) < rect_area(best)):
+                best = b
+        g["paper"] = best
     # the box round a whole chart (Excel's chart area): the smallest
     # rectangle holding the plot box with room for its labels, not much
     # bigger; text outside it is not the chart's title
@@ -542,5 +644,10 @@ def graph_for_symbol(graphs, s):
     if s.get("frame"):
         g = nearest_to_frame(graphs, s["frame"])
         return rect_distance(g["rect"], s["cx"], s["cy"]), g
+    # (on one chart's paper: that chart's - set_graph_backgrounds)
+    on = [g for g in graphs if g.get("paper") and g["paper"][0] <= s["cx"] <= g["paper"][2] and
+          g["paper"][1] <= s["cy"] <= g["paper"][3]]
+    if len(on) == 1:
+        return rect_distance(on[0]["rect"], s["cx"], s["cy"]), on[0]
     return min(((rect_distance(g["rect"], s["cx"], s["cy"]), g) for g in graphs),
                key=lambda dg: dg[0])

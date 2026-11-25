@@ -258,6 +258,17 @@ class FontInfo:
         suspect in a renumbered subset (most codes map elsewhere): it is a
         space if its glyph has no outline, and a lost ligature if another
         code of a different width already maps to that character."""
+        # a space in the ToUnicode map that the embedded TrueType program
+        # gives a visible character (2020.01.30.927558.full-023 and -026:
+        # Word's Arial subset maps glyph 0xEE, its "multiply", to U+0020 as
+        # well as glyph 3; "ε=|Δ|×n" read "ε=|Δ| n")
+        if u == " " and self.two_byte:
+            prog = self.program()
+            pu = _printable(prog.unicode(c)) if prog is not None else ""
+            # (not a private-use code: 61676858-74's program calls its
+            # space U+F007)
+            if pu and pu.strip() and not any(0xE000 <= ord(ch) <= 0xF8FF for ch in pu):
+                return pu
         if u != chr(c) or self.two_byte or not self._renumbered(umap):
             return u
         glyphs = self._simple_glyphs()
@@ -406,6 +417,9 @@ def _program_unicode(data, kind):
         cff.decompile(io.BytesIO(data), None)
         top = cff[cff.fontNames[0]]
         names = top.getGlyphOrder()
+        mac = _mac_order_cids(top, names)
+        if mac:
+            return mac
     else:
         from fontTools.ttLib import TTFont
         tt = TTFont(io.BytesIO(data), lazy=True)
@@ -424,6 +438,58 @@ def _program_unicode(data, kind):
             u = toUnicode(name.split(".")[0])  # "zero.numr" -> "0"
             if u and all(ord(ch) >= 0x20 for ch in u):
                 out[g] = u
+    return out
+
+
+def _mac_order_cids(top, names):
+    """{CID: Unicode text} of a CID-keyed CFF program converted from a
+    TrueType font whose glyphs keep their TrueType numbers as CIDs, in the
+    Macintosh standard order of the first 258 glyphs (ArianeWuerbach-Phd-219:
+    R's Arial, "BEJGKK+Arial" with CIDs 3 = space, 17 = period, 19 ... 28 =
+    the digits, 36 = A, 68 = a, and no glyph names or ToUnicode map), or
+    {}.  Only when every name is a CID ("cid00019") and the shapes agree
+    with that order: CID 3, if present, blank; three or more digit CIDs
+    (19 ... 28) present, all of one height (within 6%: round digits
+    overshoot the baseline, 707 ... 731 units) and taller than
+    wide; a period (17), if present, small and on the baseline."""
+    import re
+    from fontTools.pens.boundsPen import BoundsPen
+    from fontTools.ttLib.standardGlyphOrder import standardGlyphOrder
+    cids = {}
+    for name in names:
+        if name == ".notdef":
+            continue
+        m = re.fullmatch(r"cid(\d+)", name)
+        if not m:
+            return {}
+        cids[int(m.group(1))] = name
+    cs = top.CharStrings
+
+    def bounds(cid):
+        pen = BoundsPen(None)
+        cs[cids[cid]].draw(pen)
+        return pen.bounds
+    digits = [c for c in range(19, 29) if c in cids]
+    if len(digits) < 3:
+        return {}
+    bs = [bounds(c) for c in digits]
+    if any(b is None for b in bs):
+        return {}
+    hs = [b[3] - b[1] for b in bs]
+    if max(hs) > 1.06 * min(hs) or any(b[3] - b[1] <= b[2] - b[0] for b in bs):
+        return {}
+    if 3 in cids and bounds(3) is not None:
+        return {}
+    if 17 in cids:
+        b = bounds(17)
+        if b is None or b[3] - b[1] > 0.3 * max(hs) or b[1] > 0.1 * max(hs):
+            return {}
+    out = {}
+    for cid in cids:
+        if cid < len(standardGlyphOrder):
+            u = toUnicode(standardGlyphOrder[cid])
+            if u and all(ord(ch) >= 0x20 for ch in u):
+                out[cid] = u
     return out
 
 

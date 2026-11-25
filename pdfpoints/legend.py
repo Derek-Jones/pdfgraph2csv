@@ -103,7 +103,7 @@ def _find_legend(symbols, texts, hlines, weight):
         # Memory_systems_cacheDRAMdisk-051 reach the subtitle beside them.
         # A box plot's legend key is read as a little box plot, and must be
         # found as a key: Seongmin-PhD-044)
-        if s["shape"] in ("bar", "stem", "tile"):
+        if s["shape"] in ("bar", "stem", "tile", "errorbar", "area"):
             continue
         right = s["cx"] + s["size"] / 2
         tol = 0.3 * max(s["size"], 1.0)
@@ -141,6 +141,7 @@ def _find_legend(symbols, texts, hlines, weight):
                          and t["bbox"][2] < u["cx"] < t["bbox"][2] + 20 * t["size"]]
             # subscripts / superscripts that continue the label: f + 16
             end = t["bbox"][2]
+            whole = label       # (the label up to its last word that is no number)
             for o in by_left:
                 if o["size"] < 0.3 * t["size"]:
                     continue                 # invisible helper glyphs
@@ -149,16 +150,22 @@ def _find_legend(symbols, texts, hlines, weight):
                         abs(o["center"][1] - t["center"][1]) < 0.7 * t["size"]:
                     label += o["text"].strip()
                     end = o["bbox"][2]
+                    whole = label
                 elif o is not t and abs(o["size"] - t["size"]) <= 0.05 * t["size"] and \
                         0 < o["bbox"][0] - end <= 0.4 * t["size"] and \
                         abs(o["p0"][1] - t["p0"][1]) < 0.1 * t["size"] and \
-                        not o["rotated"] and o["value"] is None and \
+                        not o["rotated"] and \
                         not any(end < u["cx"] < o["bbox"][0] and
                                 abs(u["cy"] - t["center"][1]) < t["size"] for u in near_keys):
                     # the next word of the label, set as a separate piece
-                    # ("FULL" in small capitals, then "higher")
+                    # ("FULL" in small capitals, then "higher"); a number
+                    # only when a word follows it (economies-open-
+                    # intelligence-005's "Top 20 (Inclusive)")
                     label += " " + o["text"].strip()
                     end = o["bbox"][2]
+                    if o["value"] is None:
+                        whole = label
+            label = whole
             entries[i] = (label, t)
     keys = {i: e[0] for i, e in entries.items()}
     # a key stands apart on its line; markers along a dense data curve have
@@ -255,39 +262,68 @@ def legend_for_lines(series, paths, texts, rect=None):
     """Legend entries of line series: a short horizontal line sample (or a
     row of dashes) in the series' style with a label just to its right.
     With the graph's box `rect`, only samples within it or beside it (a
-    quarter of its size off) count: logpaper5Rediscoveries-007's right
-    graph took the names of the left one's legend (D-Lognormal for its
-    solid line) instead of its own (Year 1, 2, 3)."""
+    quarter of its size off, or half when no other graph is nearer) count:
+    logpaper5Rediscoveries-007's right graph took the names of the left
+    one's legend (D-Lognormal for its solid line) instead of its own (Year
+    1, 2, 3)."""
     names = {}
     samples = []
     if rect is not None:
         mx, my = 0.25 * (rect[2] - rect[0]), 0.25 * (rect[3] - rect[1])
         area = (rect[0] - mx, rect[1] - my, rect[2] + mx, rect[3] + my)
+        far = (rect[0] - 2 * mx, rect[1] - 2 * my, rect[2] + 2 * mx, rect[3] + 2 * my)
+
+    def near_graph(cx, cy):
+        # within a quarter of the graph's size, or within half of it when
+        # no other graph of the page is nearer (Sovinsky-paper-017: a
+        # two-row legend under the x axis title, its second key 49 pt below
+        # a 161 pt plot)
+        if area[0] <= cx <= area[2] and area[1] <= cy <= area[3]:
+            return True
+        if not (far[0] <= cx <= far[2] and far[1] <= cy <= far[3]):
+            return False
+        d = rect_distance(rect, cx, cy)
+        return all(rect_distance(r, cx, cy) > d for r in PAGE.graph_rects if tuple(r) != tuple(rect))
     for p in paths:
         for sp in p["subpaths"]:
             pts = vertices(sp)
             b = bbox_of(pts)
-            if rect is not None and not (area[0] <= (b[0] + b[2]) / 2 <= area[2] and
-                                         area[1] <= (b[1] + b[3]) / 2 <= area[3]):
+            if rect is not None and not near_graph((b[0] + b[2]) / 2, (b[1] + b[3]) / 2):
                 continue
             if p["stroke"] and not sp["closed"] and len(sp["segs"]) == 1 and \
-                    abs(b[3] - b[1]) < 0.05 and 3 < b[2] - b[0] < 60:
+                    abs(b[3] - b[1]) < 0.05 and 1 < b[2] - b[0] < 60:
+                # (strokes of 1 to 3 pt only as dashes of a row: a dash
+                # pattern may end on a short one)
                 samples.append((("solid",), p["stroke_rgb"], b))
             elif p["fill"] and len(sp["segs"]) in (3, 4) and abs(b[3] - b[1]) < 1.5 and 1 < b[2] - b[0] < 10:
                 samples.append((("dashed",), p["fill_rgb"], b))
-    # rows of dashes form one sample
+    # rows of dashes form one sample; so do short strokes in a row with gaps
+    # between them, dashes stroked one by one (Sovinsky-paper-017's
+    # "- - - - -" key, five strokes 2.5 pt apart)
     rows = []
     for st, rgb, b in sorted(samples, key=lambda s: s[2][0]):
         if st == ("dashed",):
             for r in rows:
-                if r[1] == rgb and abs(r[2][1] - b[1]) < 0.5 and 0 <= b[0] - r[2][2] < 6:
+                if r[0] == st and r[1] == rgb and abs(r[2][1] - b[1]) < 0.5 and 0 <= b[0] - r[2][2] < 6:
                     r[2] = (r[2][0], min(r[2][1], b[1]), b[2], max(r[2][3], b[3]))
                     r[3] += 1
                     break
             else:
                 rows.append([st, rgb, b, 1])
         else:
-            rows.append([st, rgb, b, 2])
+            for r in rows:
+                if r[1] == rgb and r[0] != ("dashed",) and abs(r[2][1] - b[1]) < 0.5 and \
+                        0.3 <= b[0] - r[2][2] < 6 and b[2] - b[0] < 10 and r[4] < 10:
+                    r[0] = ("stroked-dashes",)
+                    r[2] = (r[2][0], min(r[2][1], b[1]), b[2], max(r[2][3], b[3]))
+                    r[4] = b[2] - b[0]
+                    break
+            else:
+                rows.append([st, rgb, b, 2, b[2] - b[0]])
+    for r in rows:
+        if r[0] == ("stroked-dashes",):
+            r[0] = ("dashed",)
+    rows = [r[:4] for r in rows if r[0] == ("dashed",) or r[2][2] - r[2][0] > 3]
     for st, rgb, b, n in rows:
         if n < 2:
             continue
@@ -328,7 +364,7 @@ def find_page_legend(symbols, texts, blobs, graphs, paths):
     return {i: _clean_label(name) for i, name in _page_legend(symbols, texts, blobs, graphs, paths).items()}
 
 
-_CAPTION_START = re.compile(r"(?i)(fig(ure|\.)|table)\s*[0-9]")
+_CAPTION_START = re.compile(r"(?i)(fig(ure|\.)|table)\s*(?:[a-z]\.?)?[0-9]")
 
 
 def _caption_between(s, rect, caps):
@@ -590,6 +626,11 @@ def _claim(table, key, label):
 
 
 def _nearest_graph(graphs, s):
+    if not s.get("frame") and not any(rect_distance(g["rect"], s["cx"], s["cy"]) == 0 for g in graphs):
+        on = [g for g in graphs if g.get("paper") and
+              g["paper"][0] <= s["cx"] <= g["paper"][2] and g["paper"][1] <= s["cy"] <= g["paper"][3]]
+        if len(on) == 1:
+            return on[0]          # (on one chart's paper: graphs.set_graph_backgrounds)
     if s.get("frame") and not any(rect_distance(g["rect"], s["cx"], s["cy"]) == 0 for g in graphs):
         from .graphs import nearest_to_frame
         return nearest_to_frame(graphs, s["frame"])
@@ -608,6 +649,7 @@ class SeriesNamer:
         self.line_names = line_names
         self.by_marker = {}       # (graph no, marker signature) -> label / None
         self.by_colour = {}       # (graph no, colour) -> label / None (swatches)
+        self.key_colour = {}      # (graph no, colour) -> label / None (any filled key)
         self.by_shape = {}        # (graph no, shape, colour) -> label / None (image markers)
         self.form_keys = {}       # graph no -> {(shape, filled): label} when the keys' shapes differ
         self.figure = []          # (rgb, signature, label) of keys outside all graphs
@@ -631,6 +673,11 @@ class SeriesNamer:
                 self.form_keys.setdefault(g["no"], {}).setdefault(
                     (s["shape"], bool(s.get("filled"))), []).append(label)
             self.keyed.add(g["no"])
+            if s["filled"] and s["rgb"]:
+                # (a stacked area takes the name of a filled key of its
+                # colour, whatever its shape: economies-open-intelligence-
+                # 005's legend circles)
+                _claim(self.key_colour, (g["no"], color_name(s["rgb"])[1]), label)
             if s["shape"] in ("rectangle", "square") and s["filled"]:
                 _claim(self.by_colour, (g["no"], color_name(s["rgb"])[1]), label)
                 if label:
@@ -705,8 +752,47 @@ class SeriesNamer:
                 return named
         if si in self.legend:
             return self.legend[si]
+        if s["shape"] == "area":
+            named = self.key_colour.get((g["no"], color_name(s["rgb"])[1]))
+            if named:
+                return named
+        if s["shape"] == "bar" and self._bar_per_category(g):
+            # (each category its own bar and colour: the colour stands for
+            # the category, which names the bar - no other graph's key:
+            # 1356058.1356080-007's Figure 6, four bars in four greys, two
+            # of them the greys of Figure 5's legend and of a triangle key)
+            return self.by_colour.get((g["no"], color_name(s["rgb"])[1])) or \
+                self._by_form(g, s) or self._by_near_swatch(g, s)
         return (self.by_colour.get((g["no"], color_name(s["rgb"])[1])) or self._figure_series(s)
                 or self._by_form(g, s) or self._by_near_swatch(g, s) or self._page_swatch(g, s))
+
+    def _bar_per_category(self, g):
+        """Is graph g a bar chart with a category axis, one bar at each of
+        its categories (three or more), no two in the same colour, no legend
+        keys of its own, and not three quarters of its bars or more named,
+        each by its own key, outside the graph?"""
+        key = ("per_category", g["no"])
+        if key in self._shared:
+            return self._shared[key]
+        ans = False
+        if g["no"] not in self.keyed:
+            for orient in ("x", "y"):
+                m = g.get(orient, {}).get("map", {})
+                if m.get("kind") != "nominal":
+                    continue
+                x0, y0, x1, y1 = g["rect"]
+                bars = [o for o in self.symbols if o["shape"] == "bar" and
+                        x0 - 1 <= o["cx"] <= x1 + 1 and y0 - 1 <= o["cy"] <= y1 + 1]
+                at = [round(o["cx"] if orient == "x" else o["cy"], 0) for o in bars]
+                cols = [color_name(o["rgb"])[1] for o in bars if o.get("rgb")]
+                if len(bars) >= 3 and len(set(at)) == len(bars) and len(set(cols)) == len(bars):
+                    # (unless keys outside the graph name three quarters of
+                    # the bars or more, each its own: 3485513-020's chart of
+                    # benchmarks, its legend naming 6 of its 7 bars)
+                    names = [nm for nm in (self._figure_series(o) for o in bars) if nm]
+                    ans = not (len(names) >= 0.75 * len(bars) and len(set(names)) == len(names))
+        self._shared[key] = ans
+        return ans
 
     def _page_swatch(self, g, s):
         """A graph with no legend of its own takes a series name from the
