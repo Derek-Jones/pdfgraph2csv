@@ -45,11 +45,35 @@ def _continues_caption(t, texts, depth=12):
     return False
 
 
+def _line_centre(t, texts, lo_x, hi_x):
+    """The middle of the line text t is a word of: the words on its
+    baseline (within half its size) chained to it by gaps under half its
+    size, either way, lying within lo_x ... hi_x (the graph's width and a
+    tenth either side: the words over the next panel belong to its title -
+    histogram's "(s: 107.1 p: 0.00)" ends just before "f4")."""
+    s = t["size"] or 1.0
+    same = [o for o in texts if not o["rotated"] and o["text"].strip() and
+            abs(o["p0"][1] - t["p0"][1]) < 0.5 * s and abs(o["size"] - s) <= 0.15 * s and
+            o["bbox"][0] >= lo_x and o["bbox"][2] <= hi_x]
+    lo, hi = t["bbox"][0], t["bbox"][2]
+    grown = True
+    while grown:
+        grown = False
+        for o in same:
+            if o["bbox"][2] < lo and lo - o["bbox"][2] < 0.5 * s:
+                lo, grown = o["bbox"][0], True
+            elif o["bbox"][0] > hi and o["bbox"][0] - hi < 0.5 * s:
+                hi, grown = o["bbox"][2], True
+    return (lo + hi) / 2
+
+
 def _running_headers(texts):
     """Ids of the texts of a running header (footer): the topmost
     (bottommost) line of the page's text, spanning the text block from its
     left margin to its right one ("Copy-and-Patch ... for R" at the left,
-    "VMIL '25, October ..., Singapore" at the right)."""
+    "VMIL '25, October ..., Singapore" at the right), its parts set apart
+    by a quarter of the block's width or four text sizes (3832783.3834484-
+    004: "ASE '26, ..., Germany" and the authors' names, 56 pt apart)."""
     flat = [t for t in texts if not t["rotated"] and t["text"].strip()]
     if len(flat) < 3:
         return set()
@@ -64,7 +88,7 @@ def _running_headers(texts):
         line = [t for t in flat if abs(t["p0"][1] - edge["p0"][1]) < 0.3 * s]
         if min(t["bbox"][0] for t in line) <= tx0 + 0.05 * width and \
                 max(t["bbox"][2] for t in line) >= tx1 - 0.05 * width and \
-                max(o["bbox"][0] - t["bbox"][2] for t in line for o in line) > 0.25 * width:
+                max(o["bbox"][0] - t["bbox"][2] for t in line for o in line) > min(0.25 * width, 4 * s):
             out.update(id(t) for t in line)
     return out
 
@@ -110,6 +134,11 @@ def _find_title(rect, texts, symbols):
             continue            # a subscript, e.g. the "DS" of "V_DS"
         bx0, by0, bx1, by1 = t["bbox"]
         gap = by0 - y1
+        # (centred as the whole line it is a word of, words a word space
+        # apart: 2020.01.30.927558.full-012's "C1: naive" and
+        # "participants, high effort", "Step" and "width", set as separate
+        # pieces, each off centre alone)
+        mid = _line_centre(t, texts, x0 - 0.1 * w, x1 + 0.1 * w)
         # centred over the plot, or starting at its left edge (within a
         # tenth of its width: VaskeBeaman2006-Lessonslearned-003's
         # left-aligned "Figure 1e. ..." titles), and not past its right edge
@@ -125,11 +154,11 @@ def _find_title(rect, texts, symbols):
         # (centred within 5% of the width: ThomasBockPhD-073's note
         # "Goodness of fit: ..." in the plot's top, 6% off, is no title)
         inside_top = -1.2 * t["size"] <= gap < -0.15 * t["size"] and \
-            abs(t["center"][0] - (x0 + x1) / 2) <= 0.05 * w and not any(
+            abs(mid - (x0 + x1) / 2) <= 0.05 * w and not any(
             bx0 - 0.5 * sy["size"] <= sy["cx"] <= bx1 + 0.5 * sy["size"] and
             y0 <= sy["cy"] <= y1 and sy["cy"] >= by0 for sy in symbols)
         if not (-0.15 * t["size"] <= gap <= min(0.35 * h, 4 * t["size"]) or inside_top) or \
-                (abs(t["center"][0] - (x0 + x1) / 2) > 0.15 * w and not left):
+                (abs(mid - (x0 + x1) / 2) > 0.15 * w and not left):
             continue
         # (unless it stands within a font size of this graph and at least
         # four times as far from the one above: VaskeBeaman2006-Lessons-
@@ -151,8 +180,10 @@ def _find_title(rect, texts, symbols):
         # (a neighbour less than half a size off is the next word of the
         # title: Word sets "Individual" and "results" apart,
         # 2020.01.30.927558.full-048)
+        # (a turned word beside it is an axis title, no key label: -012's
+        # turned "p" left of "C3: naive")
         crowded = any(
-            o is not t and o["size"] >= 0.85 * s and abs(o["p0"][1] - t["p0"][1]) < 0.5 * s and
+            o is not t and not o["rotated"] and o["size"] >= 0.85 * s and abs(o["p0"][1] - t["p0"][1]) < 0.5 * s and
             0.5 * s <= max(o["bbox"][0] - bx1, bx0 - o["bbox"][2]) < 3 * s and not over_other_graph(o)
             for o in texts) or any(
             abs(sy["cy"] - t["center"][1]) < s and abs(sy["idx"] - t["idx"]) <= 100 and

@@ -251,14 +251,41 @@ def stack_on_shared_x(xs, ys, pairs):
 def _own_x_line(xa, ya):
     """Does a horizontal line (of any shade) lie at an end of y axis `ya`,
     over half as long as x axis `xa` and across from it?  Then the panel
-    has an x axis (or frame) of its own and borrows no other."""
+    has an x axis (or frame) of its own and borrows no other - unless the
+    line is a copy of the shared axis's, its ends those of the line the
+    shared x axis lies on (within 2 pt) (2020.01.30.927558.full-012: each
+    upper panel has the bottom panel's x axis line again, unlabelled; a
+    panel whose y axis already has a graph borrows nothing anyway)."""
     tol = 0.05 * (ya["hi"] - ya["lo"])
     need = 0.5 * (xa["hi"] - xa["lo"])
     for lo, hi, pp in list(PAGE.dark_lines[0]) + list(PAGE.all_lines[0]):
         if min(hi, xa["hi"]) - max(lo, xa["lo"]) >= need and \
-                min(abs(pp - ya["lo"]), abs(pp - ya["hi"])) <= tol:
+                min(abs(pp - ya["lo"]), abs(pp - ya["hi"])) <= tol and not _copy_of_axis_line(lo, hi, pp, xa):
             return True
     return False
+
+
+def _copy_of_axis_line(lo, hi, pp, xa):
+    """Is the horizontal line lo...hi at height pp a copy of the line under
+    x axis xa - the same ends (within 2 pt) as a line at xa's own place,
+    and either no tick row (of three or more) on it or one ticked at xa's
+    ticks (80% of its ticks within 1 pt of them, three or more: -012's
+    0.7 pt ticks)?  Then it
+    is the shared axis drawn again for the upper panel, unlabelled.  A
+    line ticked elsewhere is a scale of its own (mpl-shared-axes: a panel
+    with other unlabelled ticks takes no scale)."""
+    ticks = list(xa.get("tick_pos") or ())
+    # (rows of three ticks or more: the frame's two corners are no row)
+    rows = [b.get("tick_pos") or () for b in PAGE.bare_axes
+            if b["orient"] == "x" and abs(b["pos"] - pp) <= 1.0 and len(b.get("tick_pos") or ()) >= 3]
+
+    def agrees(row):
+        n = sum(1 for t in row if any(abs(t - u) <= 1.0 for u in ticks))
+        return n >= 3 and n >= 0.8 * len(row)
+    if rows and not any(agrees(r) for r in rows):
+        return False
+    return any(abs(l2 - lo) <= 2.0 and abs(h2 - hi) <= 2.0 and abs(p2 - xa["pos"]) <= 2.0
+               for l2, h2, p2 in list(PAGE.dark_lines[0]) + list(PAGE.all_lines[0]))
 
 
 def merge_twin_axes(graphs):
@@ -408,10 +435,32 @@ def add_panel_graphs(graphs, axes, paths):
                 continue
             # a panel is a rectangle framed on all four sides by dark lines
             if (covered(hl, r[1], r[0], r[2]) and covered(hl, r[3], r[0], r[2]) and
-                    covered(vl, r[0], r[1], r[3]) and covered(vl, r[2], r[1], r[3])):
+                    covered(vl, r[0], r[1], r[3]) and covered(vl, r[2], r[1], r[3])) or \
+                    (_open_panel(r, ya, hl, vl) and not any(
+                        overlap_area(r, h) > 0.5 * min(rect_area(r), rect_area(h)) for h in have)):
                 out.append({"x": xa, "y": ya, "rect": r})
                 have.append(r)
     return order_graphs(out) if len(out) > len(graphs) else graphs
+
+
+def _open_panel(r, ya, hl, vl):
+    """A panel of open axes in a lattice: a line along its foot and one up
+    its left side (within 2 pt of the column's and row's ends), the left
+    one ticked at two or more of the row's y ticks (an unlabelled tick row
+    there, within 1 pt) - 2020.01.30.927558.full-012's upper right panel,
+    its x scale that of the panel below, its y scale that of the panel to
+    its left, both axes drawn again without labels.  (The caller refuses a
+    rectangle over half covered by a graph: a twin-scale plot's right axis
+    paired with its own x axis, PhysRevResearch.3.033169-009.)"""
+    x0, y0, x1, y1 = r
+    foot = any(abs(pp - y0) <= 2.0 and l0 <= x0 + 2.0 and l1 >= x1 - 2.0 for l0, l1, pp in hl)
+    side = [pp for l0, l1, pp in vl if abs(pp - x0) <= 2.0 and l0 <= y0 + 2.0 and l1 >= y1 - 2.0]
+    if not foot or not side:
+        return False
+    ticks = list(ya.get("tick_pos") or ())
+    return any(b["orient"] == "y" and any(abs(b["pos"] - pp) <= 1.0 for pp in side) and
+               sum(1 for t in b.get("tick_pos") or () if any(abs(t - u) <= 1.0 for u in ticks)) >= 2
+               for b in PAGE.bare_axes)
 
 
 def order_graphs(graphs):

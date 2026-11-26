@@ -10,6 +10,26 @@ import math
 from .geometry import (axis_aligned, bbox_of, flatten_subpath, inside_rect, line_intersection, median, polygon_area, rect_area, rect_of, subpath_bbox, vertices)
 
 
+def _open_bar_outlines(p):
+    """Bars drawn as outlines only (R's hist() with no fill colour,
+    through InDesign: 460-201's histogram of residuals): [box] for an
+    unfilled stroked path of one closed subpath of three or four straight
+    segments making an axis-aligned rectangle; else [].  find_bars keeps
+    them only when three or more stand on the baseline."""
+    if p["fill"] or not p["stroke"] or len(p["subpaths"]) != 1:
+        return []
+    sp = p["subpaths"][0]
+    if not sp.get("closed") or len(sp["segs"]) not in (3, 4) or any(s[0] != "l" for s in sp["segs"]):
+        return []
+    pts = vertices(sp)
+    if len(pts) > 4 and math.dist(pts[0], pts[-1]) < 1e-6:
+        pts = pts[:-1]
+    if len(pts) != 4 or not all(abs(a[0] - b[0]) < 1e-3 or abs(a[1] - b[1]) < 1e-3
+                                for a, b in zip(pts, pts[1:] + pts[:1])):
+        return []
+    return [bbox_of(pts)]
+
+
 def find_bars(graph, paths):
     """Bars of a bar chart: filled axis-aligned rectangles standing on the
     graph's baseline (its x axis line, or the line of value 0).  Each bar is
@@ -37,11 +57,15 @@ def find_bars(graph, paths):
     hanging = []                    # bars going down from the lowest line
     loose = []                      # rectangles off the baseline: stacked segments?
     seen = set()
-    for p in paths:
+    # (outlined bars after all others: a filled bar's own outline, drawn
+    # before or after it, must not take its place)
+    outl = {id(p): _open_bar_outlines(p) for p in paths if not p["fill"]}
+    for p in [p for p in paths if not outl.get(id(p))] + [p for p in paths if outl.get(id(p))]:
         thick = _thick_upright_strokes(p)
-        if not p["fill"] and not thick:
+        opened = [] if p["fill"] or thick else outl.get(id(p), [])
+        if not p["fill"] and not thick and not opened:
             continue
-        for sp in (thick if thick else p["subpaths"]):
+        for sp in (thick or opened or p["subpaths"]):
             if isinstance(sp, tuple):
                 bx0, by0, bx1, by1 = sp
             elif any(s[0] != "l" for s in sp["segs"]) or len(sp["segs"]) not in (3, 4):
@@ -87,14 +111,22 @@ def find_bars(graph, paths):
                 key = (round(bx0, 2), round(bx1, 2), round(top, 2))
                 if key in seen:
                     continue                 # fill and outline of one bar
+                if opened and any(abs(b["cx"] - (bx0 + bx1) / 2) <= tol + 0.5 * bw and
+                                  abs(b["cy"] - top) <= tol + 2.0 for b in bars):
+                    continue                 # (a filled bar's outline, a stroke's width out)
                 seen.add(key)
                 bars.append({"shape": "bar", "cx": (bx0 + bx1) / 2, "cy": top, "size": bw,
-                             "filled": True, "rgb": _paint(p, thick), "idx": p["idx"],
+                             "filled": not opened, "rgb": _paint(p, thick or opened), "idx": p["idx"],
                              "base": by0 if top == by1 else by1})
+                if opened:
+                    bars[-1]["outline"] = True
                 break
             else:
                 if by1 <= y1 + tol:
-                    loose.append((bx0, by0, bx1, by1, p, _paint(p, thick)))
+                    if not opened:
+                        loose.append((bx0, by0, bx1, by1, p, _paint(p, thick)))
+    if sum(1 for b in bars if b.get("outline")) < 3:
+        bars = [b for b in bars if not b.get("outline")]     # (a box or two: no bars)
     _stack(bars, loose, tol, seen)
     if hanging and len(bars) >= 3:
         wm = median(b["size"] for b in bars)
@@ -266,11 +298,18 @@ def _stack(bars, loose, tol, seen):
     jobs on that of cognitive ones).  It is a data point at its own top, as
     every bar is.  Adds to `bars`."""
     tops = list(bars)
+    cell = max(tol, 0.5)
     while tops and loose:
         nxt = []
+        # (rectangles filed by their left edge: 460-201's Q-Q plot gave
+        # 6 000 "bars" against 31 000 squares, each pair tried - 90 s)
+        by_x = {}
+        for i, r in enumerate(loose):
+            by_x.setdefault(int(r[0] // cell), []).append((i, r))
         for b in tops:
             bx0, bx1 = b["cx"] - b["size"] / 2, b["cx"] + b["size"] / 2
-            for r in loose:
+            kx = int(bx0 // cell)
+            for _i, r in sorted(ir for d in (-1, 0, 1) for ir in by_x.get(kx + d, ())):
                 rx0, ry0, rx1, ry1, p, rgb = r
                 # (a segment may be thin: Memory_systems_cacheDRAMdisk-051's
                 # 0.17 pt grey layers between the black and white ones)

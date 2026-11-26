@@ -21,11 +21,13 @@ def cover_rects(paths, images):
     covers = [(b, i) for b, i in images]
     for p in paths:
         if p["fill"] and p.get("opaque", True):
-            clip = p.get("clip")
             for sp in p["subpaths"]:
                 b = rect_of(sp)
-                if b and clip:
-                    b = (max(b[0], clip[0]), max(b[1], clip[1]), min(b[2], clip[2]), min(b[3], clip[3]))
+                # (and within its form's box: 3832783.3834484-004's white
+                # page boxes, each in a form showing one chart of three)
+                for clip in (p.get("clip"), p.get("form_box")):
+                    if b and clip:
+                        b = (max(b[0], clip[0]), max(b[1], clip[1]), min(b[2], clip[2]), min(b[3], clip[3]))
                 if b and b[2] - b[0] > 0.5 and b[3] - b[1] > 0.5:
                     covers.append((b, p["idx"]))
     return covers
@@ -103,4 +105,34 @@ def drop_hidden_glyphs(texts, covers):
                 txt = "".join(c for c, _, _ in w).strip()
                 if txt:
                     out.append(dict(t, text=txt, p0=w[0][1], p1=w[-1][2], glyphs=w))
+    return out
+
+
+def drop_hidden_paths(paths):
+    """Remove the paths of a drawing placed several times, each time
+    through a window: forms with the same content but different boxes,
+    each showing a part of it.  A path of such a form lying wholly outside
+    the form's box (by more than 0.5 pt) is not seen.  3832783.3834484-004
+    places one drawing of three Excel charts in three forms, each form's
+    box showing one chart; read whole, each chart came three times,
+    shifted, and no graph was found.  Paths of other forms outside their
+    boxes stay: marks clipped out of view are reported (plus-symbols-log-
+    axes, ESEUR-intro)."""
+    from .geometry import subpath_bbox
+    boxes = {}
+    for p in paths:
+        if p.get("form_key") and p.get("form_box"):
+            boxes.setdefault(p["form_key"], set()).add(tuple(round(v, 1) for v in p["form_box"]))
+    windowed = {k for k, v in boxes.items() if len(v) >= 2}
+    if not windowed:
+        return paths
+    out = []
+    for p in paths:
+        f = p.get("form_box")
+        if p.get("form_key") in windowed and f and p["subpaths"]:
+            bb = [subpath_bbox(sp) for sp in p["subpaths"]]
+            b = [min(v[0] for v in bb), min(v[1] for v in bb), max(v[2] for v in bb), max(v[3] for v in bb)]
+            if b[0] > f[2] + 0.5 or b[2] < f[0] - 0.5 or b[1] > f[3] + 0.5 or b[3] < f[1] - 0.5:
+                continue
+        out.append(p)
     return out

@@ -144,8 +144,10 @@ def drop_outline_rings(symbols):
     a little bigger (up to 1.25 times) and on the same centre: it
     highlights that point (a blue dot under a white circle with a blue
     outline), which keeps its own series."""
-    filled, filled_any = {}, {}
+    filled, filled_any, rings = {}, {}, {}
     for s in symbols:
+        if not s["filled"] and s["shape"] == "circle" and s.get("idx") is not None:
+            rings.setdefault(s["idx"], []).append(s)
         if s["filled"] and s.get("idx") is not None:
             filled_any.setdefault(s["idx"], []).append(s)
             if s["shape"] == "circle":
@@ -153,8 +155,17 @@ def drop_outline_rings(symbols):
     out = []
     for s in symbols:
         if not s["filled"] and s["shape"] == "circle" and s.get("idx") is not None:
-            body = [f for d in (1, 2) for f in filled.get(s["idx"] - d, ())
-                    if ((f["rgb"] == s["rgb"] and 0.5 * s["size"] <= f["size"] <= s["size"]) or
+            # (three steps back when the step before is a ring on the same
+            # centre, and the ring's inner edge a little inside the body:
+            # 2020.01.30.927558.full-012 fills a disc, strokes it, fills its
+            # outline as a ring and strokes that too, leaving two circles,
+            # 0.9 and 1.1 times the disc; an open circle three steps after a
+            # filled one with no ring between is a point of its own,
+            # horowitz2014-004)
+            chain = any(math.hypot(o["cx"] - s["cx"], o["cy"] - s["cy"]) < 0.15 * s["size"]
+                        for o in rings.get(s["idx"] - 1, ()))
+            body = [f for d in ((1, 2, 3) if chain else (1, 2)) for f in filled.get(s["idx"] - d, ())
+                    if ((f["rgb"] == s["rgb"] and 0.5 * s["size"] <= f["size"] <= 1.2 * s["size"]) or
                         (d == 1 and s.get("ring") and 0.75 * s["size"] <= f["size"] <= s["size"]))
                     and math.hypot(f["cx"] - s["cx"], f["cy"] - s["cy"]) < 0.15 * s["size"]]
             if body:

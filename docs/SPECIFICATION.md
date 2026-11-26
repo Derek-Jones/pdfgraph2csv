@@ -520,6 +520,16 @@ bars of a log histogram, drawn down to y = -13 826 and clipped to the
 plot, hid the x tick labels and axis title under it; jordan-teh-026's
 last x labels, "5", come back the same way).
 
+A drawing placed several times through windows - forms of the same
+content (the same stream bytes) with different boxes, each showing a part
+of it - keeps of each placing only the paths that reach into its form's
+box (within 0.5 pt). 3832783.3834484-004 places one drawing of three
+Excel charts in three forms, each form's box showing one chart: read
+whole, each chart came three times, shifted, and no graph was found.
+Other paths outside their form's box stay: marks clipped out of view are
+reported (plus-symbols-log-axes, ESEUR-intro). A cover hides text only
+within its own clip and its form's box.
+
 A Form XObject's /BBox clips what the form draws, as the PDF specification
 says: text whose middle lies outside its clipping box or its form's box is
 not seen (Sovinsky-paper-017: the included Stata graph is a whole A4 page
@@ -686,6 +696,8 @@ quadratic).
 
 Some PDF writers convert every character into a filled path. Then:
 
+* Only real glyphs and the marker-like shapes ('o', '.') within six
+  of a real glyph's sizes are grouped into words (section 17).
 * Glyph = an outer contour plus the contours of the same path inside it
   (holes). Word = glyphs of one colour closer than about half a glyph
   (spatial grid: pages can hold 100,000+ shapes). A filled straight line
@@ -926,6 +938,15 @@ Some PDF writers convert every character into a filled path. Then:
   labels level with its ticks, left edges agreeing within 2 pt, one
   within 4 sizes of the line, their distances differing by more than 0.6
   of a size (2020.01.30.927558.full-048's heat map rows).
+* **Category labels set low** (Excel's label position "low";
+  3832783.3834484-004: ticks on the 0.00% line, the names SELECT ... TPC-C
+  under -5.00%, between the ticks). An x axis line with ticks and no
+  numbers, or two (bar values beside the line, "0.42%", "2.88%"), starting
+  within 1.5 pt of a lined y axis with a scale that runs on 3 pt or more
+  below it, takes category labels found as if its line were at that y
+  axis's foot - one for each gap between ticks or each tick, all of them.
+  The axis stays at its line (the bars' base); the rule below for labels
+  past the plot does not apply to it.
 * A category x axis on a line that a y axis with a scale spans well
   inside (beyond 5% of it from its ends), whose labels all have their
   centres past that y axis's ends, is no axis: a zero line inside the
@@ -1229,7 +1250,12 @@ Some PDF writers convert every character into a filled path. Then:
   its length, takes that graph's x axis, provided the x axis reaches it
   and no horizontal line over half the x axis long lies at an end of the
   y axis (a panel with an x axis or frame of its own, as in
-  mpl-shared-axes, borrows nothing).
+  mpl-shared-axes, borrows nothing) - unless that line has the ends
+  (within 2 pt) of the line the borrowed x axis lies on and no tick row
+  of three or more on it but one at the borrowed axis's ticks (80% of
+  them): the shared axis drawn again for the upper panel, unlabelled
+  (2020.01.30.927558.full-012, its 0.7 pt ticks at the shared ones;
+  mpl-shared-axes's panel ticked elsewhere borrows nothing).
 * **Two scales** (section 10.1): a left and a right y axis over one x
   axis are first paired as two graphs with the same plot box.
 * **One plot found twice**: graphs whose plot boxes overlap by 85% or more
@@ -1239,7 +1265,12 @@ Some PDF writers convert every character into a filled path. Then:
   axis).
 * **Small multiples** (lattice/facet plots): only outer panels carry labels;
   every framed rectangle spanned by a column's x axis and a row's y axis is
-  a graph sharing those scales (216 panels on one page in the corpus).
+  a graph sharing those scales (216 panels on one page in the corpus). So
+  is a rectangle of open axes: a line along its foot and one up its left
+  side (within 2 pt of the column's and row's ends), the left one ticked
+  at two or more of the row's y ticks, not over half covered by a graph
+  (2020.01.30.927558.full-012's upper right panel; a twin-scale plot's
+  right axis with its own x axis, PhysRevResearch.3.033169-009, is none).
 * **Panels stacked on one axis line, each with its own scale**
   (2355585.2355594-006: four violin panels, no space between them, the top
   of one the bottom of the next, a thick border with ticks on both sides;
@@ -1469,8 +1500,13 @@ files with known true values slightly worse.
 * Symbols whose path is a hiding box (section 8.1) are dropped.
 * **Outline rings**: a marker's outline drawn as a filled ring right after
   its filled body (stroke converted to an outline) comes out as an open
-  circle round a filled one - same colour and centre, 1-2× its size,
-  painted within two steps after it: the ring is dropped.
+  circle round a filled one - same colour and centre, the body 0.5 to 1.2
+  times its size, painted within two steps after it - or three, when the
+  step before is a ring on the same centre: the ring is dropped
+  (2020.01.30.927558.full-012 fills a disc, strokes it, fills its outline
+  as a ring and strokes that too: circles 0.9 and 1.1 times the disc; an
+  open circle three steps after a filled one with no ring between is a
+  point of its own, horowitz2014-004).
 * **Dots hidden in a line**: a filled circle at most 1.3 × the width of a
   line of its colour that passes within a quarter of the line width of its
   centre cannot be seen (points at the vertices of a model curve): dropped,
@@ -1709,6 +1745,21 @@ the edge of a bar of almost 0, 2020.01.30.927558.full-023):
   stretches of the x axis, not data; nor are such bands note boxes for
   data labels, so a value printed in a bar inside a band is still that
   bar's label, and a value printed inside a bar belongs to it.
+* **Outlined bars**: unfilled stroked closed rectangles (3 or 4 straight
+  segments) on the baseline are bars too, when three or more stand there
+  (460-201's histogram, R's hist() with no fill colour); they come after
+  filled bars, and one within a stroke's width of a filled bar is its
+  outline, no bar of its own. They never make stacked segments.
+* **A graph drawn twice**: when a graph's markers of its main kind, in
+  drawing order, are 2 to 4 equal runs (shape, fill and place to 0.01 pt,
+  50 markers a run or more), only the first run is data (460-201's Q-Q
+  plot draws its 37 676 squares twice over). Points drawn twice here and
+  there stay. A number
+  (with or without %) within 1.5 of its size of one bar only whose value,
+  read on the graph's scale, it states (to its last decimal, or within
+  0.2% of the axis's range) is that bar's label wherever it stands
+  (3832783.3834484-004: "14.31%" moved over the gap between two bars,
+  "2.88%" beyond the reach of its own).
 * **Groups of bars** (the user asked for tick marks labelled twice):
   bars whose centres lie within twice a bar's width of each other (and
   1.5 times the usual spacing) form a group. A row of three or more labels
@@ -2123,6 +2174,14 @@ range (85-90 ... 00-05).
   chart is nearer the lower plot; both legends use the same colours for
   different series). Frames of legends (strays.mark_legend_frames) go
   first.
+* A line sample may be a thin filled band (under 3 pt tall, 10 to 60 pt
+  long and five times its height or more), its height the line's width in
+  the legend (2020.01.30.927558.full-012's "True value", "Slider value").
+* Panels joined by shared axes (the same x or y axis, borrowed, directly
+  or through other panels) share a line legend: a graph whose lines found
+  no legend of their own takes the names found in such a panel for lines
+  of the same style and colour, when each style and colour has one name
+  (-012: the legend beside the upper right panel names all four).
 * A legend label may hold a number set as its own word when a word that
   is no number follows it ("Top 20 (Inclusive)"); a number at the end is
   still left out (it is a value, not part of the name).
@@ -2249,7 +2308,12 @@ swatches sample a continuous colour scale (symbols-on-axes, #ff0500,
   than half a size beside a title candidate is the title's next word, not
   a crowding legend label: -048's "Individual" and "results". Words
   before the candidate on its line, a word space apart, open the title
-  (ThomasBockPhD-073's "QEMU (message-based, file-based, 𝜉 = 5)"), and a
+  (ThomasBockPhD-073's "QEMU (message-based, file-based, 𝜉 = 5)"); a
+  candidate is centred as the whole line it is a word of, within the
+  graph's width and a tenth either side (-012's "C1: naive" and
+  "participants, high effort", "Step" and "width", set as separate
+  pieces); a turned word beside it (an axis title, -012's "p")
+  does not crowd it; and a
   word on a line that opens a sub-caption is that caption's, no title
   (broken-axes's "a) LLVM" under the graph above).) Such a text is not the axis title of the graph
   above, and bar tops beside it do not crowd it as legend keys would. A
@@ -2268,7 +2332,9 @@ swatches sample a continuous colour scale (symbols-on-axes, #ff0500,
   times as far from the one above), not a later line
   of a caption above, not a running header or footer (the topmost /
   bottommost line of the page's text, running from the left margin to the
-  right one with a wide gap: "Paper title ...   Conference '25, ..."; side-
+  right one with a wide gap - a quarter of the text block or four text
+  sizes, 3832783.3834484-004's "ASE '26, ..., Germany" 56 pt before its
+  authors' names: "Paper title ...   Conference '25, ..."; side-
   by-side graph titles do not reach both margins), not the axis title of
   another graph (text within that graph's width, at most 2.5 text sizes
   below its x tick labels: "Hours" under the panel above - unless another
@@ -2489,6 +2555,17 @@ Rules that follow:
   (a per-symbol cache cost more than recomputing).
 * Do not keep large intermediate lists of objects when a stream can be
   processed incrementally.
+* 460-201 (InDesign-flattened R plots, 150 000 open circles, 39 MB) took
+  6 min 40 s, now under two minutes, from four steps: outlined-text words
+  are grouped from the real glyphs and the marker-like shapes ('o', '.')
+  within six of a real glyph's sizes only (a word of marker-like shapes
+  alone is no text; grouping 85 000 circles took four minutes - dropping
+  also those that overlap other shapes was tried, and freed real
+  fragments in cumulative-evol-hollywood-film-crews-007's clouds to be
+  read alone as "1"); fragmented-circle centres are deduplicated through
+  cells of 0.12 pt, and their arcs filed in cells of the search radius;
+  stacked-bar segments are looked up by their left edge; a bar's
+  neighbours in drawing order by a dictionary of drawing steps.
 * Profile with a 92 MB-stream page: about 15 s to execute, about 20 s for
   all the analysis after it. Reference times of this version (one core):
   200 000 markers 32 s, 472 000 markers 35 s, 50 000 outline fragments
@@ -2834,6 +2911,9 @@ expected files in a copy.
 | 2020.01.30.927558.full-030 | bars up to 90% of the category spacing wide; titles inside the top of the plot (not the axis title above, not crowded by bar tops, not labels) |
 | 2020.01.30.927558.full-048 | heat map pictures (JPEG) read cell by cell, valued by colour or brightness on a colour bar at the row's right end; bars valued by colour; flush-left labels on ticked y axes; frame-hanging tick axes; category rows borrowed across a gap; colour-bar scales no axes; turned colour-bar titles; titles of separate words; short-bar outlines |
 | economies-open-intelligence-005 | stacked area bands (one point per top vertex, `y_base`); legend keys to the chart whose paper they are on; areas named by keys of any shape; numbers inside legend labels |
+| 3832783.3834484-004 | a drawing placed through several form windows read once per window; category labels set below the plot for an axis on the zero line; bar values matched by the number they state; two-part running headers 4 sizes apart |
+| 460-201 | 6 min 40 s to under 2 min (outlined-text grouping near real glyphs only; indexed circle centres, arcs, stacked segments, short bars); markers drawn twice over kept once; outlined rectangles as bars |
+| 2020.01.30.927558.full-012 | x axes borrowed down a column past a redrawn unlabelled axis line; open-axes lattice panels; band line samples; line legends shared across panels joined by axes; titles centred as whole lines; turned words crowd no title; fill, stroke and twice-outlined markers kept once |
 | overflow-exponent | "10^602" in body text |
 | encrypted*, enc-* | RC4-40/128, AES-128/256, user password |
 | bad-stream, damaged, not-a-pdf, no-graph, many-shapes, zero-width-glyph, doubtful-axes | clean failures and "no graph" |

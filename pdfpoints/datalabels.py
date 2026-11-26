@@ -266,6 +266,42 @@ def _arrow_label(ln, symbols, marks, legend, got):
     return False
 
 
+_VALUE = re.compile(r"^\s*([-\u2212]?\d+(?:\.(\d+))?)\s*%?\s*$")
+
+
+def _stated_bar(ln, graphs, symbols, marks, grid):
+    """The one bar within 1.5 of the text's size (gap) whose value, read on
+    its graph's scale, is the number the text states (to its last decimal,
+    or within 0.2% of the axis's range), when no other bar or marker in
+    reach states it; else None."""
+    m = _VALUE.match(ln["text"])
+    if not m:
+        return None
+    num = float(m.group(1).replace("\u2212", "-"))
+    tol0 = 0.5 * 10 ** -len(m.group(2) or "")
+    from .graphs import graph_for_symbol
+    from .scales import map_value
+    reach = 1.5 * ln["size"]
+    hits = []
+    for k in grid.near(ln["bbox"], reach):
+        s = symbols[k]
+        if s["shape"] != "bar" or s.get("base") is None or _gap(ln["bbox"], s) > reach:
+            continue
+        _d, g = graph_for_symbol(graphs, s)
+        ax = g["x"] if s.get("horizontal") else g["y"]
+        mp = ax.get("map") or {}
+        if mp.get("kind") not in ("linear", "log"):
+            continue
+        try:
+            v = map_value(mp, s["cx"] if s.get("horizontal") else s["cy"])
+        except (ValueError, ZeroDivisionError, OverflowError):
+            continue
+        rng = mp.get("range") or 0.0
+        if abs(v - num) <= tol0 + 0.002 * rng:
+            hits.append(k)
+    return hits[0] if len(hits) == 1 else None
+
+
 def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
     """Set s["label"] on each symbol that has a data label.  `names` are
     the legend entries' names; `boxes` the note boxes (nongraphs.text_boxes);
@@ -373,6 +409,16 @@ def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
         # segments of 2305.15675v1 page 7's horizontal stacked bars)
         if not ln.get("piece"):
             near += [k for k in marks if k not in near and _in_bar(ln["bbox"], symbols[k])]
+        # a bar's value printed beside it, moved off its column clear of
+        # its neighbours' labels (3832783.3834484-004: "14.31%" over the
+        # gap between two bars, "2.88%" beyond reach of its own): the one
+        # bar within 1.5 sizes whose value it states is its bar
+        if not ln.get("piece"):
+            k = _stated_bar(ln, graphs, symbols, marks, grid)
+            if k is not None:
+                if k not in legend:
+                    got.setdefault(k, []).append(ln)
+                continue
         if not near:
             ln["alone"] = True             # (may still be a second line: _attach_leftovers)
             continue

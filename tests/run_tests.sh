@@ -986,6 +986,22 @@ t 'economies-open-intelligence-005, with meta file: two plotly stacked area char
   --expect economies-open-intelligence-005.csv \
   --meta economies-open-intelligence-005.meta.csv
 
+t '3832783.3834484-004, with meta file: three Excel bar charts (Foxit printer) placed as three forms each showing one chart of the same three-chart drawing, the rest outside its box or under a white page box; the x axis ticked on the 0.00% line with its category names below the plot at -5.00%, between the ticks; bar values moved off their columns (14.31%, 2.88%) matched by the value they state; running header in two parts 56 pt apart' \
+  --pdf 3832783.3834484-004.pdf \
+  --expect 3832783.3834484-004.csv \
+  --meta 3832783.3834484-004.meta.csv
+
+t '460-201, with meta file: four R plots flattened by InDesign, 39 MB of drawing (was 6 min 40 s): 150 000 open circles in two scatter plots (outlined text grouped only near real glyphs; fragment centres, bar stacking and short-bar checks indexed); a Q-Q plot of 37 676 squares drawn twice over in the same order (kept once); a histogram of outlined rectangles (bars); outlined titles unread' \
+  --pdf 460-201.pdf \
+  --expect 460-201.csv \
+  --meta 460-201.meta.csv
+
+t '2020.01.30.927558.full-012 (--errbars), with meta file: twelve MATLAB panels; four line panels in a lattice, the upper ones redrawing the lower x axis line without labels (x borrowed down the column), the upper right one of open axes taking the column x and row y scales; the legend of filled band line samples beside one panel names the lines of all four; titles set as separate word pieces centred as a line; a turned axis title beside a title no legend label; markers filled, stroked and outlined twice kept once; four scatter panels and four low/high panels with error bars' \
+  --pdf 2020.01.30.927558.full-012.pdf \
+  --expect 2020.01.30.927558.full-012.csv \
+  --meta 2020.01.30.927558.full-012.meta.csv \
+  -- --errbars
+
 t 'w21074-035: no graph, two ruled regression tables one above another (coefficients with significance stars, standard errors in brackets); one column running through both is no plot, no meta file' \
   --pdf w21074-035.pdf \
   --meta - \

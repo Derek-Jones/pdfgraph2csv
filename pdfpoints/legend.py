@@ -13,7 +13,7 @@ import re
 
 from .colours import color_name
 from .context import PAGE
-from .geometry import bbox_of, median, rect_distance, thin_rect_line, vertices
+from .geometry import bbox_of, median, rect_distance, rect_of, thin_rect_line, vertices
 from .graphs import frame_symbols, frame_texts
 from .symbols import symbol_signature
 from .text import is_number
@@ -297,6 +297,13 @@ def legend_for_lines(series, paths, texts, rect=None):
                 samples.append((("solid",), p["stroke_rgb"], b))
             elif p["fill"] and len(sp["segs"]) in (3, 4) and abs(b[3] - b[1]) < 1.5 and 1 < b[2] - b[0] < 10:
                 samples.append((("dashed",), p["fill_rgb"], b))
+            elif p["fill"] and not p["stroke"] and len(sp["segs"]) in (3, 4) and \
+                    0 < b[3] - b[1] < 3 and 10 <= b[2] - b[0] < 60 and b[2] - b[0] >= 5 * (b[3] - b[1]) and \
+                    rect_of(sp):
+                # a line sample filled as a thin band, its height the line's
+                # width (2020.01.30.927558.full-012's "True value" and
+                # "Slider value", 12.8 x 1.7 pt, for 0.7 pt strokes)
+                samples.append((("solid",), p["fill_rgb"], b))
     # rows of dashes form one sample; so do short strokes in a row with gaps
     # between them, dashes stroked one by one (Sovinsky-paper-017's
     # "- - - - -" key, five strokes 2.5 pt apart)

@@ -300,7 +300,8 @@ def outlined_text(paths, blobs=None, covers=(), read_parts=None):
         return [], set()
     markerlike_keys = {(g[0], g[1]) for g in markerlike}
     words = _words_with_markerlike(
-        _group_words(_merge_repeated(_group_glyphs(parts + markerlike))), markerlike_keys)
+        _group_words(_near_real(_merge_repeated(_group_glyphs(parts + markerlike)), markerlike_keys)),
+        markerlike_keys)
 
     def n_real(word):          # glyphs that are not marker-like ('.', 'o')
         return sum(1 for g in word if not set(g["members"]) <= markerlike_keys)
@@ -459,6 +460,44 @@ def _split_unread(readings, read, markerlike_keys):
         else:
             out.append((word, best))
     return out
+
+
+def _near_real(glyphs, markerlike_keys, reach=6.0):
+    """The glyphs that may be part of a word: the real ones, and marker-
+    like ones ('o', '.') within `reach` sizes of a real one - a word of
+    marker-like shapes alone is no text (_words_with_markerlike), so the
+    rest can only make markers into words, or join real fragments in a
+    cloud of markers into clusters further apart than that.  460-201's
+    two scatter plots hold 150 000 open circles; grouping them all into
+    "words" took four minutes, for nothing."""
+    real, ml = [], []
+    for g in glyphs:
+        (ml if set(g["members"]) <= markerlike_keys else real).append(g)
+    if not ml:
+        return glyphs
+    if not real:
+        return []
+    def size(g):
+        b = g["box"]
+        return max(b[2] - b[0], b[3] - b[1], 1e-6)
+    big = max(size(g) for g in real)
+    grid = BoxGrid(max(1.0, reach * big))
+    for k, g in enumerate(real):
+        grid.add(k, g["box"])
+    # (only distance: dropping marker-like shapes that overlap others too
+    # cut real fragments in a cloud of markers loose from their unreadable
+    # clusters, read alone as "1" - cumulative-evol-hollywood-film-crews-007)
+    near = []
+    for g in ml:
+        b = g["box"]
+        for k in grid.near(b, reach * big):
+            r = real[k]["box"]
+            lim = reach * size(real[k])
+            if b[0] - r[2] < lim and r[0] - b[2] < lim and b[1] - r[3] < lim and r[1] - b[3] < lim:
+                near.append(g)
+                break
+    keep = {id(g) for g in real} | {id(g) for g in near}
+    return [g for g in glyphs if id(g) in keep]       # (in their order)
 
 
 def _words_with_markerlike(words, markerlike_keys):

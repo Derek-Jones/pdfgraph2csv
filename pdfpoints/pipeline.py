@@ -27,7 +27,7 @@ from .labels import apply_axis_multipliers, resolve_shared_labels
 from .legend import SeriesNamer, find_page_legend, legend_for_lines, patch_swatches
 from .meta import graph_meta
 from .nongraphs import axis_labels, drop_tables, text_boxes
-from .occlusion import cover_rects, drop_hidden_glyphs
+from .occlusion import cover_rects, drop_hidden_glyphs, drop_hidden_paths
 from .outlined_text import outlined_text
 from .rows import legend_looks, make_rows, marker_sized, name_box_slots, reportable
 from .scales import find_break_marks
@@ -188,6 +188,7 @@ def extract_page(pdf, pno, page, opts, info):
     # graphs are known (strays.py)
     symbols = find_page_symbols(pdf, it, text_parts)
     symbols = drop_plot_backgrounds(symbols, graphs)
+    symbols = _drop_redrawn(symbols, graphs)
     # round letters of unread outlined names ("o", "e") outside every plot:
     # flanked by letters of those names on both sides, close
     # (2355585.2355594-006's slanted benchmark names; a legend key has its
@@ -311,6 +312,38 @@ def drop_clipped_texts(texts):
     return out
 
 
+def _drop_redrawn(symbols, graphs):
+    """A graph whose markers were all drawn again, in the same order and
+    places (to 0.01 pt), keeps one drawing: its markers in drawing order
+    are k equal runs (k = 2 ... 4, 50 markers a run or more), and only the
+    first is data.  460-201's Q-Q plot draws its 37 676 squares twice
+    over.  (Points drawn twice here and there - ties - stay: the whole
+    sequence must repeat.)"""
+    by = {}
+    for s in symbols:
+        _d, g = graph_for_symbol(graphs, s)
+        by.setdefault(id(g), []).append(s)
+    drop = set()
+    for mine in by.values():
+        # (the graph's main kind of marker: a stray rectangle - a piece of
+        # its fitted line - is no part of the run)
+        kinds = collections.Counter((s["shape"], s.get("filled")) for s in mine)
+        top = kinds.most_common(1)[0][0] if kinds else None
+        mine = sorted((s for s in mine if (s["shape"], s.get("filled")) == top), key=lambda s: s["idx"])
+        keys = [(s["shape"], s.get("filled"), round(s["cx"], 2), round(s["cy"], 2)) for s in mine]
+        n = len(keys)
+        for k in (2, 3, 4):
+            if n % k or n // k < 50:
+                continue
+            m = n // k
+            if all(keys[i] == keys[i % m] for i in range(m, n)):
+                drop.update(id(s) for s in mine[m:])
+                break
+    if not drop:
+        return symbols
+    return [s for s in symbols if id(s) not in drop]
+
+
 def read_page_text(it):
     """All text of the page: real text (minus glyphs painted over by later
     boxes) and text drawn as glyph outlines, read by shape.  Returns
@@ -320,6 +353,7 @@ def read_page_text(it):
     serve as category and legend labels (numbered #1, #2, ...)."""
     covers = cover_rects(it.paths, it.images)
     it.texts = drop_hidden_glyphs(drop_repeated_texts(drop_clipped_texts(it.texts)), covers)
+    it.paths = drop_hidden_paths(it.paths)
     # (axis-break wiggles must be known before outlined text is read: they
     # are no glyphs)
     PAGE.break_marks = find_break_marks(it.paths)
@@ -506,6 +540,7 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
     Statistical_Test_Coverage_for_Linux's pages 6 and 11, nearest to the
     page's only graph, hid its curve."""
     line_names = {}
+    line_sets, sym_of = [], {}     # (graph, series, names) and the symbols of each line
     owner = {}
     outside = {}
     for s in symbols:
@@ -581,9 +616,13 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
             # (a cross on a bar no longer than it is its error bar over the
             # bar's edge: a bar of almost nothing with its error bar,
             # 2020.01.30.927558.full-023; not plus markers on bar tops)
+            # (bars by drawing step: 460-201's 150 000 marks against every bar)
+            by_idx = {}
+            for b in bars:
+                by_idx.setdefault(b["idx"], []).append(b)
             short = [s for s in marks if (s["shape"] in ("square", "rectangle") and (
-                s["idx"] in bar_paths or any(abs(s["idx"] - b["idx"]) == 1 and _on_bar(s, b)
-                                             for b in bars))) or
+                s["idx"] in bar_paths or any(_on_bar(s, b) for d in (-1, 1)
+                                             for b in by_idx.get(s["idx"] + d, ())))) or
                      (s["shape"] in ("cross", "plus") and any(
                          _on_bar(s, b) and abs(b["cy" if not b.get("horizontal") else "cx"] -
                                                b.get("base", 0.0)) <= s["size"] for b in bars))]
@@ -635,6 +674,7 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
             continue
         series = find_line_series(g, paths)
         names = legend_for_lines(series, paths, texts, g["rect"])
+        line_sets.append((g, series, names))
         for k, line in enumerate(series):
             for q in line["points"]:
                 sym = {"shape": "line", "cx": q[0], "cy": q[1], "size": 0.0,
@@ -644,5 +684,43 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
                     sym["clip"] = line["clip"]
                 if k in names:
                     line_names[id(sym)] = names[k]
+                sym_of.setdefault((id(g), k), []).append(sym)
                 symbols.append(sym)
+    _share_line_names(line_sets, sym_of, line_names)
     return line_names
+
+
+def _share_line_names(line_sets, sym_of, line_names):
+    """Panels of one lattice share a legend: a graph whose lines found no
+    legend of their own takes the names that a graph it shares an axis
+    with (directly or through others: the same x or y axis, borrowed)
+    found for lines of the same style and colour, when each such style and
+    colour has one name only (2020.01.30.927558.full-012: "True value" and
+    "Slider value" beside the upper right panel name the lines of all
+    four)."""
+    named = [(g, ser, nm) for g, ser, nm in line_sets if nm]
+    if not named:
+        return
+    # graphs joined by shared axes
+    groups = {id(g): {id(g)} for g, _s, _n in line_sets}
+    gs = [g for g, _s, _n in line_sets]
+    for i, g in enumerate(gs):
+        for h in gs[i + 1:]:
+            if g["x"] is h["x"] or g["y"] is h["y"]:
+                u = groups[id(g)] | groups[id(h)]
+                for k in u:
+                    groups[k] = u
+    for g, series, names in line_sets:
+        if names or not series:
+            continue
+        keys = {}
+        for h, ser, nm in named:
+            if id(h) not in groups[id(g)]:
+                continue
+            for k, n in nm.items():
+                keys.setdefault((ser[k]["style"][0], ser[k]["rgb"]), set()).add(n)
+        for k, line in enumerate(series):
+            n = keys.get((line["style"][0], line["rgb"]))
+            if n and len(n) == 1:
+                for sym in sym_of.get((id(g), k), ()):
+                    line_names[id(sym)] = next(iter(n))

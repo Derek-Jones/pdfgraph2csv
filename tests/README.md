@@ -131,6 +131,9 @@ identical text columns, numeric columns within the case's tolerance.
 | 2020.01.30.927558.full-030.pdf | Preprint page (Fig. 8): nine bar charts with error bars, a wide-barred panel A beside two rows of four, panel titles inside the plots |
 | 2020.01.30.927558.full-048.pdf | Preprint page (Fig. S2): a heat map stored as a JPEG picture and a bar chart coloured by value, sharing a colour bar at the right; seven bar charts with error bars below |
 | economies-open-intelligence-005.pdf | Paper page (Figure 2): two plotly stacked area charts of download shares, by developer and by country, each with its legend below it |
+| 3832783.3834484-004.pdf | Paper page (Figure 1): three Excel bar charts of throughput changes, negative bars below a zero line with the category names under the plot |
+| 460-201.pdf | Book page (Fig. 5.12): four R diagnostic plots flattened by InDesign - a Q-Q plot, two scatter plots of 37 676 open circles each, a histogram of outlined bars; 39 MB of drawing |
+| 2020.01.30.927558.full-012.pdf | Preprint page (Fig. 2): four line panels in a lattice sharing axes and one legend, four scatter panels with error bars sharing a y axis, four low/high panels with error bars |
 | damaged.pdf (beyond qpdf's repair), not-a-pdf.pdf, no-graph.pdf, many-shapes.pdf, zero-width-glyph.pdf, doubtful-axes.pdf | must fail cleanly or report that no graph was found (cases without `--expect` check only the exit status and the message) |
 
 `schumpeter-001.reference.csv` is the reference supplied with the PDF

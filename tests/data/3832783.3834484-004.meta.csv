@@ -1,0 +1,4 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,(a) 1 Thread,1,"Throughput comparison of database operations (SELECT/UPDATE/INSERT/TPC-C) under different optimization strategies for Database Server (PostgreSQL) with sufficient memory, compared to the -O2 baseline.",福昕高级PDF编辑器打印机 版本 12.1.0.15345,Excel,12,SELECT,TPC-C,-5,15
+1,2,(b) 100 Concurrent Threads,1,"Throughput comparison of database operations (SELECT/UPDATE/INSERT/TPC-C) under different optimization strategies for Database Server (PostgreSQL) with sufficient memory, compared to the -O2 baseline.",福昕高级PDF编辑器打印机 版本 12.1.0.15345,Excel,12,SELECT,TPC-C,-5,15
+1,3,(c) 500 Concurrent Threads,1,"Throughput comparison of database operations (SELECT/UPDATE/INSERT/TPC-C) under different optimization strategies for Database Server (PostgreSQL) with sufficient memory, compared to the -O2 baseline.",福昕高级PDF编辑器打印机 版本 12.1.0.15345,Excel,15,SELECT,TPC-C,-5,15

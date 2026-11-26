@@ -606,14 +606,39 @@ def _share_out_line(axes):
             a["hi"], b["lo"] = cut, cut
 
 
+def _low_category_labels(g, orient, line, m, axes, debug):
+    """Category labels of an x axis drawn at a zero line inside the plot
+    and set below the plot, at the foot of its y axis (Excel's "label
+    position: low" - 3832783.3834484-004: the ticks at 0.00%, the names
+    SELECT ... TPC-C under -5.00%, the bars below 0 kept clear of them).
+    For an x axis line with ticks whose numbers are none or two (bar value
+    labels by the line, "0.42%", "2.88%"), starting within 1.5 pt of a
+    lined y axis with a scale that runs on below it (by 3 pt or more):
+    category labels found as if the axis line were at that y axis's foot,
+    one between each pair of ticks or at each tick, all of them.  Returns
+    the labels, or None."""
+    if orient != "x" or line is None or (m is not None and m["n"] > 2):
+        return None
+    alo, ahi, apos = line
+    for y in axes:
+        if y["orient"] != "y" or not y["has_line"] or y["map"]["kind"] == "nominal" or \
+                abs(y["pos"] - alo) > 1.5 or not y["lo"] < apos - 3.0 < y["hi"]:
+            continue
+        lab = nominal_axis(g, orient, (alo, ahi, y["lo"]), debug)
+        if lab is not None and len(lab) >= len(g["pos"]) - 1:
+            return lab
+    return None
+
+
 def _labels_past_plot(a, axes):
     """A category x axis on a line that a y axis with a scale spans well
     inside (beyond 5% of it from either end), whose labels all lie past
     that y axis's ends: a zero line inside the plot, the panel titles
     above the plot taken for its categories (2020.01.30.927558.full-023:
     "IIAB", "Delta", "M-Avg" over bars hanging from 0)."""
-    if a["orient"] != "x" or a["map"]["kind"] != "nominal" or not a.get("labels"):
-        return False
+    if a["orient"] != "x" or a["map"]["kind"] != "nominal" or not a.get("labels") or \
+            a.get("low_labels"):
+        return False            # (labels set low on purpose: _low_category_labels)
     for y in axes:
         if y["orient"] != "y" or y["map"]["kind"] == "nominal" or not y["has_line"]:
             continue
@@ -1395,7 +1420,10 @@ def axes_from_group(g, orient, line, numeric, axes, debug):
             orient, ["%.2f" % p for p in g["pos"]], line is not None,
             [(round(c, 2), v) for c, v in pairs], m), file=sys.stderr)
     lab = None
-    if m is None or (m["n"] <= 2 and len(g["pos"]) >= 6):
+    low = _low_category_labels(g, orient, line, m, axes, debug)
+    if low is not None:
+        lab = low
+    elif m is None or (m["n"] <= 2 and len(g["pos"]) >= 6):
         # no numbers, or two stray "numbers" (misread letters) on a long
         # row of ticks: try category labels
         lab = nominal_axis(g, orient, line, debug)
@@ -1437,6 +1465,7 @@ def axes_from_group(g, orient, line, numeric, axes, debug):
             "has_line": line is not None, "map": m, "ticks": pairs, "labels": labels,
             "tick_len": L, "tick_pos": list(g["pos"]),
             "label_ticks": bool(g.get("label_ticks")),
+            "low_labels": low is not None and lab is low,
             # (the labels' reading direction: a graph turned on the page)
             "label_angle": snapped_angle(getattr(pairs, "angles", []))}
     if g.get("label_ticks"):

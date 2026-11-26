@@ -126,11 +126,12 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
         return symbols
     fam = [r1]
     base = _cluster_centres([a for a in arcs if abs(a[2] - r1) < 0.03 * r1], r1)
+    base_cells = _centre_cells(base)
     for r2, n2 in radii.most_common(6)[1:]:
         if n2 < 0.2 * n1 or min(abs(r2 - f) for f in fam) < 0.05 * r1:
             continue
         cc = _cluster_centres([a for a in arcs if abs(a[2] - r2) < 0.03 * r2], r2)
-        hit = sum(1 for k in cc if any(math.hypot(k[0] - j[0], k[1] - j[1]) < 0.12 for j in base))
+        hit = sum(1 for k in cc if _near_centre(base_cells, k))
         if cc and hit >= 0.7 * len(cc):
             fam.append(r2)                       # concentric: same markers
     sel = [a for a in arcs if any(abs(a[2] - f) < 0.03 * f for f in fam)]
@@ -140,10 +141,14 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
     # 3. the marker centres
     r_out = max(fam)
     cents = []
+    # (centres filed in cells of 0.12 pt: 460-201's 150 000 open circles
+    # made the check against every centre so far take two minutes)
+    cells = {}
     for f in fam:
         for k in _cluster_centres([a for a in sel if abs(a[2] - f) < 0.03 * f], f):
-            if not any(math.hypot(k[0] - j[0], k[1] - j[1]) < 0.12 for j in cents):
+            if not _near_centre(cells, k):
                 cents.append(k)
+                cells.setdefault((int(k[0] // 0.12), int(k[1] // 0.12)), []).append(k)
     if len(cents) < 5:
         return symbols
     # markers that are intact need no rebuilding
@@ -153,9 +158,12 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
         wgrid.setdefault((int(s["cx"] // r_out), int(s["cy"] // r_out)), []).append(s)
     # whole markers of a graph that was not flattened (a page may have
     # both) stay as they are
+    # (arcs filed in cells as big as the reach, 0.15 of the radius: cells
+    # of a whole radius held hundreds of arcs each in 460-201's clouds)
+    ac = 0.15 * r_out
     agrid = {}
     for a in sel:
-        agrid.setdefault((int(a[0] // r_out), int(a[1] // r_out)), []).append(a)
+        agrid.setdefault((int(a[0] // ac), int(a[1] // ac)), []).append(a)
     intact, opaque = [], []
     keep_idx = set()                     # paths of opaque whole markers
     for k in cents:
@@ -166,8 +174,9 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
         # all the arcs there drawn by those circles themselves: whole
         # markers, not the top of a stack of fragments
         own = {s["idx"] for s in hits}
+        ax, ay = int(k[0] // ac), int(k[1] // ac)
         arc_paths = {a[3] for dx in (-1, 0, 1) for dy in (-1, 0, 1)
-                     for a in agrid.get((gx + dx, gy + dy), ())
+                     for a in agrid.get((ax + dx, ay + dy), ())
                      if math.hypot(a[0] - k[0], a[1] - k[1]) < 0.15 * r_out}
         op = bool(hits) and arc_paths <= own
         opaque.append(op)
@@ -329,6 +338,23 @@ def _outline_found(cents, arcs, r):
     return out
 
 
+def _centre_cells(cents):
+    """Centres filed in cells of 0.12 pt, for _near_centre."""
+    cells = {}
+    for k in cents:
+        cells.setdefault((int(k[0] // 0.12), int(k[1] // 0.12)), []).append(k)
+    return cells
+
+
+def _near_centre(cells, k):
+    """Is a filed centre within 0.12 pt of k?  (A scan of every centre
+    took minutes on 460-201's 150 000 open circles.)"""
+    cx, cy = int(k[0] // 0.12), int(k[1] // 0.12)
+    return any(math.hypot(k[0] - j[0], k[1] - j[1]) < 0.12
+               for u in (cx - 1, cx, cx + 1) for v in (cy - 1, cy, cy + 1)
+               for j in cells.get((u, v), ()))
+
+
 def rebuild_strip_discs(paths, symbols):
     """Discs filled as a fan of thin triangles (a 20-gon cut into vertical
     strips, seen in a probability textbook's plots): a run of small filled
@@ -336,7 +362,7 @@ def rebuild_strip_discs(paths, symbols):
     box is about square and whose area is about that of the disc in it
     (pi/4 of the box; a square of two triangles fills its box) is one filled
     circle.  The pieces give no other symbols."""
-    runs, cur = [], []
+    runs, cur, box = [], [], None      # (box: the run's union so far)
     for p in paths:
         piece = None
         if p["fill"] and not p["stroke"] and len(p["subpaths"]) == 1:
@@ -347,12 +373,15 @@ def rebuild_strip_discs(paths, symbols):
                 if 3 <= len(v) <= 5 and max(b[2] - b[0], b[3] - b[1]) <= 8:
                     piece = (p, v, b)
         if piece and cur and cur[-1][0]["idx"] == piece[0]["idx"] - 1 and \
-                cur[-1][0]["fill_rgb"] == piece[0]["fill_rgb"] and _touch(_union(cur), piece[2]):
+                cur[-1][0]["fill_rgb"] == piece[0]["fill_rgb"] and _touch(box, piece[2]):
             cur.append(piece)
+            pb = piece[2]
+            box = (min(box[0], pb[0]), min(box[1], pb[1]), max(box[2], pb[2]), max(box[3], pb[3]))
             continue
         if len(cur) >= 6:
             runs.append(cur)
         cur = [piece] if piece else []
+        box = piece[2] if piece else None
     if len(cur) >= 6:
         runs.append(cur)
     discs, used = [], set()

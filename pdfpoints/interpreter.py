@@ -27,6 +27,7 @@ does not keep:
 """
 
 import decimal
+import hashlib
 import math
 import re
 import sys
@@ -106,6 +107,7 @@ class ExtraState:
         self.ca = 1.0                     # fill opacity
         self.clip = None                  # clipping box (x0, y0, x1, y1), None = page
         self.form_box = None              # the /BBox of the Form XObjects being run (page space)
+        self.form_key = None              # digest of the innermost form's content (repeated drawings)
         self.font = None                  # FontInfo of the current font
         self.gs_name = ""                 # name of the last ExtGState set (drawing style)
         self.fill_pattern = None          # name of the fill colour's pattern, if one
@@ -318,6 +320,8 @@ class ContentInterpreter(PDFPageInterpreter):
                 "opaque": e.ca >= 0.99, "clip": e.clip,
                 "res": _resolution(self.unit, self.ctm), "tool": self.tool,
                 "scale": _resolution(1.0, self.ctm),
+                "form_box": getattr(e, "form_box", None),
+                "form_key": getattr(e, "form_key", None),
                 "style": self._style()})
         if self.clip_next and subpaths:
             # (only the clip's bounding box is kept: enough to tell which
@@ -602,6 +606,10 @@ class ContentInterpreter(PDFPageInterpreter):
                     cs = [apply_matrix_pt(m, (u, v)) for u in (bb[0], bb[2]) for v in (bb[1], bb[3])]
                     b = (min(c[0] for c in cs), min(c[1] for c in cs),
                          max(c[0] for c in cs), max(c[1] for c in cs))
+                    try:
+                        extra.form_key = hashlib.sha1(xobj.get_rawdata() or b"").hexdigest()
+                    except Exception:      # (an unreadable stream: no key)
+                        extra.form_key = None
                     c = getattr(extra, "form_box", None)
                     extra.form_box = b if c is None else (max(b[0], c[0]), max(b[1], c[1]),
                                                           min(b[2], c[2]), min(b[3], c[3]))
