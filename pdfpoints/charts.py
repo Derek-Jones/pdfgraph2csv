@@ -635,29 +635,62 @@ def _stroked_lines(paths, inside, rect=None, tol=1.0):
 
     # programs split long lines into pieces (R: one per few hundred points);
     # an axis-parallel piece joins only pieces drawn next to it (within two
-    # drawing steps), so a grid line or frame is no part of a line
+    # drawing steps), so a grid line or frame is no part of a line.  A piece
+    # joins the first series (in the order they were begun) of its colour
+    # and width that it continues; the series' ends are filed by colour and
+    # width in cells of 0.05 pt, so only those that may meet it are tried
+    # (every piece against every series took minutes on ESEUR-slowpages'
+    # thousands of separate strokes)
     series = []
+    heads, tails, members = {}, {}, {}      # (rgb, style) -> PointGrid of series numbers / list
+
+    def file_ends(k, n):
+        s = series[n]
+        heads[k].add(n, *s["pts"][0])
+        tails[k].add(n, *s["pts"][-1])
+
+    def unfile_ends(k, n):
+        s = series[n]
+        for grid, q in ((heads[k], s["pts"][0]), (tails[k], s["pts"][-1])):
+            cell = grid.cells.get(grid.key(*q))
+            if cell is not None and n in cell:
+                cell.remove(n)
+
     for pc in sorted(pieces, key=lambda pc: pc["idx"]):
-        for s in series:
-            if s["rgb"] == pc["rgb"] and s["style"] == pc["style"] and (
-                    not (pc["flat"] or s["flat"]) or abs(pc["idx"] - s["last"]) <= 2):
-                if math.hypot(s["pts"][-1][0] - pc["pts"][0][0], s["pts"][-1][1] - pc["pts"][0][1]) < 0.05:
-                    s["pts"] += pc["pts"][1:]
-                elif math.hypot(pc["pts"][-1][0] - s["pts"][0][0], pc["pts"][-1][1] - s["pts"][0][1]) < 0.05:
-                    s["pts"] = pc["pts"][:-1] + s["pts"]
-                elif cut_pair(s, pc):
-                    s["pts"] = s["pts"][:-1] + pc["pts"][1:]
-                else:
-                    continue
-                s["seen"] = s["seen"] or pc["seen"]
-                s["flat"] = s["flat"] and pc["flat"]
-                s["pieces"] += pc["pieces"]
-                s["last"] = pc["idx"]
-                break
+        k = (pc["rgb"], pc["style"])
+        if k not in heads:
+            heads[k], tails[k], members[k] = PointGrid(0.05), PointGrid(0.05), []
+        a0, a1 = pc["pts"][0], pc["pts"][-1]
+        cands = {n for n in tails[k].near(*a0)} | {n for n in heads[k].near(*a1)}
+        if out_of_clip(pc, a0):
+            cands.update(members[k])             # (a cut pair may be anywhere)
+        for n in sorted(cands):
+            s = series[n]
+            if not (not (pc["flat"] or s["flat"]) or abs(pc["idx"] - s["last"]) <= 2):
+                continue
+            if math.hypot(s["pts"][-1][0] - a0[0], s["pts"][-1][1] - a0[1]) < 0.05:
+                unfile_ends(k, n)
+                s["pts"] += pc["pts"][1:]
+            elif math.hypot(a1[0] - s["pts"][0][0], a1[1] - s["pts"][0][1]) < 0.05:
+                unfile_ends(k, n)
+                s["pts"] = pc["pts"][:-1] + s["pts"]
+            elif cut_pair(s, pc):
+                unfile_ends(k, n)
+                s["pts"] = s["pts"][:-1] + pc["pts"][1:]
+            else:
+                continue
+            file_ends(k, n)
+            s["seen"] = s["seen"] or pc["seen"]
+            s["flat"] = s["flat"] and pc["flat"]
+            s["pieces"] += pc["pieces"]
+            s["last"] = pc["idx"]
+            break
         else:
             series.append({"pts": list(pc["pts"]), "rgb": pc["rgb"], "style": pc["style"],
                            "idx": pc["idx"], "clip": pc["clip"], "seen": pc["seen"],
                            "flat": pc["flat"], "last": pc["idx"], "pieces": pc["pieces"]})
+            members[k].append(len(series) - 1)
+            file_ends(k, len(series) - 1)
     series = [s for s in series if not s["flat"]]
     shown = {(s["rgb"], s["style"]) for s in series if s["seen"]}
     return [s for s in series if s["seen"] or (s["rgb"], s["style"]) in shown]

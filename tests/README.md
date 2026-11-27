@@ -138,6 +138,9 @@ identical text columns, numeric columns within the case's tolerance.
 | gopinath2014mutations-004.pdf | Paper page (Fig. 2): four R smoothScatter density plots in two rows of two |
 | 2407.03385v3.pdf | A whole 28-page paper: matplotlib figures with Type 3 fonts renumbered from code 0, ten very large raster pictures, heat maps and bar charts |
 | no.ntnu_inspera_146721987_149459097-031.pdf | Thesis page: two LaTeX tables drawn cell by cell, no graph |
+| ESEUR-slowpages.pdf | A page of R plots with thousands of points each, lines drawn as many separate strokes |
+| prob-book-171.pdf | two scatter plots of 1000 crowded filled circles each, every dot a strip of thin triangles, slightly oval (Microsoft Print to PDF); soft hyphens as minus signs; samples of Bivariate Normal (0, 0, 1, 1, 0) and (0, 0, 1, 1, 0.5) |
+| BehavioralNetworkScience-305.pdf | Network diagram drawn as filled outlines (names and edges), no graph |
 | damaged.pdf (beyond qpdf's repair), not-a-pdf.pdf, no-graph.pdf, many-shapes.pdf, zero-width-glyph.pdf, doubtful-axes.pdf | must fail cleanly or report that no graph was found (cases without `--expect` check only the exit status and the message) |
 
 `schumpeter-001.reference.csv` is the reference supplied with the PDF

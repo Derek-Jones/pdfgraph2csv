@@ -656,7 +656,8 @@ quadratic).
   (Korotayev_Doomsday_preprint-005: x axis 4,0 … 0,0 read 40 … 0).
 * `parse_number`: plain numbers, `1,000`, `$5`, `25%`, `10^3`, `2x10^3`,
   fractional exponents (`10^+0.2`, `10^-1.0`: 2355585.2355594-006),
-  `2×10^3`, Unicode minus (U+2212), '95-style years, dates (decimal year),
+  `2×10^3`, Unicode minus (U+2212) and the soft hyphen (U+00AD, drawn as
+  the minus by Microsoft Print to PDF: prob-book-171), '95-style years, dates (decimal year),
   and numbers with a unit or scale suffix: byte sizes in SI units (`B`,
   `kB`, `MB`, `GB`, `TB`, `PB` = 10^3n; the value is in bytes) and binary
   units (`KiB`, `MiB`, `GiB`, `TiB` = 1024^n), thousands and millions
@@ -727,6 +728,14 @@ Some PDF writers convert every character into a filled path. Then:
   tick labels up to four times over: each "1910" was eight overlapping
   glyphs, which form no line of text, so no label was read, the scales
   fell back to tick numbers (#1, #2 ...) and the third panel was lost.
+* A word under 1 pt both across and up is a speck: its glyphs are read
+  only from their proportions ('1', '.', '-'), never rasterised against
+  the digit templates. BehavioralNetworkScience-305's network diagram
+  draws its edges as tens of thousands of filled slivers, each read four
+  ways, and rasterising them took most of a minute and a half. (Reading
+  specks as '1' stays: cumulative-evol-hollywood-film-crews-007's marker
+  fragments read that way are text, not markers, and its points depend
+  on it.)
 * Read each glyph by rasterising it (even-odd fill, 3×3 supersampling) to a
   12×16 grid and comparing it with built-in digit templates (Liberation
   Sans/Serif/Mono and DejaVu Sans renderings of 0–9, each with its ink aspect
@@ -1468,6 +1477,14 @@ files with known true values slightly worse.
   and a cross of one colour around the same centre (within 5% of the size),
   drawn one right after the other, with sizes within a factor of 2, are one
   asterisk.
+* A disc filled as a strip of thin triangles (prob-book-057: a run of 6
+  or more small filled triangles of one colour, painted one after another
+  and touching, about round, its area pi/4 of its box) is one filled
+  circle. Crowded discs drawn one after another touch and would join one
+  run: a piece of no width or height (a sliver, the strip's end) after
+  the disc's body closes it (prob-book-171's 2 000 dots each begin and end
+  with one). The disc may be oval, its sides 0.7 of each other or more
+  (prob-book-171: 3.3 x 4.4 pt, printed to PDF at unequal scales).
 * A stroke may be drawn in halves (1356058.1356080-007: Excel's '+' as four
   2.8 pt arms, the halves of each bar overlapping at the centre): two
   consecutive strokes (drawing order) of one colour, in line (within 2°
@@ -2624,6 +2641,25 @@ Rules that follow:
   row uneven and it is no colour strip) before it is read whole, and
   images with PNG or TIFF predictors are stored again without them when
   the file is opened (qpdf undoes them in C; pdfminer did it in Python).
+* ESEUR-slowpages (four LuaTeX pages of R plots, 207 000 points in all,
+  many lines drawn as thousands of separate two-point strokes) took 7.7
+  minutes, now 1.5 minutes, its output unchanged: stroked line pieces
+  join only the series of their colour and width whose ends they meet
+  (the ends filed in a PointGrid of 0.05 pt; a piece outside its clip
+  still tries every series of its colour, for a cut pair), the first in
+  the order they were begun as before; a lone capped bar looks only at
+  the symbols near its x (sorted across); a cap is sought only among the
+  horizontal strokes of its bucket whose middles are near (sorted by
+  middle); a legend label's neighbouring markers are found once per
+  label among the symbols at its height (sorted by height); and line
+  samples are joined into rows only with the open rows of their colour
+  (taken left to right, a row ending 6 pt or more back is closed).
+* BehavioralNetworkScience-305 (a network diagram, no graph; names and
+  edges as filled outlines, 400 000 glyph readings) took 113 s, now 36 s:
+  the glyphs of specks under 1 pt are not rasterised, and the rasteriser gives each
+  edge only the sample rows it spans and marks the samples between pairs
+  of crossings by bisection (the same cells as testing every sample).
+  The test file ESEUR-slowpages is now its third page alone (17 s).
 * Profile with a 92 MB-stream page: about 15 s to execute, about 20 s for
   all the analysis after it. Reference times of this version (one core):
   200 000 markers 32 s, 472 000 markers 35 s, 50 000 outline fragments
@@ -2976,6 +3012,9 @@ expected files in a copy.
 | gopinath2014mutations-004 | bars sorted across for on-bar checks, stacked segments filed once: 12 min to 20 s; bars of heat-map cells dropped |
 | 2407.03385v3 | colour-strip candidates sampled before being read whole; image predictors undone by qpdf: 3.5 min to 6 s; Type 3 fonts renumbered from code 0 read by glyph number; Type 3 em from the font box |
 | no.ntnu_inspera_146721987_149459097-031 | category names standing inside the box: a table |
+| ESEUR-slowpages | (the test file is page 3 of the original four) 7.7 min to 1.5 min: stroked pieces join series by indexed end points; lone capped bars, caps, legend neighbours and line-sample rows looked up by sorted index |
+| prob-book-171 | strip discs split at their no-width end slivers (crowded dots drawn one after another), oval up to 0.7; soft hyphen as a minus sign |
+| BehavioralNetworkScience-305 | network diagram of outlines, no graph: specks under 1 pt not rasterised; glyph raster by spans: 113 s to 36 s |
 | overflow-exponent | "10^602" in body text |
 | encrypted*, enc-* | RC4-40/128, AES-128/256, user password |
 | bad-stream, damaged, not-a-pdf, no-graph, many-shapes, zero-width-glyph, doubtful-axes | clean failures and "no graph" |

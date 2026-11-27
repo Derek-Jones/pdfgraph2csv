@@ -1044,6 +1044,21 @@ t 'no.ntnu_inspera_146721987_149459097-031: no graph, two LaTeX tables drawn cel
   --meta - \
   --stderr 'No vector graphics found'
 
+t 'ESEUR-slowpages, with meta file: one page of R plots of thousands of points, lines drawn as thousands of separate strokes; the pieces join series through indexed end points, and lone capped bars, caps, legend neighbours and line sample rows are looked up by sorted index' \
+  --pdf ESEUR-slowpages.pdf \
+  --expect ESEUR-slowpages.csv \
+  --meta ESEUR-slowpages.meta.csv
+
+t 'prob-book-171, with meta file: two scatter plots of 1000 filled black circles each, every dot a strip of thin triangles that begins and ends with a sliver of no width, the dots 3.3 x 4.4 pt (printed to PDF at unequal scales) and crowded; minus signs written as soft hyphens; the samples have means near 0, standard deviations near 1 and correlations 0.0 and 0.49' \
+  --pdf prob-book-171.pdf \
+  --expect prob-book-171.csv \
+  --meta prob-book-171.meta.csv
+
+t 'BehavioralNetworkScience-305: no graph, a network diagram whose names and edges are filled outlines (tens of thousands of slivers under 1 pt, read only by their proportions; outlined glyphs rasterised span by span)' \
+  --pdf BehavioralNetworkScience-305.pdf \
+  --meta - \
+  --stderr 'No vector graphics found'
+
 t 'w21074-035: no graph, two ruled regression tables one above another (coefficients with significance stars, standard errors in brackets); one column running through both is no plot, no meta file' \
   --pdf w21074-035.pdf \
   --meta - \

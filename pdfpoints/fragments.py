@@ -360,6 +360,14 @@ def rebuild_strip_discs(paths, symbols):
             cur.append(piece)
             pb = piece[2]
             box = (min(box[0], pb[0]), min(box[1], pb[1]), max(box[2], pb[2]), max(box[3], pb[3]))
+            if _cap(piece[2]) and not all(_cap(b) for _, _, b in cur):
+                # a flat end piece after the disc's body closes it: the
+                # next disc, touching or overlapping it, starts afresh
+                # (prob-book-171's 2 000 dots, crowded, began and ended
+                # with a sliver of no width)
+                if len(cur) >= 6:
+                    runs.append(cur)
+                cur, box = [], None
             continue
         if len(cur) >= 6:
             runs.append(cur)
@@ -371,7 +379,9 @@ def rebuild_strip_discs(paths, symbols):
     for run in runs:
         x0, y0, x1, y1 = union_box(b for _, _, b in run)
         w, h = x1 - x0, y1 - y0
-        if min(w, h) <= 0 or min(w, h) < 0.85 * max(w, h):
+        # (about round: prob-book-171's dots are 3.3 x 4.4 pt, their page
+        # printed to PDF at unequal scales)
+        if min(w, h) <= 0 or min(w, h) < 0.7 * max(w, h):
             continue
         area = sum(abs(polygon_area(v)) for _, v, _ in run)
         if not 0.6 * w * h <= area <= 0.92 * w * h:
@@ -386,6 +396,11 @@ def rebuild_strip_discs(paths, symbols):
     out = [s for s in symbols if s.get("idx") not in used] + discs
     out.sort(key=lambda s: s["idx"])
     return out
+
+
+def _cap(b, tol=0.01):
+    """A piece of no width or no height (its box `b`): a strip disc's end."""
+    return b[2] - b[0] <= tol or b[3] - b[1] <= tol
 
 
 def _touch(a, b, tol=0.05):

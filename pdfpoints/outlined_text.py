@@ -108,18 +108,33 @@ def _raster(polys, box):
             if a[1] != b[1]:
                 edges.append((a, b))
     S = 3
+    n = _TGW * S
+    # the samples' x positions; a sample is inside when the crossings left
+    # of it (strictly) are odd, so the samples inside are those in a span
+    # (xs[2k], xs[2k + 1]], found by bisection rather than sample by sample
+    # (BehavioralNetworkScience-305: 400 000 outlined glyphs of a diagram)
+    sxs = [x0 + (rx + 0.5) * w / n for rx in range(n)]
+    col = [rx // S for rx in range(n)]
     cov = [0] * (_TGW * _TGH)
-    for ry in range(_TGH * S):
-        y = y1 - (ry + 0.5) * h / (_TGH * S)       # top row first
-        xs = sorted(a[0] + (y - a[1]) * (b[0] - a[0]) / (b[1] - a[1])
-                    for a, b in edges if (a[1] <= y < b[1]) or (b[1] <= y < a[1]))
+    # the sample rows' heights, top row first; each edge gives its crossing
+    # to the rows it spans (lo <= y < hi), found by bisection on the
+    # negated heights (which rise), rather than every row trying every edge
+    ys = [y1 - (ry + 0.5) * h / (_TGH * S) for ry in range(_TGH * S)]
+    neg = [-y for y in ys]
+    rows = [[] for _ in ys]
+    for a, b in edges:
+        lo, hi = (a[1], b[1]) if a[1] < b[1] else (b[1], a[1])
+        for ry in range(bisect.bisect_right(neg, -hi), bisect.bisect_right(neg, -lo)):
+            rows[ry].append(a[0] + (ys[ry] - a[1]) * (b[0] - a[0]) / (b[1] - a[1]))
+    for ry, xs in enumerate(rows):
         if not xs:
             continue
+        xs.sort()
         row = (ry // S) * _TGW
-        for rx in range(_TGW * S):
-            # crossings left of the sample (strictly): inside when odd
-            if bisect.bisect_left(xs, x0 + (rx + 0.5) * w / (_TGW * S)) % 2:
-                cov[row + rx // S] += 1
+        for k in range(0, len(xs), 2):
+            end = bisect.bisect_right(sxs, xs[k + 1]) if k + 1 < len(xs) else n
+            for rx in range(bisect.bisect_right(sxs, xs[k]), end):
+                cov[row + col[rx]] += 1
     bits = 0
     half = S * S / 2
     for c in cov:
@@ -127,9 +142,9 @@ def _raster(polys, box):
     return bits
 
 
-def _read_glyph(polys, box, word_box):
+def _read_glyph(polys, box, word_box, speck=False):
     """Classify one glyph (polygons in reading orientation): returns
-    (char, quality 0..1)."""
+    (char, quality 0..1).  A glyph of a `speck` is only a '1', '.' or '-'."""
     x0, y0, x1, y1 = box
     w, h = x1 - x0, y1 - y0
     H = word_box[3] - word_box[1]
@@ -149,6 +164,8 @@ def _read_glyph(polys, box, word_box):
         if area > 0.85 * w * h:
             return "?", 0.0                        # a solid bar (tick, error bar), not a '1'
         return "1", 0.95
+    if speck:
+        return "?", 0.0
     cells = _raster(polys, box)
     best = ("?", 0.0)
     # a glyph clearly shorter than the word may be an 'e' on the baseline
@@ -840,6 +857,9 @@ def _group_words(glyphs, reach=0.45):
     return [[glyphs[i] for i in members] for members in sets.groups()]
 
 
+_MIN_WORD = 1.0                    # pt: smaller words are specks
+
+
 def _read_word(word, rot):
     """Read a word in the frame turned by `rot` degrees.  Returns (text,
     quality 0..1, word box in that frame).  The quality is 0 when the glyphs
@@ -857,6 +877,12 @@ def _read_word(word, rot):
         return bbox_of([q for _, b in glyphs for q in ((b[0], b[1]), (b[2], b[3]))])
 
     wb = box_of(fr)
+    # a word under 1 pt each way is a speck: its glyphs are read only from
+    # their proportions ('1', '.', '-'), never against the digit templates
+    # (the tens of thousands of slivers that make up the edges of
+    # BehavioralNetworkScience-305's network diagram, each read four ways,
+    # took a minute)
+    speck = wb[2] - wb[0] < _MIN_WORD and wb[3] - wb[1] < _MIN_WORD
     # a trailing group of smaller, raised glyphs is an exponent (10^-1)
     hmax = max(b[3] - b[1] for _, b in fr)
     base = min(b[1] for _, b in fr if b[3] - b[1] >= 0.75 * hmax)
@@ -881,12 +907,12 @@ def _read_word(word, rot):
     if split:
         main, expo = fr[:n_main], fr[n_main:]
         mb, eb = box_of(main), box_of(expo)
-        chars = [_read_glyph(polys, b, mb) for polys, b in main]
-        echars = [_read_glyph(polys, b, eb) for polys, b in expo]
+        chars = [_read_glyph(polys, b, mb, speck) for polys, b in main]
+        echars = [_read_glyph(polys, b, eb, speck) for polys, b in expo]
         text = "".join(c for c, _ in chars) + "^" + "".join(c for c, _ in echars)
         chars = chars + echars
     else:
-        chars = [_read_glyph(polys, b, wb) for polys, b in fr]
+        chars = [_read_glyph(polys, b, wb, speck) for polys, b in fr]
         text = "".join(c for c, _ in chars)
     qual = min(q for _, q in chars)
     if not any(c not in ".-" for c, _ in chars):

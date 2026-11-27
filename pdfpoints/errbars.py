@@ -26,6 +26,7 @@ measure a bar against, so their vertical bars must be capped: a short
 horizontal stroke centred on each end (_vertex_bars).
 """
 
+import bisect
 import math
 
 from .geometry import thin_rect_line
@@ -128,6 +129,13 @@ def lone_capped_bars(graphs, symbols, paths, graph_of):
     index = _index(segs["h"])
     hidx = {"h": index}
     boxed = {id(graph_of(s)) for s in symbols if s["shape"].startswith("box-")}
+    # (the symbols sorted across, so that a stroke looks only at those that
+    # may stand on it: every stroke against every symbol took minutes on
+    # ESEUR-slowpages' plots of thousands of points)
+    marks = sorted(((s["cx"], k, s) for k, s in enumerate(symbols) if not s["shape"].startswith("box-")),
+                   key=lambda m: (m[0], m[1]))
+    xs = [m[0] for m in marks]
+    reach = max([0.3] + [0.15 * m[2]["size"] for m in marks])
     out, seen = [], set()
     for p in paths:
         if not p["stroke"] or p["fill"]:
@@ -158,8 +166,8 @@ def lone_capped_bars(graphs, symbols, paths, graph_of):
             # jittered dots, a seventh of the caps' length, fall on it by
             # chance and off its middle)
             cap, mid = max(c_lo, c_hi), (lo + hi) / 2
-            on = [s for s in symbols if not s["shape"].startswith("box-") and
-                  abs(s["cx"] - x) <= max(0.3, 0.15 * s["size"]) and
+            near = marks[bisect.bisect_left(xs, x - reach):bisect.bisect_right(xs, x + reach)]
+            on = [s for _, _, s in near if abs(s["cx"] - x) <= max(0.3, 0.15 * s["size"]) and
                   lo - 0.5 * s["size"] <= s["cy"] <= hi + 0.5 * s["size"]]
             if any(s["size"] >= 0.25 * cap or s["shape"] in ("line", "bar", "stem") or
                    (len(on) == 1 and abs(s["cy"] - mid) <= max(0.3, 0.15 * s["size"]))
@@ -254,9 +262,20 @@ _TOL = 0.3                         # pt
 def _cap(index, x, y, width, frac=_CAP_FRAC):
     """Length of the short horizontal stroke centred on (x, y) - an error
     bar's cap, at most `frac` of the plot's `width` - or None."""
+    # (each bucket's strokes sorted by their middles, made on first use, so
+    # that only those that may be centred on x are tried: a bucket holds
+    # thousands of strokes on ESEUR-slowpages' dense plots)
+    mids = index.get("h_mid")
+    if mids is None:
+        mids = index["h_mid"] = {}
+        for b, segs in index["h"].items():
+            segs = sorted(segs, key=lambda q: (q[0] + q[1]) / 2)
+            mids[b] = ([(lo + hi) / 2 for lo, hi, _ in segs], segs)
+    reach = max(_TOL, 0.1 * frac * width)
     best = None
     for b in range(math.floor((y - _TOL) / _BUCKET), math.floor((y + _TOL) / _BUCKET) + 1):
-        for lo, hi, pos in index["h"].get(b, ()):
+        ms, segs = mids.get(b, ((), ()))
+        for lo, hi, pos in segs[bisect.bisect_left(ms, x - reach - 1e-9):bisect.bisect_right(ms, x + reach + 1e-9)]:
             n = hi - lo
             if (abs(pos - y) <= _TOL and abs((lo + hi) / 2 - x) <= max(_TOL, 0.1 * n)
                     and 0.5 <= n <= frac * width):

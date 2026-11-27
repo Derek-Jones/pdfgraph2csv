@@ -147,8 +147,10 @@ def parse_number(s, decimal_comma=False):
     q = parse_quantity(s)
     if q is not None:
         return q
+    # (a soft hyphen drawn as the minus: prob-book-171's "\u00ad5", printed
+    # to PDF by Microsoft)
     t = (s.strip().replace("\u2212", "-").replace("\u2013", "-")
-         .replace("\u2014", "-").replace("\u00a0", "").replace(" ", ""))
+         .replace("\u2014", "-").replace("\u00ad", "-").replace("\u00a0", "").replace(" ", ""))
     t = t.replace(",", "").replace("$", "").replace("%", "")
     # (fractional exponents too: 2355585.2355594-006's "10^+0.2",
     # "10^-1.0")

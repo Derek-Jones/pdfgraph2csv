@@ -98,6 +98,9 @@ def _find_legend(symbols, texts, hlines, weight):
                         math.floor((x1 + 0.5) / hl_cell) + 1):
             hl_grid.setdefault((gx, gy), []).append((x0, x1, y))
     by_left = sorted(texts, key=lambda o: o["bbox"][0])     # (for label continuations)
+    by_y = sorted(symbols, key=lambda u: u["cy"])
+    sym_y = [u["cy"] for u in by_y]
+    keys_by_label = {}
     for i, s in enumerate(symbols):
         # (a bar stands on the baseline: never a key - the tallest bars of
         # Memory_systems_cacheDRAMdisk-051 reach the subtitle beside them.
@@ -135,10 +138,16 @@ def _find_legend(symbols, texts, hlines, weight):
         if best:
             t = best[1]
             label = t["text"].strip()
-            # (markers: not the legend's frame box)
-            near_keys = [u for u in symbols if u["size"] < 2 * t["size"]
-                         and abs(u["cy"] - t["center"][1]) < 2 * t["size"]
-                         and t["bbox"][2] < u["cx"] < t["bbox"][2] + 20 * t["size"]]
+            # (markers: not the legend's frame box; the markers at the label's
+            # height found once per label, by bisection: thousands of points
+            # beside a label took minutes on ESEUR-slowpages)
+            near_keys = keys_by_label.get(id(t))
+            if near_keys is None:
+                ty, reach_y = t["center"][1], 2 * t["size"]
+                near_keys = keys_by_label[id(t)] = [
+                    u for u in by_y[bisect.bisect_left(sym_y, ty - reach_y):bisect.bisect_right(sym_y, ty + reach_y)]
+                    if u["size"] < 2 * t["size"] and abs(u["cy"] - ty) < reach_y
+                    and t["bbox"][2] < u["cx"] < t["bbox"][2] + 20 * t["size"]]
             # subscripts / superscripts that continue the label: f + 16
             end = t["bbox"][2]
             whole = label       # (the label up to its last word that is no number)
@@ -307,18 +316,24 @@ def legend_for_lines(series, paths, texts, rect=None):
     # rows of dashes form one sample; so do short strokes in a row with gaps
     # between them, dashes stroked one by one (Sovinsky-paper-017's
     # "- - - - -" key, five strokes 2.5 pt apart)
-    rows = []
+    # (samples are taken left to right, so a row ending 6 pt or more left of
+    # one is never continued again: only the open rows of a colour are
+    # tried, in the order they were begun - every sample against every row
+    # took minutes on ESEUR-slowpages' thousands of short strokes)
+    rows, open_rows = [], {}
     for st, rgb, b in sorted(samples, key=lambda s: s[2][0]):
+        live = open_rows[rgb] = [r for r in open_rows.get(rgb, ()) if b[0] - r[2][2] < 6]
         if st == ("dashed",):
-            for r in rows:
+            for r in live:
                 if r[0] == st and r[1] == rgb and abs(r[2][1] - b[1]) < 0.5 and 0 <= b[0] - r[2][2] < 6:
                     r[2] = (r[2][0], min(r[2][1], b[1]), b[2], max(r[2][3], b[3]))
                     r[3] += 1
                     break
             else:
                 rows.append([st, rgb, b, 1])
+                live.append(rows[-1])
         else:
-            for r in rows:
+            for r in live:
                 if r[1] == rgb and r[0] != ("dashed",) and abs(r[2][1] - b[1]) < 0.5 and \
                         0.3 <= b[0] - r[2][2] < 6 and b[2] - b[0] < 10 and r[4] < 10:
                     r[0] = ("stroked-dashes",)
@@ -327,6 +342,7 @@ def legend_for_lines(series, paths, texts, rect=None):
                     break
             else:
                 rows.append([st, rgb, b, 2, b[2] - b[0]])
+                live.append(rows[-1])
     for r in rows:
         if r[0] == ("stroked-dashes",):
             r[0] = ("dashed",)

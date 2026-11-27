@@ -1,0 +1,3 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,,3.3.2,A sample of n -1000 values 1X Y1 from the Bivariate Normal 10 0 1 1 01 distribution.,,,1000,-5,5,-4,4
+1,2,,3.3.3,A sample of n -1000 values 1X Y1 from the Bivariate Normal 10 0 1 1 0 51 distribution.,,,1000,-5,5,-4,4
