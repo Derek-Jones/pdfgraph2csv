@@ -22,8 +22,8 @@ If no images are extracted, then the process involves extracting the page contai
 
     usage: pdfgraph2csv.py [--debug] [--digits N] [--errbars] [--exclude-legend] [--glyph-centre {marker,bbox}] [-h]
                        [--heatmap] [--inside-only] [--integer AXIS] [--internal] [--max-symbol-frac MAX_SYMBOL_FRAC] [--max-words N]
-                       [-meta FILE] [--meta-only] [-o OUTPUT] [--pages PAGES] [--password PASSWORD] [--rotation]
-                       [--sizesymbol]
+                       [-meta FILE] [--meta-only] [-o OUTPUT] [--pages PAGES] [--password PASSWORD] [--progress]
+                       [--rotation] [--sizesymbol]
                        pdf
 
     positional arguments:
@@ -49,6 +49,7 @@ If no images are extracted, then the process involves extracting the page contai
       -o OUTPUT, --output OUTPUT  write to file OUTPUT (default: stdout)
       --pages PAGES         comma separated page numbers, e.g. 1,3
       --password PASSWORD   password of an encrypted PDF (user or owner password)
+      --progress            print to standard output each page number as it is processed and the seconds since processing of the PDF started
       --rotation            output the rotation of each point's graph (0, 90, -90 or 180 degrees)
       --sizesymbol          output the size of each point's marker in PDF points (1/72 inch) - the diameter of a circle, the average edge length of a box (other shapes: the mean of their bounding box's width and height)
 

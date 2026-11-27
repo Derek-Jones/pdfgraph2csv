@@ -10,28 +10,25 @@ import math
 
 from .geometry import (
     bbox_of, bezier_point, circumcircle, flatten_subpath, is_polygon, point_in_polys,
-    polygon_area, subpath_bbox, vertices)
+    polygon_area, subpath_bbox, union_box, vertices)
+from .grouping import PointGrid
 
 
 def _cluster_centres(arcs, rr):
     """Merge circle centres closer than 8% of the radius `rr` (the arcs of
     one circle give nearly the same centre); returns [[x, y, count]]."""
-    cent, grid = [], {}
-    cell = max(0.2 * rr, 0.05)
+    cent, grid = [], PointGrid(max(0.2 * rr, 0.05))
     for c in arcs:
-        key = (int(c[0] // cell), int(c[1] // cell))
         hit = None
-        for dx in (-1, 0, 1):
-            for dy in (-1, 0, 1):
-                for k in grid.get((key[0] + dx, key[1] + dy), ()):
-                    if math.hypot(k[0] - c[0], k[1] - c[1]) < 0.08 * rr:
-                        hit = k
+        for k in grid.near(c[0], c[1]):
+            if math.hypot(k[0] - c[0], k[1] - c[1]) < 0.08 * rr:
+                hit = k                           # (the last one found)
         if hit:
             hit[2] += 1
         else:
             k = [c[0], c[1], 1]
             cent.append(k)
-            grid.setdefault(key, []).append(k)
+            grid.add(k, c[0], c[1])
     return cent
 
 
@@ -103,6 +100,8 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
             # their subpath runs far beyond the circle)
             sb = subpath_bbox(sp)
             extent = max(sb[2] - sb[0], sb[3] - sb[1])
+            if extent > 40:
+                continue                     # (no arc of radius under 8 qualifies)
             for s in sp["segs"]:
                 if s[0] == "c":
                     p0, p1, p2, p3 = cur, s[1], s[2], s[3]
@@ -143,40 +142,36 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
     cents = []
     # (centres filed in cells of 0.12 pt: 460-201's 150 000 open circles
     # made the check against every centre so far take two minutes)
-    cells = {}
+    cells = _centre_cells(())
     for f in fam:
         for k in _cluster_centres([a for a in sel if abs(a[2] - f) < 0.03 * f], f):
             if not _near_centre(cells, k):
                 cents.append(k)
-                cells.setdefault((int(k[0] // 0.12), int(k[1] // 0.12)), []).append(k)
+                cells.add(k, k[0], k[1])
     if len(cents) < 5:
         return symbols
     # markers that are intact need no rebuilding
     whole = [s for s in symbols if s["shape"] == "circle"]
-    wgrid = {}
+    wgrid = PointGrid(r_out)
     for s in whole:
-        wgrid.setdefault((int(s["cx"] // r_out), int(s["cy"] // r_out)), []).append(s)
+        wgrid.add(s, s["cx"], s["cy"])
     # whole markers of a graph that was not flattened (a page may have
     # both) stay as they are
     # (arcs filed in cells as big as the reach, 0.15 of the radius: cells
     # of a whole radius held hundreds of arcs each in 460-201's clouds)
-    ac = 0.15 * r_out
-    agrid = {}
+    agrid = PointGrid(0.15 * r_out)
     for a in sel:
-        agrid.setdefault((int(a[0] // ac), int(a[1] // ac)), []).append(a)
+        agrid.add(a, a[0], a[1])
     intact, opaque = [], []
     keep_idx = set()                     # paths of opaque whole markers
     for k in cents:
-        gx, gy = int(k[0] // r_out), int(k[1] // r_out)
-        hits = [s for dx in (-1, 0, 1) for dy in (-1, 0, 1) for s in wgrid.get((gx + dx, gy + dy), ())
+        hits = [s for s in wgrid.near(k[0], k[1])
                 if math.hypot(s["cx"] - k[0], s["cy"] - k[1]) < 0.15 * r_out]
         intact.append(bool(hits))
         # all the arcs there drawn by those circles themselves: whole
         # markers, not the top of a stack of fragments
         own = {s["idx"] for s in hits}
-        ax, ay = int(k[0] // ac), int(k[1] // ac)
-        arc_paths = {a[3] for dx in (-1, 0, 1) for dy in (-1, 0, 1)
-                     for a in agrid.get((ax + dx, ay + dy), ())
+        arc_paths = {a[3] for a in agrid.near(k[0], k[1])
                      if math.hypot(a[0] - k[0], a[1] - k[1]) < 0.15 * r_out}
         op = bool(hits) and arc_paths <= own
         opaque.append(op)
@@ -234,15 +229,13 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
             layer[c] = i + 1
             lightest[c] = cs[0]
     ladder_len = {c: len(ladders[_hue_family(c)]) for c in layer}
-    cgrid = {}
+    cgrid = PointGrid(r_out)
     for j, k in enumerate(cents):
-        cgrid.setdefault((int(k[0] // r_out), int(k[1] // r_out)), []).append(j)
+        cgrid.add(j, k[0], k[1])
 
     def covering(x, y):
         """Indexes of the marker centres whose circle covers (x, y)."""
-        gx, gy = int(x // r_out), int(y // r_out)
-        return [j for dx in (-1, 0, 1) for dy in (-1, 0, 1) for j in cgrid.get((gx + dx, gy + dy), ())
-                if math.hypot(cents[j][0] - x, cents[j][1] - y) < r_out - 0.02]
+        return [j for j in cgrid.near(x, y) if math.hypot(cents[j][0] - x, cents[j][1] - y) < r_out - 0.02]
 
     # sample each marker where it overlaps as few others as possible
     samples = []         # (overlap key, covering markers, layers seen, colour) or None
@@ -284,10 +277,8 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
     # (only those at a rebuilt marker: whole markers elsewhere on the page,
     # in a graph that was not flattened, stay)
     def at_rebuilt(s):
-        gx, gy = int(s["cx"] // r_out), int(s["cy"] // r_out)
         return any(math.hypot(cents[j][0] - s["cx"], cents[j][1] - s["cy"]) < 2 * r_out
-                   for dx in (-1, 0, 1, 2, -2) for dy in (-1, 0, 1, 2, -2)
-                   for j in cgrid.get((gx + dx, gy + dy), ()))
+                   for j in cgrid.near(s["cx"], s["cy"], 2))
     out = [s for s in symbols if s["idx"] not in frag_paths or not at_rebuilt(s)]
     default = max(fam_cols, key=sum)
     rebuilt_idx = min(frags[0][2], 0) - 1      # drawn "before" everything
@@ -319,40 +310,32 @@ def _arc_span(c, p0, pm, p3):
 def _outline_found(cents, arcs, r):
     """For each centre, the fraction of its circle's outline covered by the
     arcs fitted there (centres within 0.12 pt; 72 steps of 5 degrees)."""
-    grid = {}
+    grid = PointGrid(r)
     for a in arcs:
-        grid.setdefault((int(a[0] // r), int(a[1] // r)), []).append(a)
+        grid.add(a, a[0], a[1])
     out = []
     for k in cents:
-        gx, gy = int(k[0] // r), int(k[1] // r)
         bins = set()
-        for dx in (-1, 0, 1):
-            for dy in (-1, 0, 1):
-                for a in grid.get((gx + dx, gy + dy), ()):
-                    if math.hypot(a[0] - k[0], a[1] - k[1]) < 0.12:
-                        start, sweep = a[5]
-                        for b in range(72):
-                            if (b * 5 + 2.5 - start) % 360 <= sweep:
-                                bins.add(b)
+        for a in grid.near(k[0], k[1]):
+            if math.hypot(a[0] - k[0], a[1] - k[1]) < 0.12:
+                start, sweep = a[5]
+                bins.update(b for b in range(72) if (b * 5 + 2.5 - start) % 360 <= sweep)
         out.append(len(bins) / 72.0)
     return out
 
 
 def _centre_cells(cents):
     """Centres filed in cells of 0.12 pt, for _near_centre."""
-    cells = {}
+    cells = PointGrid(0.12)
     for k in cents:
-        cells.setdefault((int(k[0] // 0.12), int(k[1] // 0.12)), []).append(k)
+        cells.add(k, k[0], k[1])
     return cells
 
 
 def _near_centre(cells, k):
     """Is a filed centre within 0.12 pt of k?  (A scan of every centre
     took minutes on 460-201's 150 000 open circles.)"""
-    cx, cy = int(k[0] // 0.12), int(k[1] // 0.12)
-    return any(math.hypot(k[0] - j[0], k[1] - j[1]) < 0.12
-               for u in (cx - 1, cx, cx + 1) for v in (cy - 1, cy, cy + 1)
-               for j in cells.get((u, v), ()))
+    return any(math.hypot(k[0] - j[0], k[1] - j[1]) < 0.12 for j in cells.near(k[0], k[1]))
 
 
 def rebuild_strip_discs(paths, symbols):
@@ -386,7 +369,7 @@ def rebuild_strip_discs(paths, symbols):
         runs.append(cur)
     discs, used = [], set()
     for run in runs:
-        x0, y0, x1, y1 = _union(run)
+        x0, y0, x1, y1 = union_box(b for _, _, b in run)
         w, h = x1 - x0, y1 - y0
         if min(w, h) <= 0 or min(w, h) < 0.85 * max(w, h):
             continue
@@ -403,11 +386,6 @@ def rebuild_strip_discs(paths, symbols):
     out = [s for s in symbols if s.get("idx") not in used] + discs
     out.sort(key=lambda s: s["idx"])
     return out
-
-
-def _union(pieces):
-    bs = [b for _, _, b in pieces]
-    return (min(b[0] for b in bs), min(b[1] for b in bs), max(b[2] for b in bs), max(b[3] for b in bs))
 
 
 def _touch(a, b, tol=0.05):

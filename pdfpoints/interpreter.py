@@ -46,7 +46,7 @@ from pdfminer.utils import apply_matrix_pt, mult_matrix
 
 from .colourbar import colour_strip, strip_pixels
 from .geometry import bbox_of, control_points
-from .image_marks import read_image
+from .image_marks import read_image, rows_uneven
 from .tokenizer import Floats, coordinate_decimals, has_inline_image, operators
 from .tools import tool_name, xmp_creator_tool
 
@@ -471,7 +471,9 @@ class ContentInterpreter(PDFPageInterpreter):
         pieces = []                           # [text, start, end, glyphs]
         last_end = None
         saw_space = False                     # a space character since the previous glyph
-        em = abs(fs * th) or 1.0
+        # (a Type 3 font's em in text space units: fonts._type3_em)
+        efs = fs * getattr(font, "em", 1.0)
+        em = abs(efs * th) or 1.0
         for item in items:
             if isinstance(item, (int, float)):        # TJ adjustment, 1/1000 em
                 pen += -item / 1000.0 * fs * th
@@ -503,10 +505,10 @@ class ContentInterpreter(PDFPageInterpreter):
                     last_end = gend
                     saw_space = False
                 pen += (w * fs + tc + (tw if (code == 32 and not font.two_byte) else 0)) * th
-        size = math.hypot(base[2] * fs, base[3] * fs)
+        size = math.hypot(base[2] * efs, base[3] * efs)
         for txt, s0, s1, gl in pieces:
             p0 = apply_matrix_pt(base, (s0, rise))
-            top = apply_matrix_pt(base, (s0, rise + 0.7 * fs))
+            top = apply_matrix_pt(base, (s0, rise + 0.7 * efs))
             self.page.record("texts", {
                 "text": txt, "p0": p0, "p1": apply_matrix_pt(base, (s1, rise)),
                 "up": (top[0] - p0[0], top[1] - p0[1]), "size": size,
@@ -633,7 +635,8 @@ class ContentInterpreter(PDFPageInterpreter):
             ww, hh = resolve1(xobj.get("Width")), resolve1(xobj.get("Height"))
             if isinstance(ww, int) and isinstance(hh, int) and max(ww, hh) >= 2 and \
                     max(ww, hh) >= 5 * min(ww, hh) and max(box[2] - box[0], box[3] - box[1]) >= 20:
-                strip = colour_strip(read_image(xobj))   # a colour bar (colourbar.py)
+                # (a few rows looked at first: a big picture is no strip)
+                strip = None if rows_uneven(xobj) else colour_strip(read_image(xobj))
                 if strip:
                     strip["ctm"] = self.ctm
                     self.page.record("colour_strips", strip)

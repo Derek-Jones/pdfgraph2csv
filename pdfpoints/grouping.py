@@ -1,7 +1,7 @@
 """Grouping helpers: disjoint sets (union-find), used to gather glyph
-outlines into words and stroke pieces into crosses, and a uniform grid of
-boxes for finding the neighbours of a shape among many (pages can hold
-hundreds of thousands of shapes)."""
+outlines into words and stroke pieces into crosses, and uniform grids of
+boxes (BoxGrid) and of points (PointGrid) for finding the neighbours of a
+shape among many (pages can hold hundreds of thousands of shapes)."""
 
 import math
 
@@ -72,3 +72,31 @@ class BoxGrid:
                 if got:
                     out.update(got)
         return out
+
+
+class PointGrid:
+    """Items at points filed in square cells of side `cell`: near(x, y)
+    gives those in the cells around (x, y) - the 3 x 3 block, or more
+    rings of cells - cell by cell, column by column (dx outer, dy inner),
+    each cell in the order its items were filed.  Callers check the exact
+    distance themselves."""
+
+    def __init__(self, cell):
+        self.cell = cell
+        self.cells = {}
+
+    def key(self, x, y):
+        c = self.cell
+        return int(x // c), int(y // c)
+
+    def add(self, item, x, y):
+        self.cells.setdefault(self.key(x, y), []).append(item)
+
+    def near(self, x, y, rings=1):
+        gx, gy = self.key(x, y)
+        cells = self.cells
+        for dx in range(-rings, rings + 1):
+            for dy in range(-rings, rings + 1):
+                got = cells.get((gx + dx, gy + dy))
+                if got:
+                    yield from got

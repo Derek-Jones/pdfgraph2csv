@@ -155,6 +155,7 @@ python3 pdfgraph2csv.py FILE.pdf [options]
 | `--max-words N` | the most words of running text a graph's plot area may hold (default 20; section 10). Added at the user's request. |
 | `--integer AXIS` | round the values of axis `x` or `y` (may be given twice) to whole numbers: data that can only be integers (counts) drawn with a little jitter. Category labels are left alone. Added at the user's request. |
 | `--password PW` | user or owner password of an encrypted file. |
+| `--progress` | before each page is processed, print to standard output "page N: S.S s": its number and the seconds, to one decimal, since processing of the PDF began (opening and repairing the file included). Added at the user's request. With no `-o` the CSV goes to standard output too, after the progress lines. |
 | `--debug` | print axis candidates, graph boxes, titles, legends to stderr. |
 
 `--help` prints the usage text of README.md word for word (written out in
@@ -485,7 +486,17 @@ killed). Write a **streaming tokenizer** that yields one
   "uni00000013", which the Adobe Glyph List reads as U+0000 U+0013. A name
   (or a base-encoding entry) that gives control characters is ignored, and
   the code keeps its standard meaning (printable ASCII 32-126: code 48 is
-  "0").
+  "0") - unless such names stand at codes below 32: then the codes were
+  given out afresh from 0 (2407.03385v3's matplotlib Type 3 fonts, code 0
+  "uni00000011") and every glyph number from 3 to 97 is read in the
+  Macintosh standard glyph order, which TrueType fonts keep for printable
+  ASCII (glyph 3 the space, 19 "0", 36 "A": the character 29 on).
+* **The em of a Type 3 font** whose glyphs are all named by glyph number
+  and whose /FontMatrix does not scale by 0.001 is its /FontBBox height
+  through the matrix, taken for 1.3 em: text sizes, word gaps and label
+  heights use it (2407.03385v3: 2 048 units to the em, a matrix of
+  0.004883, labels at /Tf 0.82 that are 8 pt). Other Type 3 fonts (marker
+  glyphs) keep the font size.
 * **Fonts without a map to Unicode**: for a two-byte (CID) font whose code
   neither ToUnicode nor pdfminer explains, read the embedded font program
   (FontFile2, FontFile3/OpenType, bare CFF; the descendant's for Type 0):
@@ -1174,6 +1185,13 @@ Some PDF writers convert every character into a filled path. Then:
   193: Word tables ruled only under their headings and between columns;
   a column of two of them passed for a plot with x categories "R", "R"
   from "R actual" and "R theory" and y categories "actual", "actual").
+  So is one with a category axis each way where 80% or more of one
+  axis's names (three or more) stand inside the plot box, more than half
+  their size in from the edge their axis faces: a chart's category names
+  stand outside its box, a table's column of entries within the table
+  (no.ntnu_inspera_146721987_149459097-031: a LaTeX table drawn cell by
+  cell, white filled cells taken for bars, the second column's entries
+  beside a column rule taken for y categories).
   So is any graph whose box holds a grid of numbers (apart from its axis
   labels, and ignoring text under 3 pt or 60% of the labels' size): at
   least 3 columns and 3 rows that each line up 3 or more numbers, with 9
@@ -2047,7 +2065,10 @@ a fifth of the plot), centred inside the plot, in three or more colours,
 half of them or more beside another one tile away (the dots of dotted grid
 lines stand apart: 2355585.2355594-006),
 each such tile is a point at its centre, symbol `tile`; other marks on the
-tiles' places go. Tiles are no legend keys. Tiles are found with or
+tiles' places go, and so do bars no wider than a tile with their middle
+within a tile's width of the tiles' area (gopinath2014mutations-004's
+smoothScatter columns, and the cut cells of its edge columns, were read
+as 16 000 stacked bars). Tiles are no legend keys. Tiles are found with or
 without `--heatmap`; their colour-bar values are reported only with it
 (the user found the option had no effect on 2308.04785-006, whose tiles
 were valued anyway).
@@ -2566,6 +2587,43 @@ Rules that follow:
   cells of 0.12 pt, and their arcs filed in cells of the search radius;
   stacked-bar segments are looked up by their left edge; a bar's
   neighbours in drawing order by a dictionary of drawing steps.
+* Two shared indexes serve the searches: `grouping.BoxGrid` (boxes filed
+  in every cell they touch; `near(box, reach)`) and `grouping.PointGrid`
+  (items at points; `near(x, y, rings)` yields the 3 x 3 block of cells,
+  or more rings, column by column, each cell in filing order, so that a
+  search that keeps the first or last match finds the same one as a scan
+  in that order). New code uses them rather than its own cell
+  dictionaries.
+* The refactoring of November 2026 (outputs byte for byte unchanged on
+  all test cases; the suite 981 s to 569 s) removed these all-pairs
+  steps: the upright bars that may be letters ('I', 'l', '1') looked at
+  every glyph (now a BoxGrid of the glyphs, the bars taken for letters
+  added as they are found: 2204.07073-010 98 s to 20 s,
+  LogicProbPragSyllogistic_Reasoning-013 110 s to 15 s); marker-like
+  shapes looked at every real glyph within the biggest one's reach (now
+  each real glyph's box grown by its own reach, filed once:
+  cumulative-evol-hollywood-film-crews-007 92 s to 55 s, log-clipped-
+  markers 53 s to 20 s); the pieces near a dotted line's run, the
+  symbols inside a legend frame candidate (counted once per frame), the
+  numbers beside a numeric legend key (sorted by height) and stacked bar
+  segments (filed by their bottom left corner) likewise; the ticks of a
+  bare line are gathered only once it has its one 10^k label; subpaths
+  over 40 pt are not searched for marker arcs.
+* 2602.03839v2-029 (matplotlib lines with shaded bands as outlines of
+  thousands of edges) took 25 minutes, now 7 s, its output unchanged: an
+  outlined line's slices are cut only by the edges that span them
+  (bisected), and the slice middles are chained through a PointGrid of
+  the 12 widths a step may span (nearest first, ties to the earlier
+  slice). gopinath2014mutations-004 (R smoothScatter, 9 000 bars) took 12
+  minutes, now 20 s: shapes look only at the bars they may be centred on
+  (bars sorted across), and stacked segments are filed once, those taken
+  skipped by their key.
+* 2407.03385v3 (28 pages, ten 15 016 x 1 252 pictures) took 3.5 minutes
+  to report no graphs, now 6 s, and finds nine: a long thin picture is
+  first looked at in 64 sampled rows across it (grey or RGB data; one
+  row uneven and it is no colour strip) before it is read whole, and
+  images with PNG or TIFF predictors are stored again without them when
+  the file is opened (qpdf undoes them in C; pdfminer did it in Python).
 * Profile with a 92 MB-stream page: about 15 s to execute, about 20 s for
   all the analysis after it. Reference times of this version (one core):
   200 000 markers 32 s, 472 000 markers 35 s, 50 000 outline fragments
@@ -2914,6 +2972,10 @@ expected files in a copy.
 | 3832783.3834484-004 | a drawing placed through several form windows read once per window; category labels set below the plot for an axis on the zero line; bar values matched by the number they state; two-part running headers 4 sizes apart |
 | 460-201 | 6 min 40 s to under 2 min (outlined-text grouping near real glyphs only; indexed circle centres, arcs, stacked segments, short bars); markers drawn twice over kept once; outlined rectangles as bars |
 | 2020.01.30.927558.full-012 | x axes borrowed down a column past a redrawn unlabelled axis line; open-axes lattice panels; band line samples; line legends shared across panels joined by axes; titles centred as whole lines; turned words crowd no title; fill, stroke and twice-outlined markers kept once |
+| 2602.03839v2-029 | outlined-line slices cut by spanning edges only, slice middles chained through a grid: 25 min to 7 s |
+| gopinath2014mutations-004 | bars sorted across for on-bar checks, stacked segments filed once: 12 min to 20 s; bars of heat-map cells dropped |
+| 2407.03385v3 | colour-strip candidates sampled before being read whole; image predictors undone by qpdf: 3.5 min to 6 s; Type 3 fonts renumbered from code 0 read by glyph number; Type 3 em from the font box |
+| no.ntnu_inspera_146721987_149459097-031 | category names standing inside the box: a table |
 | overflow-exponent | "10^602" in body text |
 | encrypted*, enc-* | RC4-40/128, AES-128/256, user password |
 | bad-stream, damaged, not-a-pdf, no-graph, many-shapes, zero-width-glyph, doubtful-axes | clean failures and "no graph" |

@@ -18,6 +18,7 @@ import math
 import re
 
 from .geometry import median
+from .grouping import PointGrid
 from .labels import LabelPairs
 from .scales import fit_axis, map_value
 
@@ -254,12 +255,10 @@ def bar_value_luma(bar, rgb):
     return map_value(bar["map"], mono[-1][1])
 
 
-def _on_tile(s, grid, cell):
+def _on_tile(s, grid):
     """Does mark s lie on a tile's place (within a quarter of its size)?"""
-    gx, gy = int(s["cx"] // cell), int(s["cy"] // cell)
     return any(abs(t["cx"] - s["cx"]) <= 0.25 * t["w"] and abs(t["cy"] - s["cy"]) <= 0.25 * t["h"]
-               for dx in (-1, 0, 1) for dy in (-1, 0, 1)
-               for t in grid.get((gx + dx, gy + dy), ()))
+               for t in grid.near(s["cx"], s["cy"]))
 
 
 def heat_tiles(g, paths):
@@ -523,10 +522,23 @@ def add_heat_tiles(graphs, symbols, paths, strips, texts, pictures=(), heatmap=F
             g["value_name"] = value_name(bar, g.get("caption", ""), g.get("title", ""))
         # (marks on a tile's place, within a quarter of its size: the cell
         # squares of 2308.04785-006's correlation matrices)
-        cell = max(tiles[0]["w"], tiles[0]["h"])
-        grid = {}
+        grid = PointGrid(max(tiles[0]["w"], tiles[0]["h"]))
         for t in tiles:
-            grid.setdefault((int(t["cx"] // cell), int(t["cy"] // cell)), []).append(t)
+            grid.add(t, t["cx"], t["cy"])
+        # (and bars made of the tiles' paths, or of the cut cells at the
+        # plot's edges drawn among them: gopinath2014mutations-004's
+        # smoothScatter columns of tiles read as 16 000 stacked bars)
+        # (a bar no wider than a tile, its middle within a tile's width of
+        # the tiles' area: the cells of the edge columns, drawn before and
+        # after the rest and cut by the plot, are bars no more)
+        tw = median(t["w"] for t in tiles)
+        ax0 = min(t["cx"] - t["w"] / 2 for t in tiles) - tw
+        ax1 = max(t["cx"] + t["w"] / 2 for t in tiles) + tw
+        ay0 = min(t["cy"] - t["h"] / 2 for t in tiles) - tw
+        ay1 = max(t["cy"] + t["h"] / 2 for t in tiles) + tw
 
-        symbols[:] = [s for s in symbols if not _on_tile(s, grid, cell)]
+        def cell(s):
+            return s["shape"] == "bar" and s["size"] <= 1.05 * tw and \
+                ax0 <= s["cx"] <= ax1 and ay0 <= s["cy"] <= ay1
+        symbols[:] = [s for s in symbols if not _on_tile(s, grid) and not cell(s)]
         symbols += tiles

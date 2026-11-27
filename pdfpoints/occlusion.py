@@ -8,7 +8,7 @@ two labels at one tick, or labels the reader never sees.
 import math
 
 from .context import PAGE
-from .geometry import rect_of
+from .geometry import path_bbox, rect_of
 
 
 def cover_rects(paths, images):
@@ -118,7 +118,6 @@ def drop_hidden_paths(paths):
     shifted, and no graph was found.  Paths of other forms outside their
     boxes stay: marks clipped out of view are reported (plus-symbols-log-
     axes, ESEUR-intro)."""
-    from .geometry import subpath_bbox
     boxes = {}
     for p in paths:
         if p.get("form_key") and p.get("form_box"):
@@ -130,8 +129,7 @@ def drop_hidden_paths(paths):
     for p in paths:
         f = p.get("form_box")
         if p.get("form_key") in windowed and f and p["subpaths"]:
-            bb = [subpath_bbox(sp) for sp in p["subpaths"]]
-            b = [min(v[0] for v in bb), min(v[1] for v in bb), max(v[2] for v in bb), max(v[3] for v in bb)]
+            b = path_bbox(p)
             if b[0] > f[2] + 0.5 or b[2] < f[0] - 0.5 or b[1] > f[3] + 0.5 or b[3] < f[1] - 0.5:
                 continue
         out.append(p)

@@ -1648,11 +1648,6 @@ def _one_label_log_axes(axes, numeric, hs_open, vs_open, debug=False):
         line = (lo, hi, X)
         if any(a["map"] and a["map"]["kind"] != "nominal" for a in _axes_on(axes + out, orient, line, 1.0)):
             continue
-        segs = hs_open if orient == "y" else vs_open
-        ticks = sorted({round(p, 3) for s_lo, s_hi, p in segs
-                        if (abs(s_lo - X) <= 0.5 or abs(s_hi - X) <= 0.5) and lo - 0.5 <= p <= hi + 0.5})
-        if len(ticks) < 5:
-            continue
         ax = 1 if orient == "y" else 0         # coordinate along the axis
         near = []
         for t in numeric:
@@ -1672,6 +1667,13 @@ def _one_label_log_axes(axes, numeric, hs_open, vs_open, debug=False):
         if not m:
             continue
         k = int(m.group(1))
+        # (the ticks only now, for the few lines with one 10^k label: every
+        # bare line scanning all segments cost seconds on big pages)
+        segs = hs_open if orient == "y" else vs_open
+        ticks = sorted({round(p, 3) for s_lo, s_hi, p in segs
+                        if (abs(s_lo - X) <= 0.5 or abs(s_hi - X) <= 0.5) and lo - 0.5 <= p <= hi + 0.5})
+        if len(ticks) < 5:
+            continue
         s = t["size"] or 1.0
         p0 = min(ticks, key=lambda p: abs(p - t["center"][ax]))
         if abs(p0 - t["center"][ax]) > 0.4 * s:

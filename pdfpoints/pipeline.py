@@ -3,10 +3,12 @@ axes and graphs, find the markers (or bars / line vertices), name their
 series from the legends and map each point through its graph's axes.
 """
 
+import bisect
 import collections
 import math
 import re
 import sys
+import time
 
 from .axes import drop_duplicate_axes, drop_scattered_tick_axes, find_axes
 from .charts import find_bars, find_boxes, find_line_series, find_stacked_areas, find_stems, find_violins
@@ -59,10 +61,14 @@ class Options:
 
 
 def extract(pdf_path, pages=None, inside_only=False, max_frac=0.1, debug=False,
-            exclude_legend=False, password=b"", info=None, errbars=False, heatmap=False):
+            exclude_legend=False, password=b"", info=None, errbars=False, heatmap=False,
+            progress=None):
     """Return the data point rows of a PDF file (one dict per point).
     `pages` limits the work to a set of page numbers.  If `info` is a dict
-    it receives 'graphs' (number of graphs found) and 'warnings'."""
+    it receives 'graphs' (number of graphs found) and 'warnings'.
+    `progress`, if given, is called with each page number before the page
+    is processed and the seconds since this call began (--progress)."""
+    start = time.monotonic()
     with open(pdf_path, "rb") as f:
         pdf = Document(f.read(), password)
     opts = Options(inside_only, max_frac, debug, exclude_legend, errbars, heatmap)
@@ -73,6 +79,8 @@ def extract(pdf_path, pages=None, inside_only=False, max_frac=0.1, debug=False,
     rows = []
     for pno, page in enumerate(pdf.pages(), 1):
         if not pages or pno in pages:
+            if progress:
+                progress(pno, time.monotonic() - start)
             try:
                 rows += extract_page(pdf, pno, page, opts, info)
             except Exception as e:     # a bug must not lose the other pages
@@ -426,6 +434,28 @@ def find_page_graphs(it, texts, boxes, pno, debug):
     return graphs
 
 
+class _BarsAcross:
+    """Bars sorted by their middle across (x for upright bars, y for
+    horizontal ones), so that a shape looks only at those it may be
+    centred on (_on_bar: within 30% of a bar's width) - every shape against
+    every bar took ten minutes on gopinath2014mutations-004's 9 000 bars."""
+
+    def __init__(self, bars):
+        self.sides = []
+        for horizontal in (False, True):
+            j = "cy" if horizontal else "cx"
+            mine = sorted((b[j], k, b) for k, b in enumerate(bars) if bool(b.get("horizontal")) == horizontal)
+            if mine:
+                reach = 0.3 * max(b["size"] for _, _, b in mine)
+                self.sides.append((j, [m[0] for m in mine], [m[2] for m in mine], reach))
+
+    def near(self, s):
+        for j, keys, mine, reach in self.sides:
+            lo = bisect.bisect_left(keys, s[j] - reach)
+            hi = bisect.bisect_right(keys, s[j] + reach)
+            yield from mine[lo:hi]
+
+
 def _on_bar(s, b):
     """Is shape s centred on bar b (its middle across the bar within 30%
     of the bar's width, along it between its foot and its end)?  For a
@@ -620,12 +650,13 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
             by_idx = {}
             for b in bars:
                 by_idx.setdefault(b["idx"], []).append(b)
+            across = _BarsAcross(bars)
             short = [s for s in marks if (s["shape"] in ("square", "rectangle") and (
                 s["idx"] in bar_paths or any(_on_bar(s, b) for d in (-1, 1)
                                              for b in by_idx.get(s["idx"] + d, ())))) or
                      (s["shape"] in ("cross", "plus") and any(
                          _on_bar(s, b) and abs(b["cy" if not b.get("horizontal") else "cx"] -
-                                               b.get("base", 0.0)) <= s["size"] for b in bars))]
+                                               b.get("base", 0.0)) <= s["size"] for b in across.near(s)))]
             # short bars taken for squares are bars; squares that are no
             # bars (legend keys of the bar colours) stay, if the bars are
             # most of the shapes
@@ -659,8 +690,9 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
         if bars:
             # (rectangles that are short bars' outlines, centred on a bar
             # and as wide, go: 2020.01.30.927558.full-048)
+            across = _BarsAcross(bars)
             outl = {id(s) for s in symbols if s["shape"] == "rectangle" and not s.get("marker") and
-                    any(abs(s["size"] - b["size"]) <= 0.2 * b["size"] and _on_bar(s, b) for b in bars)}
+                    any(abs(s["size"] - b["size"]) <= 0.2 * b["size"] and _on_bar(s, b) for b in across.near(s))}
             if outl:
                 symbols[:] = [s for s in symbols if id(s) not in outl]
             # a second row of x labels naming groups of bars; categories

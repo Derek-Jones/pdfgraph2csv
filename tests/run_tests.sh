@@ -449,6 +449,28 @@ t_help() {
     fi
 }
 
+# t_progress: --progress prints each page processed and the seconds so far
+t_progress() {
+    local name='--progress: one line per page processed (pages 2 and 8 of 2407.03385v3), page number and seconds since the start to one decimal, on standard output'
+    if [ -n "$filter" ] && ! printf '%s\n' "$name" | grep -qiF -- "$filter"; then
+        return
+    fi
+    [ "$update" -eq 1 ] && return
+    "$PYTHON" -I "$PROGRAM" --progress --pages 2,8 -o "$TMP/progress.csv" "$DATA/2407.03385v3.pdf" \
+        >"$TMP/progress_out" 2>/dev/null
+    if awk 'NR == 1 && /^page 2: [0-9]+\.[0-9] s$/ { a = 1 } NR == 2 && /^page 8: [0-9]+\.[0-9] s$/ { b = 1 }
+            END { exit !(a && b && NR == 2) }' "$TMP/progress_out"; then
+        passed=$((passed + 1))
+        [ "$verbose" -eq 1 ] && printf 'ok    %4ds  %s\n' 0 "$name"
+    else
+        failed=$((failed + 1))
+        failed_names="$failed_names  $name
+"
+        printf 'FAIL  %4ds  %s\n' 0 "$name"
+        sed 's/^/      got: /' "$TMP/progress_out"
+    fi
+}
+
 # summary: called after the last case
 summary() {
     if [ "$update" -eq 1 ]; then
@@ -1001,6 +1023,26 @@ t '2020.01.30.927558.full-012 (--errbars), with meta file: twelve MATLAB panels;
   --expect 2020.01.30.927558.full-012.csv \
   --meta 2020.01.30.927558.full-012.meta.csv \
   -- --errbars
+
+t '2602.03839v2-029, with meta file: six matplotlib line charts in two rows of three, lines with shaded bands drawn as outlines of thousands of edges (was 25 minutes: each slice against every edge, each slice middle against every other; now 7 s)' \
+  --pdf 2602.03839v2-029.pdf \
+  --expect 2602.03839v2-029.csv \
+  --meta 2602.03839v2-029.meta.csv
+
+t 'gopinath2014mutations-004, with meta file: four R smoothScatter density plots, 15 876 tiles each, read as heat tiles only (the columns of tiles and the cut edge cells were also read as 16 000 stacked bars; 12 minutes, each mark against every bar; now 20 s)' \
+  --pdf gopinath2014mutations-004.pdf \
+  --expect gopinath2014mutations-004.csv \
+  --meta gopinath2014mutations-004.meta.csv
+
+t '2407.03385v3, with meta file: a 28-page paper (was 3.5 minutes and no vector graphics found): ten 15 016 x 1 252 pictures checked for colour strips by sampled rows, their PNG predictors undone by qpdf; matplotlib Type 3 fonts with codes renumbered from 0 and glyph-number names (uni00000013) read in the Macintosh glyph order, their em taken from the font box (labels at Tf 0.82 are 8 pt); nine graphs on pages 2, 8, 16, 21, 22 and 23' \
+  --pdf 2407.03385v3.pdf \
+  --expect 2407.03385v3.csv \
+  --meta 2407.03385v3.meta.csv
+
+t 'no.ntnu_inspera_146721987_149459097-031: no graph, two LaTeX tables drawn cell by cell (white filled cells, rules in pieces); the second column of the first, beside a column rule, was a category axis whose names stand inside the box, its headings x categories, the cells bars' \
+  --pdf no.ntnu_inspera_146721987_149459097-031.pdf \
+  --meta - \
+  --stderr 'No vector graphics found'
 
 t 'w21074-035: no graph, two ruled regression tables one above another (coefficients with significance stars, standard errors in brackets); one column running through both is no plot, no meta file' \
   --pdf w21074-035.pdf \
@@ -1556,5 +1598,6 @@ t 'random10 asterisk-unequal: the same points with 10-digit coordinates (asteris
   --keep
 
 t_help
+t_progress
 
 summary

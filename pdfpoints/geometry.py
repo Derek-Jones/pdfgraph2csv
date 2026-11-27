@@ -164,6 +164,18 @@ def bbox_of(pts):
     return min(xs), min(ys), max(xs), max(ys)
 
 
+def union_box(boxes):
+    """The box (x0, y0, x1, y1) holding all the boxes given."""
+    boxes = list(boxes)
+    return (min(b[0] for b in boxes), min(b[1] for b in boxes),
+            max(b[2] for b in boxes), max(b[3] for b in boxes))
+
+
+def path_bbox(p):
+    """The box of all a path's subpaths."""
+    return union_box(subpath_bbox(sp) for sp in p["subpaths"])
+
+
 def circumcircle(a, b, c):
     """Centre and radius of the circle through three points (None if they
     are collinear)."""

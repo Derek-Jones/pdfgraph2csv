@@ -22,7 +22,7 @@ from .colours import color_name
 from .geometry import (
     axis_aligned, bbox_of, encloses, flatten_subpath, median, memoized, rect_area, subpath_bbox,
     vertices)
-from .grouping import BoxGrid, DisjointSets
+from .grouping import BoxGrid, DisjointSets, PointGrid
 
 
 def drop_hidden_dots(symbols, paths):
@@ -289,12 +289,12 @@ def drop_marker_faces(symbols, paths=()):
         made.append(m)
         faces[id(s)] = m
     # pieces within the ring of a face
-    centres = {}
+    centres = PointGrid(cell)
     for s in symbols:
         b = faces.get(id(s))
         # (whole faces only: a sliver of a face lies off its marker's centre)
         if b is not None and s["size"] > 0.3 * b["size"]:
-            centres.setdefault((int(s["cx"] // cell), int(s["cy"] // cell)), []).append((s, b["size"]))
+            centres.add((s, b["size"]), s["cx"], s["cy"])
 
     # (the bases of whole faces: a sliver of white may lie on any piece)
     base_ids = {id(faces[id(s)]) for s in symbols
@@ -308,16 +308,13 @@ def drop_marker_faces(symbols, paths=()):
     def piece(s):
         # a small piece near a face, or (painted before the face, on its
         # ring, no bigger than it) a piece of the ring or disc under it
-        gx, gy = int(s["cx"] // cell), int(s["cy"] // cell)
-        for dx in (-1, 0, 1):
-            for dy in (-1, 0, 1):
-                for f, z in centres.get((gx + dx, gy + dy), ()):
-                    if f is s:
-                        continue
-                    d = math.hypot(f["cx"] - s["cx"], f["cy"] - s["cy"])
-                    if (s["size"] <= 0.45 * z and d <= 0.75 * z) or \
-                            (s["idx"] < f["idx"] and s["size"] <= 1.1 * z and d <= 0.5 * z):
-                        return True
+        for f, z in centres.near(s["cx"], s["cy"]):
+            if f is s:
+                continue
+            d = math.hypot(f["cx"] - s["cx"], f["cy"] - s["cy"])
+            if (s["size"] <= 0.45 * z and d <= 0.75 * z) or \
+                    (s["idx"] < f["idx"] and s["size"] <= 1.1 * z and d <= 0.5 * z):
+                return True
         return False
     out = []
     for s in symbols:

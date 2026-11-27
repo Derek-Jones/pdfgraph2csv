@@ -16,7 +16,7 @@ import collections
 import math
 
 from .geometry import bbox_of, box_of, encloses, inside_rect, median, rect_area, rect_distance, vertices
-from .grouping import DisjointSets
+from .grouping import DisjointSets, PointGrid
 from .text import WORD_RE
 
 
@@ -427,9 +427,15 @@ def pattern_dash_paths(paths):
             if line_like(run):
                 mine.update(x[1] for x in run)
         if mine:
-            near = [x for x in ps if x[1] in mine]
+            # (the run's pieces filed in cells of 8 pt: every piece against
+            # every one of a long run took tens of seconds)
+            near = PointGrid(8.0)
+            for y in ps:
+                if y[1] in mine:
+                    near.add(y, y[0], y[3])
             for x in ps:
-                if x[1] not in mine and any(math.hypot(x[0] - y[0], x[3] - y[3]) <= 8.0 for y in near):
+                if x[1] not in mine and any(math.hypot(x[0] - y[0], x[3] - y[3]) <= 8.0
+                                            for y in near.near(x[0], x[3])):
                     mine.add(x[1])
         drop |= mine
     return drop
@@ -535,6 +541,7 @@ def mark_legend_frames(symbols, paths, graphs):
             boxes.append(b)
     if not boxes:
         return symbols
+    held = {}          # box -> how many symbols it holds (counted once per box)
     for s in out:
         if s.get("idx") is None:
             continue
@@ -543,7 +550,10 @@ def mark_legend_frames(symbols, paths, graphs):
         if not holding:
             continue
         b = min(holding, key=lambda b: (b[2] - b[0]) * (b[3] - b[1]))
-        if sum(1 for o in out if b[0] < o["cx"] < b[2] and b[1] < o["cy"] < b[3]) >= 2:
+        key = tuple(b)
+        if key not in held:
+            held[key] = sum(1 for o in out if b[0] < o["cx"] < b[2] and b[1] < o["cy"] < b[3])
+        if held[key] >= 2:
             s["frame"] = b
     return symbols
 

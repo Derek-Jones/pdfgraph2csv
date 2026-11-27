@@ -265,6 +265,29 @@ def _one_name(m):
     return len(m.get("ticks", ())) >= 2 and len(names) == 1
 
 
+def _names_inside(g):
+    """Do most (80%) of the names of one of graph g's category axes - three
+    or more - stand inside its plot box, more than half their size in from
+    the edge their axis faces?  A chart's category names stand outside its
+    box; a table's column of entries, the rule beside it taken for an axis,
+    stands within the table (no.ntnu_inspera_146721987_149459097-031: the
+    entries of the second column of a LaTeX table with filled cells, its
+    headings taken for x categories)."""
+    x0, y0, x1, y1 = g["rect"]
+    for k in ("x", "y"):
+        labs = [t for _, t in g[k].get("labels") or ()]
+        if len(labs) < 3:
+            continue
+        def inside(t):
+            s = 0.5 * (t.get("size") or 1.0)
+            if k == "y":
+                return t["bbox"][0] > x0 + s and t["bbox"][2] < x1 - s
+            return t["bbox"][1] > y0 + s and t["bbox"][3] < y1 - s
+        if sum(1 for t in labs if inside(t)) >= 0.8 * len(labs):
+            return True
+    return False
+
+
 def drop_tables(graphs, texts, debug=False, boxes=(), paths=()):
     """The graphs that are graphs.  Dropped:
     - a 'plot' holding more words of running text than --max-words
@@ -274,8 +297,9 @@ def drop_tables(graphs, texts, debug=False, boxes=(), paths=()):
       and row names passed for axes;
     - a graph with a category axis each way whose cells hold text in at
       least half of them, or one of whose axes names one category at every
-      tick (_one_name): a ruled table (its column headings and row names
-      are the categories).  A chart with categories both ways, such as a
+      tick (_one_name), or whose names stand inside its box (_names_inside):
+      a ruled table (its column headings and row names are the
+      categories).  A chart with categories both ways, such as a
       dot matrix, holds markers in its cells, not text;
     - a graph lying inside a ruled table (ruled_tables) twice its size or
       more, whose box holds a grid of numbers: a few rows of the table
@@ -314,6 +338,8 @@ def drop_tables(graphs, texts, debug=False, boxes=(), paths=()):
                 why = "is a table: text in %d of its %d cells" % (held, n)
             elif _one_name(mx) or _one_name(my):
                 why = "is a table: a category axis naming one category over and over"
+            elif _names_inside(g):
+                why = "is a table: a category axis's names stand inside its box"
         if why is None:
             out.append(g)
         elif debug:

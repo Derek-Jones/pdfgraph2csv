@@ -442,14 +442,20 @@ def numeric_legend(symbols, texts):
     colours and with different numbers.  Returns ({symbol index: number as
     printed}, {texts of the heading just above the keys})."""
     found = {}
+    # (the numbers sorted by height, so a marker looks only at those level
+    # with it - every marker against every text cost seconds on big pages;
+    # each one's candidates are taken in the texts' order, as before)
+    nums = sorted((t["center"][1], k, t) for k, t in enumerate(texts)
+                  if is_number(t) and not t["rotated"])
+    heights = [n[0] for n in nums]
+    reach = 0.4 * max((t["size"] or 1.0 for _, _, t in nums), default=1.0)
     for i, s in enumerate(symbols):
         if s["shape"] in ("bar", "stem", "tile", "line") or s["size"] > 8 or not s.get("rgb"):
             continue
         right = s["cx"] + s["size"] / 2
         best = None
-        for t in texts:
-            if not is_number(t) or t["rotated"]:
-                continue
+        lo, hi = bisect.bisect_left(heights, s["cy"] - reach), bisect.bisect_right(heights, s["cy"] + reach)
+        for _k, t in sorted((n[1], n[2]) for n in nums[lo:hi]):
             ts = t["size"] or 1.0
             gap = t["bbox"][0] - right
             if 0 <= gap <= 1.5 * ts and abs(t["center"][1] - s["cy"]) <= 0.4 * ts:

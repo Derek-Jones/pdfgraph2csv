@@ -134,6 +134,10 @@ identical text columns, numeric columns within the case's tolerance.
 | 3832783.3834484-004.pdf | Paper page (Figure 1): three Excel bar charts of throughput changes, negative bars below a zero line with the category names under the plot |
 | 460-201.pdf | Book page (Fig. 5.12): four R diagnostic plots flattened by InDesign - a Q-Q plot, two scatter plots of 37 676 open circles each, a histogram of outlined bars; 39 MB of drawing |
 | 2020.01.30.927558.full-012.pdf | Preprint page (Fig. 2): four line panels in a lattice sharing axes and one legend, four scatter panels with error bars sharing a y axis, four low/high panels with error bars |
+| 2602.03839v2-029.pdf | Preprint page (Figs. 13, 14): six matplotlib line charts with shaded bands, two rows of three |
+| gopinath2014mutations-004.pdf | Paper page (Fig. 2): four R smoothScatter density plots in two rows of two |
+| 2407.03385v3.pdf | A whole 28-page paper: matplotlib figures with Type 3 fonts renumbered from code 0, ten very large raster pictures, heat maps and bar charts |
+| no.ntnu_inspera_146721987_149459097-031.pdf | Thesis page: two LaTeX tables drawn cell by cell, no graph |
 | damaged.pdf (beyond qpdf's repair), not-a-pdf.pdf, no-graph.pdf, many-shapes.pdf, zero-width-glyph.pdf, doubtful-axes.pdf | must fail cleanly or report that no graph was found (cases without `--expect` check only the exit status and the message) |
 
 `schumpeter-001.reference.csv` is the reference supplied with the PDF

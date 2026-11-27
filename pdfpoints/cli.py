@@ -17,8 +17,8 @@ from .pipeline import extract
 HELP = """\
 usage: pdfgraph2csv.py [--debug] [--digits N] [--errbars] [--exclude-legend] [--glyph-centre {marker,bbox}] [-h]
                    [--heatmap] [--inside-only] [--integer AXIS] [--internal] [--max-symbol-frac MAX_SYMBOL_FRAC] [--max-words N]
-                   [-meta FILE] [--meta-only] [-o OUTPUT] [--pages PAGES] [--password PASSWORD] [--rotation]
-                   [--sizesymbol]
+                   [-meta FILE] [--meta-only] [-o OUTPUT] [--pages PAGES] [--password PASSWORD] [--progress]
+                   [--rotation] [--sizesymbol]
                    pdf
 
 positional arguments:
@@ -44,6 +44,7 @@ options:
   -o OUTPUT, --output OUTPUT  write to file OUTPUT (default: stdout)
   --pages PAGES         comma separated page numbers, e.g. 1,3
   --password PASSWORD   password of an encrypted PDF (user or owner password)
+  --progress            print to standard output each page number as it is processed and the seconds since processing of the PDF started
   --rotation            output the rotation of each point's graph (0, 90, -90 or 180 degrees)
   --sizesymbol          output the size of each point's marker in PDF points (1/72 inch) - the diameter of a circle, the average edge length of a box (other shapes: the mean of their bounding box's width and height)
 """
@@ -57,6 +58,12 @@ class _Parser(argparse.ArgumentParser):
 
     def format_usage(self):
         return HELP[:HELP.index("\n\n") + 1]
+
+
+def _progress(pno, seconds):
+    """--progress: the page about to be processed and the seconds since the
+    PDF's processing started (opening the file included), one decimal."""
+    print("page %d: %.1f s" % (pno, seconds), flush=True)
 
 
 def main():
@@ -104,6 +111,9 @@ def main():
                     help="output the symbol centres in PDF page coordinates")
     ap.add_argument("--password", default="",
                     help="password of an encrypted PDF (user or owner password)")
+    ap.add_argument("--progress", action="store_true",
+                    help="print to standard output each page number as it is processed and the "
+                         "seconds since processing of the PDF started")
     ap.add_argument("--debug", action="store_true", help="print axis detection details")
     args = ap.parse_args()
     if args.digits is not None and not 1 <= args.digits <= 17:
@@ -122,7 +132,8 @@ def main():
     try:
         rows = extract(args.pdf, pages, args.inside_only, args.max_symbol_frac, args.debug,
                        args.exclude_legend, args.password.encode("utf-8"), info,
-                       errbars=args.errbars, heatmap=args.heatmap)
+                       errbars=args.errbars, heatmap=args.heatmap,
+                       progress=_progress if args.progress else None)
     except (OSError, ValueError) as e:
         sys.exit("error: %s" % e)
     for wmsg in info.get("warnings", []):

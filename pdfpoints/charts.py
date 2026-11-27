@@ -8,6 +8,7 @@ import bisect
 import math
 
 from .geometry import (axis_aligned, bbox_of, flatten_subpath, inside_rect, line_intersection, median, polygon_area, rect_area, rect_of, subpath_bbox, vertices)
+from .grouping import PointGrid
 
 
 def _open_bar_outlines(p):
@@ -298,18 +299,19 @@ def _stack(bars, loose, tol, seen):
     jobs on that of cognitive ones).  It is a data point at its own top, as
     every bar is.  Adds to `bars`."""
     tops = list(bars)
-    cell = max(tol, 0.5)
+    # (rectangles filed once by their bottom left corner, a bar looking
+    # only around its top left one: 460-201's Q-Q plot gave 6 000 "bars"
+    # against 31 000 squares, each pair tried - 90 s; candidates in their
+    # order in `loose`, those taken skipped by their key - refiling the
+    # rest for each layer cost gopinath2014mutations-004 seconds)
+    corners = PointGrid(max(tol, 0.5))
+    for i, r in enumerate(loose):
+        corners.add((i, r), r[0], r[1])
     while tops and loose:
         nxt = []
-        # (rectangles filed by their left edge: 460-201's Q-Q plot gave
-        # 6 000 "bars" against 31 000 squares, each pair tried - 90 s)
-        by_x = {}
-        for i, r in enumerate(loose):
-            by_x.setdefault(int(r[0] // cell), []).append((i, r))
         for b in tops:
             bx0, bx1 = b["cx"] - b["size"] / 2, b["cx"] + b["size"] / 2
-            kx = int(bx0 // cell)
-            for _i, r in sorted(ir for d in (-1, 0, 1) for ir in by_x.get(kx + d, ())):
+            for _i, r in sorted(corners.near(bx0, b["cy"]), key=lambda ir: ir[0]):
                 rx0, ry0, rx1, ry1, p, rgb = r
                 # (a segment may be thin: Memory_systems_cacheDRAMdisk-051's
                 # 0.17 pt grey layers between the black and white ones)
@@ -323,7 +325,6 @@ def _stack(bars, loose, tol, seen):
                            "filled": True, "rgb": rgb, "idx": p["idx"], "base": ry0}
                     bars.append(seg)
                     nxt.append(seg)
-        loose = [r for r in loose if (round(r[0], 2), round(r[2], 2), round(r[3], 2)) not in seen]
         tops = nxt
 
 
@@ -758,17 +759,28 @@ def _outlined_lines(graph, paths, inside):
         mids = []
         for k in (0, 1):                    # 0: vertical slices at x; 1: level ones at y
             lo_b, hi_b = (bx0, bx1) if k == 0 else (by0, by1)
+            vs = []
             v = lo_b + step / 2
             while v < hi_b:
-                cuts = []
-                for a, b in edges:
+                vs.append(v)
+                v += step
+            # each edge cuts only the slices between its ends (every slice
+            # against every edge took minutes on 2602.03839v2-029's
+            # outlines of thousands of edges)
+            cuts = [[] for _ in vs]
+            for a, b in edges:
+                e0, e1 = (a[k], b[k]) if a[k] <= b[k] else (b[k], a[k])
+                i = max(0, bisect.bisect_left(vs, e0))
+                while i < len(vs) and vs[i] < e1:
+                    v = vs[i]
                     if (a[k] - v) * (b[k] - v) < 0:
                         f = (v - a[k]) / (b[k] - a[k])
-                        cuts.append(a[1 - k] + f * (b[1 - k] - a[1 - k]))
-                if cuts and max(cuts) - min(cuts) <= 6 * width:
-                    c = (min(cuts) + max(cuts)) / 2
+                        cuts[i].append(a[1 - k] + f * (b[1 - k] - a[1 - k]))
+                    i += 1
+            for v, cs in zip(vs, cuts):
+                if cs and max(cs) - min(cs) <= 6 * width:
+                    c = (min(cs) + max(cs)) / 2
                     mids.append((v, c) if k == 0 else (c, v))
-                v += step
         if len(mids) < 3:
             continue
         cx, cy = (bx0 + bx1) / 2, (by0 + by1) / 2
@@ -776,10 +788,23 @@ def _outlined_lines(graph, paths, inside):
         left = set(range(len(mids)))
         left.discard(mids.index(cur))
         centre = [cur]
+        # (the nearest slice found through cells of the 12 widths a step may
+        # span: every slice against every other took minutes on
+        # 2602.03839v2-029's long outlined curves)
+        reach = 12 * width
+        grid = PointGrid(reach)
+        for k, q in enumerate(mids):
+            grid.add(k, q[0], q[1])
         while left:
-            m = min(left, key=lambda k: math.dist(mids[k], cur))
-            if math.dist(mids[m], cur) > 12 * width:
+            best = None
+            for k in grid.near(cur[0], cur[1]):
+                if k in left:
+                    d = math.dist(mids[k], cur)
+                    if best is None or (d, k) < best:
+                        best = (d, k)
+            if best is None or best[0] > reach:
                 break                       # (a stray slice off the line)
+            m = best[1]
             left.discard(m)
             cur = mids[m]
             centre.append(cur)

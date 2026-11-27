@@ -10,6 +10,7 @@ glyphs used by plotting programs are listed here.
 """
 
 import io
+import math
 import re
 
 from fontTools.agl import toUnicode
@@ -150,6 +151,7 @@ class FontInfo:
                 if isinstance(w, (int, float)):
                     self.widths[first + k] = w
         self.scale = getattr(font, "hscale", 0.001) * 1000.0
+        self.em = _type3_em(spec, self.diffs)
         self.metrics = _standard_metrics(self.base) if not self.widths else None
         self._unicode_cache = {}
         self._spec = spec
@@ -212,6 +214,14 @@ class FontInfo:
             # number 0x13 (Type 3 copies of TrueType fonts), which the Adobe
             # Glyph List reads as U+0000 U+0013.  The code keeps its
             # standard meaning then (48 is "0").
+            # codes renumbered from 0 (2407.03385v3's matplotlib Type 3
+            # fonts: code 0 is "uni00000011", code 32 "uni0000005b"): the
+            # glyph number read in the Macintosh standard glyph order, which
+            # TrueType fonts keep for the printable ASCII characters (glyph
+            # 3 the space, 19 "0", 36 "A": the character 29 on)
+            m = re.fullmatch(r"uni([0-9A-Fa-f]{8})", self.diffs[c])
+            if m and self._renumbered_glyphs() and 3 <= int(m.group(1), 16) <= 97:
+                return chr(int(m.group(1), 16) + 29)
             if 0x20 <= c < 0x7F:
                 return chr(c)
             if not u:
@@ -239,6 +249,14 @@ class FontInfo:
                 # tells which characters they are
                 return "\ufffd"
         return chr(c) if 0 <= c < 0x110000 else "?"
+
+    def _renumbered_glyphs(self):
+        """Do glyph-number names ("uni00000013") stand at codes below the
+        space - codes given out afresh, not the characters' own?"""
+        if not hasattr(self, "_renum_glyphs"):
+            self._renum_glyphs = any(k < 0x20 and re.fullmatch(r"uni[0-9A-Fa-f]{8}", v)
+                                     for k, v in self.diffs.items())
+        return self._renum_glyphs
 
     def _ordering(self):
         """The CIDSystemInfo ordering of a Type 0 font ('' if none)."""
@@ -649,6 +667,30 @@ def _simple_glyph_metrics(spec):
         return out
     except Exception:                 # no program, or one fontTools cannot read
         return None
+
+
+def _type3_em(spec, diffs):
+    """How many text space units a Type 3 font's em is: its glyph space
+    has no em, so its /FontBBox height is taken for 1.3 em (most fonts'
+    boxes are 1.2 to 1.4 em tall), through its /FontMatrix.  2407.03385v3's
+    matplotlib Type 3 fonts, 2 048 units to the em and a matrix of
+    0.004883, set 8 pt labels at /Tf 0.82: taken for 0.8 pt, they were no
+    labels.  1 for other fonts, for a Type 3 font whose matrix scales by
+    0.001, and for one whose glyphs are not all named by glyph number
+    (marker glyphs - short-years's font "A" - keep their size)."""
+    try:
+        if getattr(resolve1(spec.get("Subtype")), "name", None) != "Type3" or not diffs or \
+                not all(re.fullmatch(r"uni[0-9A-Fa-f]{8}", v) for v in diffs.values()):
+            return 1.0                    # (only copies of TrueType text fonts)
+        m = [float(resolve1(v)) for v in resolve1(spec.get("FontMatrix"))]
+        d = math.hypot(m[2], m[3])
+        if 0.0009 <= d <= 0.0011:
+            return 1.0                    # (1 000 units to the em, as in other fonts)
+        bb = [float(resolve1(v)) for v in resolve1(spec.get("FontBBox"))]
+        h = abs(bb[3] - bb[1]) * d
+        return h / 1.3 if h > 0 else 1.0
+    except (TypeError, ValueError, IndexError):
+        return 1.0
 
 
 def _differences(spec):

@@ -50,6 +50,20 @@ def _salvage_flate(obj, names):
         return b""
 
 
+def _predicted_image(obj):
+    """Is stream obj an image whose data carry a predictor (/DecodeParms
+    with /Predictor 2 or more)?"""
+    try:
+        if obj.get("/Subtype") != pikepdf.Name.Image:
+            return False
+        parms = obj.get("/DecodeParms")
+        if isinstance(parms, pikepdf.Array):
+            parms = parms[0] if len(parms) else None
+        return isinstance(parms, pikepdf.Dictionary) and int(parms.get("/Predictor", 1)) >= 2
+    except (TypeError, ValueError, pikepdf.PdfError):
+        return False
+
+
 class Document:
     """A PDF file, ready for interpretation: `pages()` lists its pages
     (pdfminer PDFPage objects), `rsrcmgr` caches fonts across pages and
@@ -103,7 +117,15 @@ class Document:
             if not all(n in _DECODABLE for n in names):
                 continue
             try:
-                obj.read_bytes()
+                data = obj.read_bytes()
+                if names in (["/FlateDecode"], ["/Fl"]) and _predicted_image(obj):
+                    # an image with a PNG or TIFF predictor, its predictor
+                    # undone here by qpdf and stored again without one:
+                    # pdfminer would undo it in Python, byte by byte
+                    # (2407.03385v3's 15 016 x 1 252 pictures: 12 s each)
+                    obj.write(zlib.compress(data, 1), filter=pikepdf.Name.FlateDecode)
+                    if "/DecodeParms" in obj:
+                        del obj["/DecodeParms"]
             except pikepdf.PdfError as e:
                 data = _salvage_flate(obj, names)
                 if data:                       # a truncated Flate stream: keep what decodes

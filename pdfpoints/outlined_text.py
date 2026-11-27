@@ -16,7 +16,7 @@ import re
 from .context import PAGE
 from .geometry import (
     bbox_of, encloses, flatten_subpath, median, polygon_area, subpath_bbox, thin_rect_line,
-    to_frame)
+    to_frame, union_box)
 from .grouping import BoxGrid, DisjointSets
 from .occlusion import CoverIndex
 from .symbols import classify_subpath
@@ -480,22 +480,25 @@ def _near_real(glyphs, markerlike_keys, reach=6.0):
     def size(g):
         b = g["box"]
         return max(b[2] - b[0], b[3] - b[1], 1e-6)
-    big = max(size(g) for g in real)
-    grid = BoxGrid(max(1.0, reach * big))
-    for k, g in enumerate(real):
-        grid.add(k, g["box"])
+    # each real glyph's box grown by its reach, filed by cell: a marker-like
+    # shape looks only at the cells it lies in (searching every real glyph
+    # within the biggest one's reach gathered sets of thousands per shape)
+    grown = []
+    for g in real:
+        r, lim = g["box"], reach * size(g)
+        grown.append((r[0] - lim, r[1] - lim, r[2] + lim, r[3] + lim))
+    grid = BoxGrid(max(1.0, median(max(u[2] - u[0], u[3] - u[1]) for u in grown)))
+    for k, u in enumerate(grown):
+        grid.add(k, u)
     # (only distance: dropping marker-like shapes that overlap others too
     # cut real fragments in a cloud of markers loose from their unreadable
     # clusters, read alone as "1" - cumulative-evol-hollywood-film-crews-007)
     near = []
     for g in ml:
         b = g["box"]
-        for k in grid.near(b, reach * big):
-            r = real[k]["box"]
-            lim = reach * size(real[k])
-            if b[0] - r[2] < lim and r[0] - b[2] < lim and b[1] - r[3] < lim and r[1] - b[3] < lim:
-                near.append(g)
-                break
+        if any(b[0] < u[2] and u[0] < b[2] and b[1] < u[3] and u[1] < b[3]
+               for u in (grown[k] for k in grid.near(b))):
+            near.append(g)
     keep = {id(g) for g in real} | {id(g) for g in near}
     return [g for g in glyphs if id(g) in keep]       # (in their order)
 
@@ -663,23 +666,35 @@ def _glyph_parts(paths, covers):
     # letter ('I', 'l', '1'): 3576042-018's outlined legend name "HINDBR"
     # fell apart at its 'I', and the 'H' alone was taken for a marker (a
     # tick mark has no glyph level with it on both sides)
-    for bar in bars:
+    # (the glyphs - and the bars taken for letters so far - filed by box:
+    # every bar against every glyph took minutes
+    # on pages of tens of thousands of each - 2204.07073-010, Logic-
+    # ProbPragSyllogistic_Reasoning-013)
+    tall = [bar for bar in bars if bar[3][3] - bar[3][1] >= 2.5 * (bar[3][2] - bar[3][0])]
+    others = parts + markerlike
+    if tall and others:
+        index = BoxGrid(max(1.0, median(bar[3][3] - bar[3][1] for bar in tall)))
+        for k, g in enumerate(others):
+            index.add(k, g[3])
+    for bar in tall:
         b = bar[3]
-        h, w = b[3] - b[1], b[2] - b[0]
-        if h < 2.5 * w:
-            continue
+        h = b[3] - b[1]
         reach = 0.6 * h
-
-        def level(g, bar=bar, b=b, h=h):
+        left = right = False
+        for k in index.near(b, reach):
+            g = others[k]
             gb = g[3]
             gh = gb[3] - gb[1]
-            return g[4] == bar[4] and 0.6 * h <= gh <= 1.4 * h and \
-                min(gb[3], b[3]) - max(gb[1], b[1]) >= 0.7 * h
-        others = parts + markerlike
-        left = any(level(g) and 0 <= b[0] - g[3][2] <= reach for g in others)
-        right = any(level(g) and 0 <= g[3][0] - b[2] <= reach for g in others)
+            if g[4] == bar[4] and 0.6 * h <= gh <= 1.4 * h and \
+                    min(gb[3], b[3]) - max(gb[1], b[1]) >= 0.7 * h:
+                left = left or 0 <= b[0] - gb[2] <= reach
+                right = right or 0 <= gb[0] - b[2] <= reach
+                if left and right:
+                    break
         if left and right:
             markerlike.append(bar)
+            index.add(len(others), b)          # (a letter for the bars after it)
+            others.append(bar)
     # tall slender pieces (axis-break wiggles, brackets) are no digits and
     # would glue neighbouring labels into one unreadable word
     hmed = median(g[3][3] - g[3][1] for g in parts)
@@ -916,7 +931,6 @@ def _blob_items(word):
     return [{"text": None, "value": None, "rotated": True, "angle": 0.0,
              "center": (sum((b[0] + b[2]) / 2 for b in gb) / len(gb),
                         sum((b[1] + b[3]) / 2 for b in gb) / len(gb)),
-             "bbox": (min(b[0] for b in gb), min(b[1] for b in gb),
-                      max(b[2] for b in gb), max(b[3] for b in gb)),
+             "bbox": union_box(gb),
              "centres": [((b[0] + b[2]) / 2, (b[1] + b[3]) / 2) for b in gb],
              "size": hmed / 0.7, "idx": idx}]

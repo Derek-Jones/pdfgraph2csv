@@ -95,6 +95,41 @@ def _jpeg_pixels(raw, w, h):
     return img.tobytes(), (1 if img.mode == "L" else 3)
 
 
+def rows_uneven(xobj, samples=64):
+    """A quick look at a long thin image before it is read whole: True if
+    one of a few rows across it (first, last and evenly between) holds
+    pixels further apart than 0.02 in some component - then it is no
+    colour strip (colourbar.colour_strip).  False when it may be one, or
+    when the image is not plain 8-bit grey or RGB data (palettes, CMYK,
+    JPEG: read whole).  2407.03385v3's ten 15 016 x 1 252 pictures were
+    each turned into 19 million colour tuples to learn that (and their PNG
+    predictors undone in Python: document.py now has qpdf undo them)."""
+    filters = _filters(xobj)
+    if any(f in ("JPXDecode", "JBIG2Decode", "CCITTFaxDecode", "DCTDecode") for f in filters):
+        return False
+    w, h = resolve1(xobj.get("Width")), resolve1(xobj.get("Height"))
+    if resolve1(xobj.get("BitsPerComponent")) != 8 or not isinstance(w, int) or not isinstance(h, int) or \
+            _palette(xobj.get("ColorSpace")):
+        return False
+    n = _components(xobj.get("ColorSpace"))
+    if n not in (1, 3):
+        return False            # (CMYK: near components may differ in RGB)
+    data = _decoded(xobj)
+    if data is None or len(data) < w * h * n:
+        return False
+    lim = 0.02 * 255
+    count = w if h < w else h                 # rows across the strip
+    for r in sorted({round(k * (count - 1) / (samples - 1)) for k in range(samples)}):
+        if h >= w:
+            row = data[r * w * n:(r + 1) * w * n]
+        else:
+            row = b"".join(data[(c * w + r) * n:(c * w + r + 1) * n] for c in range(h))
+        first = row[:n]
+        if any(abs(row[k] - first[k % n]) > lim for k in range(len(row))):
+            return True
+    return False
+
+
 def read_image(xobj):
     """(width, height, [(r, g, b)] per pixel, [alpha 0..1] per pixel), rows
     top to bottom; None if the image cannot be read."""
