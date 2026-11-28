@@ -6,7 +6,6 @@ mapped piecewise on either side of a wiggle line.
 import bisect
 import math
 
-from .context import PAGE
 from .geometry import bbox_of, control_points, median
 
 
@@ -25,6 +24,11 @@ def fit_axis(pairs, rescue=False):
     return m
 
 
+_PREFIX_MIN = 4    # prefixed labels (k, M) judged with 4 or more
+_PREFIX_LO = 300   # a prefix step is 300 to 3000 times the value
+_PREFIX_HI = 3000  # (a factor of 1000 between prefixes)
+
+
 def _prefix_steps(pairs):
     """Labels such as 10, 20, 50, ... 500 MHz, 1, 2, 5 GHz whose units
     could not be read (drawn as outlines): along the axis the values grow
@@ -34,7 +38,7 @@ def _prefix_steps(pairs):
     fall, or fall by other than about 1000 times what the steps before
     them lead to expect."""
     ps = sorted(pairs)
-    if len(ps) < 4 or any(v <= 0 for _, v in ps):
+    if len(ps) < _PREFIX_MIN or any(v <= 0 for _, v in ps):
         return None
     ups = sum(1 for a, b in zip(ps, ps[1:]) if b[1] > a[1])
     if ups < len(ps) - 1 - ups:
@@ -46,12 +50,20 @@ def _prefix_steps(pairs):
             prev = out[-2][1] / scale if len(out) >= 2 else None
             ratio = v0 / prev if prev else 2.0
             expect = v0 * ratio
-            if not 300 <= expect / v1 <= 3000:
+            if not _PREFIX_LO <= expect / v1 <= _PREFIX_HI:
                 return None
             scale *= 1000.0
             falls += 1
         out.append((c1, v1 * scale))
     return out if falls else None
+
+
+_LINEAR_SPREAD = 0.01  # a linear fit off by over 0.01 may be log
+_FIT_RESID = 0.02      # a fit's residuals within 0.02 of the range
+_RESCUE_MIN = 4        # a misread label is dropped from 4 labels or more
+_RESCUE_FIT = 3        # the rest fitted with 3 or more
+_RESCUE_RESID = 0.002  # the rest fitting within 0.002
+_MISREAD_OFF = 0.1     # a misread label off its fit by 0.1 of the range
 
 
 def _fit_axis(pairs, rescue=False):
@@ -110,26 +122,26 @@ def _fit_axis(pairs, rescue=False):
             lg = lsq(pairs, True)   # 1, 10, 100, ... : a log10 axis
             if lg is not None:
                 best = ("log", lg)
-        elif all(v > 0 for _, v in pairs) and max(lin[2]) > 0.01:
+        elif all(v > 0 for _, v in pairs) and max(lin[2]) > _LINEAR_SPREAD:
             lg = lsq(pairs, True)
             if lg is not None and max(lg[2]) < max(lin[2]) / 10:
                 best = ("log", lg)
         kind, (a, b, res) = best
-        if max(res) <= 0.02 or (len(pairs) == 2 and n0 == 2):
+        if max(res) <= _FIT_RESID or (len(pairs) == 2 and n0 == 2):
             vals = [v for _, v in pairs]
             return {"kind": kind, "a": a, "b": b, "n": len(pairs), "resid": max(res),
                     "range": max(vals) - min(vals)}
         worst = max(range(len(pairs)), key=lambda i: res[i])
         pairs.pop(worst)  # drop a mismatched label and refit
-    if rescue and len(original) >= 4:
+    if rescue and len(original) >= _RESCUE_MIN:
         # a misread label lies far off the line through the others, which
         # fit almost exactly; labels that only roughly follow a scale (a
         # category axis of sizes 250, 180, 130, 100, 70) are no misreading
         best = None
         for i in range(len(original)):
             rest = original[:i] + original[i + 1:]
-            m = fit_axis(rest) if len(rest) >= 3 else None
-            if m is None or m["n"] != len(rest) or m["resid"] > 0.002:
+            m = fit_axis(rest) if len(rest) >= _RESCUE_FIT else None
+            if m is None or m["n"] != len(rest) or m["resid"] > _RESCUE_RESID:
                 continue
             c, v = original[i]
             pred = map_value(m, c)
@@ -137,10 +149,16 @@ def _fit_axis(pairs, rescue=False):
                 abs(math.log10(max(pred, 1e-300)) - math.log10(v)) / max(
                     math.log10(max(x for _, x in rest) / min(x for _, x in rest)), 1e-12) \
                 if v > 0 else float("inf")
-            if off >= 0.1 and (best is None or m["resid"] < best["resid"]):
+            if off >= _MISREAD_OFF and (best is None or m["resid"] < best["resid"]):
                 best = m
         return best
     return None
+
+
+_ROUNDED_MIN = 4    # rounded log steps judged with 4 labels or more
+_EVEN_FRAC = 0.02   # evenly spaced within 2%
+_DECADE_FIT = 1e-3  # decades fitted within 0.001
+_ROUNDED_OFF = 0.1  # labels within 10% of the decade fit
 
 
 def _rounded_log_steps(pairs, lsq):
@@ -150,21 +168,21 @@ def _rounded_log_steps(pairs, lsq):
     ten, ticks evenly spaced (within 2%) and the other labels within 10% of
     the values the decades give them, the mapping is fitted to the decades
     alone.  None otherwise."""
-    if len(pairs) < 4 or any(v <= 0 for _, v in pairs):
+    if len(pairs) < _ROUNDED_MIN or any(v <= 0 for _, v in pairs):
         return None
     ps = sorted(pairs)
     gaps = [b[0] - a[0] for a, b in zip(ps, ps[1:])]
     med = sorted(gaps)[len(gaps) // 2]
-    if med <= 0 or any(abs(g - med) > 0.02 * med for g in gaps):
+    if med <= 0 or any(abs(g - med) > _EVEN_FRAC * med for g in gaps):
         return None
     dec = [(c, v) for c, v in ps if abs(math.log10(v) - round(math.log10(v))) < 1e-9]
     if len(dec) < 2 or len(dec) == len(ps) or len({v for _, v in dec}) < 2:
         return None
     fit = lsq(dec, True)
-    if fit is None or max(fit[2]) > 1e-3:
+    if fit is None or max(fit[2]) > _DECADE_FIT:
         return None
     a, b, _ = fit
-    if any(abs(10 ** (a * c + b) - v) > 0.1 * v for c, v in ps):
+    if any(abs(10 ** (a * c + b) - v) > _ROUNDED_OFF * v for c, v in ps):
         return None
     vals = [v for _, v in ps]
     return {"kind": "log", "a": a, "b": b, "n": len(ps), "resid": max(fit[2]),
@@ -230,6 +248,10 @@ def nominal_map(labelled):
             "n": len(labelled), "resid": 0.0, "range": 1.0}
 
 
+_BREAK_MAX_PT = 20  # an axis-break wiggle is under 20 pt
+_BREAK_ENDS = 0.6   # its ends 60% of its size apart
+
+
 def find_break_marks(paths):
     """Boxes of short open curved strokes (pieces of the wiggle lines
     that mark broken axes).  They decide where a piecewise axis is cut, and
@@ -245,25 +267,32 @@ def find_break_marks(paths):
             b = bbox_of(pts)
             ends = math.hypot(pts[-1][0] - pts[0][0], pts[-1][1] - pts[0][1])
             # an open stroke whose ends are well apart (not a circle)
-            if b[2] - b[0] < 20 and b[3] - b[1] < 20 and \
-                    ends > 0.6 * max(b[2] - b[0], b[3] - b[1]):
+            if b[2] - b[0] < _BREAK_MAX_PT and b[3] - b[1] < _BREAK_MAX_PT and \
+                    ends > _BREAK_ENDS * max(b[2] - b[0], b[3] - b[1]):
                 out.append(b)
     return out
 
 
-def piecewise_axis(pairs, orient, apos):
+_BREAK_MIN_TICKS = 4    # a broken axis has 4 ticks or more
+_BREAK_SIDE_MIN = 3     # 3 on one side of the break
+_BREAK_SCALE_LO = 0.85  # the two sides' scales within 0.85
+_BREAK_SCALE_HI = 1.18  # to 1.18 of each other
+_BREAK_GAP = 0.5        # a real gap: half a step or more
+
+
+def piecewise_axis(pairs, orient, apos, *, page):
     """An axis broken by a wiggle line: the labels form two linear runs with
     the same scale and a jump in value where the wiggle crosses the axis.
     Returns a 'piecewise' mapping (cut at the wiggle) or None."""
     pp = sorted(pairs)
     n = len(pp)
-    if n < 4:
+    if n < _BREAK_MIN_TICKS:
         return None
     k = 0 if orient == "x" else 1
     found = None
     for i in range(2, n):
         lo, hi = pp[:i], pp[i:]
-        if max(len(lo), len(hi)) < 3:
+        if max(len(lo), len(hi)) < _BREAK_SIDE_MIN:
             continue
         m1 = fit_axis(lo)
         if len(hi) == 1 and m1:
@@ -275,15 +304,15 @@ def piecewise_axis(pairs, orient, apos):
         if not m1 or not m2 or m1["kind"] != "linear" or m2["kind"] != "linear" or \
                 m1["n"] < len(lo) or m2["n"] < len(hi) or m1["a"] * m2["a"] <= 0:
             continue
-        if not 0.85 < m1["a"] / m2["a"] < 1.18:
+        if not _BREAK_SCALE_LO < m1["a"] / m2["a"] < _BREAK_SCALE_HI:
             continue
         c0, c1 = lo[-1][0], hi[0][0]
         # the second run continues beyond where the first run would be
         gap = (m2["a"] * c1 + m2["b"]) - (m1["a"] * c1 + m1["b"])
-        if gap * m1["a"] <= 0 or abs(gap) < 0.5 * abs(m1["a"]) * (c1 - c0):
+        if gap * m1["a"] <= 0 or abs(gap) < _BREAK_GAP * abs(m1["a"]) * (c1 - c0):
             continue
         # a wiggle crossing the axis line between the two runs
-        marks = [b for b in PAGE.break_marks
+        marks = [b for b in page.break_marks
                  if c0 < (b[k] + b[k + 2]) / 2 < c1
                  and b[1 - k] - 2 <= apos <= b[3 - k] + 2]
         if not marks:

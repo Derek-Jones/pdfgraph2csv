@@ -26,13 +26,11 @@ positional arguments:
 
 options:
   --debug               print axis detection details
-  --digits N            significant digits in numbers written (default: as many as the accuracy of the program that drew the graph justifies when it is known, else the precision of the PDF's coordinates, at least 6)
+  --digits N            significant digits output (default: based on the accuracy of the program that drew the graph, if known, else the precision of the PDF's coordinates, at least 6)
   --errbars             output the ends of each point's error bars
   --exclude-legend      do not report the marker symbols of legend keys
   --glyph-centre {marker,bbox} data point of a ZapfDingbats marker glyph: the plotting convention (0.396, 0.347) em (default) or the centre of the glyph's bounding box
-  --heatmap             find a graded grey or colour scale beside a graph (a colour bar) and
-                        put the value each point's colour stands for on it in a new column,
-                        named after the scale (its title, or what the caption says colour shows)
+  --heatmap             attempt to match symbol colors against a legend colour/grey scale
   -h, --help            show this help message and exit
   --inside-only         only report symbols inside the axis rectangle
   --integer AXIS        round axis values (x or y; may be given twice) to whole numbers
@@ -44,7 +42,7 @@ options:
   -o OUTPUT, --output OUTPUT  write to file OUTPUT (default: stdout)
   --pages PAGES         comma separated page numbers, e.g. 1,3
   --password PASSWORD   password of an encrypted PDF (user or owner password)
-  --progress            print to standard output each page number as it is processed and the seconds since processing of the PDF started
+  --progress            output page number as it is processed and seconds since processing started
   --rotation            output the rotation of each point's graph (0, 90, -90 or 180 degrees)
   --sizesymbol          output the size of each point's marker in PDF points (1/72 inch) - the diameter of a circle, the average edge length of a box (other shapes: the mean of their bounding box's width and height)
 """

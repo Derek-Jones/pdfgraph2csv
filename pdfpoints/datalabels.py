@@ -37,9 +37,8 @@ of one point's label are joined, top first.
 import math
 import re
 
-from .context import PAGE
 from .geometry import encloses, median, rect_area
-from .grouping import BoxGrid
+from .spatial import BoxGrid
 from .nongraphs import axis_labels
 from .symbols import symbol_signature
 
@@ -47,17 +46,22 @@ MAX_WORDS, MAX_CHARS = 4, 40
 _NUMERIC = re.compile(r"[\d\s.,%x×+\-\u2212()]+")
 
 
+_BAND_TOL_FRAC = 0.02  # a label in a bar's band: within 2% of the plot
+_BAND_TOL_PT = 0.5     # plus 0.5 pt
+_BAND_MAX_FRAC = 0.5   # the band under half the plot
+
+
 def _band(b, rect):
     """Whether box b shades a stretch of a plot box across its whole height
     or width (the grey bands of 2204.07073-010), rather than framing a
     note: it spans the box one way and less than half of it the other."""
     x0, y0, x1, y1 = rect
-    tol = 0.02 * max(x1 - x0, y1 - y0) + 0.5
+    tol = _BAND_TOL_FRAC * max(x1 - x0, y1 - y0) + _BAND_TOL_PT
     # (the band may run on past the box: over the drawings above a panel)
     across = b[1] <= y0 + tol and b[3] >= y1 - tol and x0 - tol <= b[0] and b[2] <= x1 + tol \
-        and b[2] - b[0] < 0.5 * (x1 - x0)
+        and b[2] - b[0] < _BAND_MAX_FRAC * (x1 - x0)
     along = b[0] <= x0 + tol and b[2] >= x1 - tol and y0 - tol <= b[1] and b[3] <= y1 + tol \
-        and b[3] - b[1] < 0.5 * (y1 - y0)
+        and b[3] - b[1] < _BAND_MAX_FRAC * (y1 - y0)
     return across or along
 
 
@@ -74,6 +78,9 @@ def _in_bar(box, s):
     return abs(cx - s["cx"]) <= s["size"] / 2 and lo <= cy <= hi
 
 
+_FOOT_EMS = 0.25  # a label beyond a bar's foot: by a quarter of a font size
+
+
 def _beyond_foot(box, s, em=0.0):
     """Is a text box no label of bar s: its centre beyond the bar's foot
     (2020.01.30.927558.full-023: bars hanging from 0, the asterisks and
@@ -85,7 +92,7 @@ def _beyond_foot(box, s, em=0.0):
     k = 0 if s.get("horizontal") else 1
     c = (0.5 * (box[0] + box[2]), 0.5 * (box[1] + box[3]))
     across = s["cy"] if k == 0 else s["cx"]
-    if abs(c[1 - k] - across) > 0.5 * s["size"] + 0.25 * em:
+    if abs(c[1 - k] - across) > 0.5 * s["size"] + _FOOT_EMS * em:
         return True
     end = s["cx"] if k == 0 else s["cy"]
     foot = s["base"]
@@ -113,6 +120,10 @@ def _score(box, s):
     return _gap(box, s) + off
 
 
+_KIND_MIN = 3      # a kind of marker counts with 3 of it or more
+_FIT_MARGIN = 0.6  # one fit better than the next by 40%
+
+
 def _consistent(got, symbols, unsure):
     """A chart labels the points of one series: a label won by the only
     labelled marker of its kind moves to the best other marker within reach
@@ -124,18 +135,21 @@ def _consistent(got, symbols, unsure):
     for k in got:
         kinds[symbol_signature(symbols[k])] = kinds.get(symbol_signature(symbols[k]), 0) + len(got[k])
     for ln, rs in unsure:
-        fits = [(sc, r) for sc, r in rs if kinds.get(symbol_signature(symbols[r]), 0) >= 3
+        fits = [(sc, r) for sc, r in rs if kinds.get(symbol_signature(symbols[r]), 0) >= _KIND_MIN
                 and r not in got]
-        if len(fits) == 1 or (len(fits) > 1 and fits[0][0] < 0.6 * fits[1][0]):
+        if len(fits) == 1 or (len(fits) > 1 and fits[0][0] < _FIT_MARGIN * fits[1][0]):
             got[fits[0][1]] = [ln]
     for k in list(got):
         if kinds[symbol_signature(symbols[k])] != 1 or len(got[k]) != 1:
             continue
         ln = got[k][0]
-        alt = [r for r in ln.get("close", ()) if kinds.get(symbol_signature(symbols[r]), 0) >= 3
+        alt = [r for r in ln.get("close", ()) if kinds.get(symbol_signature(symbols[r]), 0) >= _KIND_MIN
                and r not in got]
         if alt:
             got[alt[0]] = got.pop(k)
+
+
+_SWATCH_LEVEL_EMS = 0.5  # a label after a swatch level within half a font size
 
 
 def _after_swatch(ln, boxes):
@@ -144,7 +158,7 @@ def _after_swatch(ln, boxes):
     em = ln["size"]
     cy = (ln["bbox"][1] + ln["bbox"][3]) / 2
     return any(b[2] - b[0] <= 2 * em and b[3] - b[1] <= 2 * em and
-               0 <= ln["bbox"][0] - b[2] <= em and abs((b[1] + b[3]) / 2 - cy) <= 0.5 * em
+               0 <= ln["bbox"][0] - b[2] <= em and abs((b[1] + b[3]) / 2 - cy) <= _SWATCH_LEVEL_EMS * em
                for b in boxes)
 
 
@@ -158,6 +172,10 @@ def _name_parts(names):
 
 
 _DECIMAL = re.compile(r"[+\-\u2212]?\d*\.\d+")
+
+
+_LINE_BACK_EMS = 0.3  # words of a label line from 0.3 of a font size back
+_LINE_GAP_EMS = 0.6   # to 0.6 of a font size apart
 
 
 def _lines(texts, apart=frozenset()):
@@ -183,7 +201,7 @@ def _lines(texts, apart=frozenset()):
             # 0.25 em apart; whole numbers still join - a row of day counts,
             # ids run together in touching markers)
             if hi - lo > 0 and \
-                    -0.3 * big <= t["bbox"][0] - o["bbox"][2] <= 0.6 * big and \
+                    -_LINE_BACK_EMS * big <= t["bbox"][0] - o["bbox"][2] <= _LINE_GAP_EMS * big and \
                     (id(t) in apart) == (id(o["items"][-1]) in apart) and \
                     not (_DECIMAL.fullmatch(t["text"].strip()) and
                          _DECIMAL.fullmatch(o["items"][-1]["text"].strip())):
@@ -204,6 +222,11 @@ def _lines(texts, apart=frozenset()):
     return out
 
 
+_STACK_SIZE_EMS = 0.05  # stacked label lines: sizes within 0.05 of a font size
+_STACK_GAP_EMS = 0.6    # under 0.6 of a font size apart
+_STACK_ALIGN_EMS = 0.5  # aligned within half a font size
+
+
 def _stacked(a, b):
     """Whether line b is set directly under line a as one label with it
     ("FlashAttention," over "paged KV"): same size, left-aligned or centred
@@ -211,9 +234,9 @@ def _stacked(a, b):
     to be a label."""
     em = a["size"]
     text = a["text"] + " " + b["text"]
-    return (abs(a["size"] - b["size"]) <= 0.05 * em and
-            0 <= a["bbox"][1] - b["bbox"][3] < 0.6 * em and
-            (abs(a["bbox"][0] - b["bbox"][0]) < 0.5 * em or
+    return (abs(a["size"] - b["size"]) <= _STACK_SIZE_EMS * em and
+            0 <= a["bbox"][1] - b["bbox"][3] < _STACK_GAP_EMS * em and
+            (abs(a["bbox"][0] - b["bbox"][0]) < _STACK_ALIGN_EMS * em or
              abs((a["bbox"][0] + a["bbox"][2]) - (b["bbox"][0] + b["bbox"][2])) < em) and
             len(text) <= MAX_CHARS and len(text.split()) <= MAX_WORDS)
 
@@ -235,13 +258,18 @@ def _attach_leftovers(got, cands):
                 placed[id(ln)] = k
                 break
 
-def _arrow_label(ln, symbols, marks, legend, got):
-    """A label at the free end of an arrow (PAGE.arrows: symbols.
+_ARROW_MIN_PT = 8.0  # an arrow's label within 8 pt
+_ARROW_SIZES = 3     # or 3 sizes of its point
+_ARROW_AIM_DEG = 30  # an arrow pointing within 30 degrees
+
+
+def _arrow_label(ln, symbols, marks, legend, got, *, page):
+    """A label at the free end of an arrow (page.arrows: symbols.
     drop_arrowheads) names the marker just beyond the arrow's tip - within
     8 pt (or three head sizes) of it and 30 degrees of its direction
     (1356058.1356080-007: "-O1" ... "-Os" pointing at the '+' markers of
     GCC's levels).  Sets got[k]; True if the line was so used."""
-    arrows = getattr(PAGE, "arrows", None) or []
+    arrows = page.arrows
     x0, y0, x1, y1 = ln["bbox"]
     for tip, (ux, uy), end, size in arrows:
         gap = math.hypot(max(x0 - end[0], end[0] - x1, 0.0), max(y0 - end[1], end[1] - y1, 0.0))
@@ -254,9 +282,9 @@ def _arrow_label(ln, symbols, marks, legend, got):
             s = symbols[k]
             dx, dy = s["cx"] - tip[0], s["cy"] - tip[1]
             d = math.hypot(dx, dy)
-            if d > max(8.0, 3 * size):
+            if d > max(_ARROW_MIN_PT, _ARROW_SIZES * size):
                 continue
-            if d > 0.5 * s["size"] and (dx * ux + dy * uy) / d < math.cos(math.radians(30)):
+            if d > 0.5 * s["size"] and (dx * ux + dy * uy) / d < math.cos(math.radians(_ARROW_AIM_DEG)):
                 continue
             if best is None or d < best[0]:
                 best = (d, k)
@@ -267,6 +295,10 @@ def _arrow_label(ln, symbols, marks, legend, got):
 
 
 _VALUE = re.compile(r"^\s*([-\u2212]?\d+(?:\.(\d+))?)\s*%?\s*$")
+
+
+_STATED_REACH_EMS = 1.5  # a stated value within 1.5 font sizes of its bar
+_STATED_RANGE = 0.002    # agreeing within 0.2% of the axis range
 
 
 def _stated_bar(ln, graphs, symbols, marks, grid):
@@ -281,7 +313,7 @@ def _stated_bar(ln, graphs, symbols, marks, grid):
     tol0 = 0.5 * 10 ** -len(m.group(2) or "")
     from .graphs import graph_for_symbol
     from .scales import map_value
-    reach = 1.5 * ln["size"]
+    reach = _STATED_REACH_EMS * ln["size"]
     hits = []
     for k in grid.near(ln["bbox"], reach):
         s = symbols[k]
@@ -297,12 +329,23 @@ def _stated_bar(ln, graphs, symbols, marks, grid):
         except (ValueError, ZeroDivisionError, OverflowError):
             continue
         rng = mp.get("range") or 0.0
-        if abs(v - num) <= tol0 + 0.002 * rng:
+        if abs(v - num) <= tol0 + _STATED_RANGE * rng:
             hits.append(k)
     return hits[0] if len(hits) == 1 else None
 
 
-def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
+_LABEL_MIN_PT = 3.0       # data labels are 3 pt or more
+_LABEL_MIN_TICK = 0.6     # and 0.6 of the tick labels' size
+_LABEL_MAX_TICK = 1.25    # and at most 1.25 times it
+_NOTE_BOX_FRAC = 0.5      # a note box is under half the graph
+_BAR_END_PT = 0.5         # a box on a bar's top or end: within 0.5 pt
+_LABEL_CELL_PT = 10.0     # marks filed in cells of 10 pt or their size
+_NUMERIC_REACH_EMS = 0.8  # a numeric label within 0.8 of a font size of its point
+_TEXT_REACH_EMS = 1.5     # a text label within 1.5
+_RANK_MARGIN = 0.6        # the nearest point nearer than the next by 40%
+
+
+def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker, *, page):
     """Set s["label"] on each symbol that has a data label.  `names` are
     the legend entries' names; `boxes` the note boxes (nongraphs.text_boxes);
     only symbols for which is_marker(s) holds take part (frames and boxes
@@ -312,8 +355,8 @@ def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
     own = {id(t) for g in graphs for t in axis_labels(g)}
     names = _name_parts(names)
     tick = median((t["size"] for g in graphs for t in axis_labels(g)), 0.0)
-    least = max(3.0, 0.6 * tick)
-    most = 1.25 * tick if tick else float("inf")
+    least = max(_LABEL_MIN_PT, _LABEL_MIN_TICK * tick)
+    most = _LABEL_MAX_TICK * tick if tick else float("inf")
     # note boxes: not bars (a bar's value is often printed inside it) and
     # not square markers (charts print a point's id inside its marker)
     bar_tops = [(s["cx"], s["cy"]) for s in symbols if s["shape"] == "bar" and not s.get("horizontal")]
@@ -322,19 +365,19 @@ def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
     # (and heat-map tiles: a cell's value printed in it, 2308.04785-006)
     marker_boxes = [(s["cx"], s["cy"], s["size"]) for s in symbols
                     if s["shape"] in ("square", "tile") and is_marker(s)]
-    small_boxes = [b for b in boxes if any(rect_area(b) < 0.5 * rect_area(g["rect"]) for g in graphs)
-                   and not any(abs((b[0] + b[2]) / 2 - x) < 0.5 and
-                               min(abs(b[3] - y), abs(b[1] - y)) < 0.5 for x, y in bar_tops)
-                   and not any(abs((b[1] + b[3]) / 2 - y) < 0.5 and
-                               min(abs(b[2] - x), abs(b[0] - x)) < 0.5 for x, y in bar_ends)
-                   and not any(abs((b[0] + b[2]) / 2 - x) < 0.5 and abs((b[1] + b[3]) / 2 - y) < 0.5
+    small_boxes = [b for b in boxes if any(rect_area(b) < _NOTE_BOX_FRAC * rect_area(g["rect"]) for g in graphs)
+                   and not any(abs((b[0] + b[2]) / 2 - x) < _BAR_END_PT and
+                               min(abs(b[3] - y), abs(b[1] - y)) < _BAR_END_PT for x, y in bar_tops)
+                   and not any(abs((b[1] + b[3]) / 2 - y) < _BAR_END_PT and
+                               min(abs(b[2] - x), abs(b[0] - x)) < _BAR_END_PT for x, y in bar_ends)
+                   and not any(abs((b[0] + b[2]) / 2 - x) < _BAR_END_PT and abs((b[1] + b[3]) / 2 - y) < _BAR_END_PT
                                and abs(max(b[2] - b[0], b[3] - b[1]) - sz) < 1.0
                                for x, y, sz in marker_boxes)
                    and not any(_band(b, g["rect"]) for g in graphs)]
     # (graphs' titles are no labels: 2020.01.30.927558.full-030's "E5",
     # inside the top of its panel over a bar)
     from .titles import find_title
-    titles = {find_title(g["rect"], texts, symbols) for g in graphs} - {""}
+    titles = {find_title(g["rect"], texts, symbols, page=page) for g in graphs} - {""}
     cands = []
     # (tiny items - specks of text 0.1 pt high - are dropped before lines
     # are made, so that they join nothing)
@@ -348,9 +391,9 @@ def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
     arrowed = set()
     marks0 = [k for k, s in enumerate(symbols) if is_marker(s)]
     for ln in lines:
-        if least <= ln["size"] <= 2 * (most / 1.25) and len(ln["text"]) <= MAX_CHARS and \
+        if least <= ln["size"] <= 2 * (most / _LABEL_MAX_TICK) and len(ln["text"]) <= MAX_CHARS and \
                 not any(id(t) in own for t in ln["items"]) and \
-                _arrow_label(ln, symbols, marks0, legend, got):
+                _arrow_label(ln, symbols, marks0, legend, got, page=page):
             arrowed.add(id(ln))
     lines = [ln for ln in lines if id(ln) not in arrowed]
     for ln in lines:
@@ -374,7 +417,7 @@ def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
         for k, lns in got.items():
             symbols[k]["label"] = " ".join(ln["text"] for ln in lns)
         return
-    grid = BoxGrid(max(10.0, *(symbols[k]["size"] for k in marks)))
+    grid = BoxGrid(max(_LABEL_CELL_PT, *(symbols[k]["size"] for k in marks)))
     for k in marks:
         s = symbols[k]
         h = s["size"] / 2
@@ -401,7 +444,7 @@ def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
                               "items": [t], "piece": True} for t in ln["items"]]
                 continue
         # (a value is set tight against its point; a name may stand off)
-        reach = (0.8 if _NUMERIC.fullmatch(ln["text"]) else 1.5) * ln["size"]
+        reach = (_NUMERIC_REACH_EMS if _NUMERIC.fullmatch(ln["text"]) else _TEXT_REACH_EMS) * ln["size"]
         if ln.get("piece"):
             reach = 0.0                    # (a piece must lie on its marker)
         near = [k for k in grid.near(ln["bbox"], reach) if _gap(ln["bbox"], symbols[k]) <= reach]
@@ -453,7 +496,7 @@ def add_data_labels(graphs, symbols, texts, legend, names, boxes, is_marker):
         inside = [r for r in ranked if _in_bar(ln["bbox"], symbols[r[1]])]
         if len(inside) == 1:
             ranked = inside
-        if len(ranked) > 1 and ranked[0][0] >= 0.6 * ranked[1][0]:
+        if len(ranked) > 1 and ranked[0][0] >= _RANK_MARGIN * ranked[1][0]:
             if len(ln["items"]) > 1:
                 # ids printed in markers that touch run together into one
                 # line ("4168 7640 1157"): each piece on its own marker

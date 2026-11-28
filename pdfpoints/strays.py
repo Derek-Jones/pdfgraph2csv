@@ -16,8 +16,15 @@ import collections
 import math
 
 from .geometry import bbox_of, box_of, encloses, inside_rect, median, rect_area, rect_distance, vertices
-from .grouping import DisjointSets, PointGrid
+from .spatial import DisjointSets, PointGrid
 from .text import WORD_RE
+
+
+_PROSE_RUN_LOOKBACK = 50          # runs of markers looked back at for one to continue
+_PROSE_RUN_LEVEL_SIZES = 0.3      # markers of a run on one baseline: within 0.3 of the bigger one's size
+_PROSE_RUN_GAP_SIZES = 3          # and at most 3 sizes (plus _PROSE_RUN_GAP_PT) apart
+_PROSE_RUN_GAP_PT = 2             # (the gap's fixed part, pt)
+_PROSE_BEYOND_GRAPHS_FRAC = 0.15  # a line of prose reaches beyond the graphs by 15% of their width
 
 
 def drop_symbols_in_prose(symbols, texts, graphs):
@@ -44,10 +51,10 @@ def drop_symbols_in_prose(symbols, texts, graphs):
     # runs of markers along one baseline, left to right
     runs = []
     for s in outside:
-        for r in reversed(runs[-50:]):
+        for r in reversed(runs[-_PROSE_RUN_LOOKBACK:]):
             q = r[-1]
-            if abs(q["cy"] - s["cy"]) <= 0.3 * max(s["size"], q["size"]) and \
-                    s["cx"] - q["cx"] <= 3 * max(s["size"], q["size"]) + 2:
+            if abs(q["cy"] - s["cy"]) <= _PROSE_RUN_LEVEL_SIZES * max(s["size"], q["size"]) and \
+                    s["cx"] - q["cx"] <= _PROSE_RUN_GAP_SIZES * max(s["size"], q["size"]) + _PROSE_RUN_GAP_PT:
                 r.append(s)
                 break
         else:
@@ -56,7 +63,7 @@ def drop_symbols_in_prose(symbols, texts, graphs):
     if graphs:
         gx0 = min(g["rect"][0] for g in graphs)
         gx1 = max(g["rect"][2] for g in graphs)
-        reach = 0.15 * (gx1 - gx0)
+        reach = _PROSE_BEYOND_GRAPHS_FRAC * (gx1 - gx0)
         prose = [ln for ln in lines if ln[2][0][0] < gx0 - reach or ln[2][-1][1] > gx1 + reach]
     drop = set()
     for run in runs:
@@ -68,6 +75,9 @@ def drop_symbols_in_prose(symbols, texts, graphs):
                 any(_after_text(ln, x0, cy, size) for ln in lines):
             drop.update(id(s) for s in run)
     return [s for s in symbols if id(s) not in drop]
+
+
+_PROSE_WORDS = 3  # a line of prose has 3 or more words (of 3 letters or more)
 
 
 def _text_lines(texts):
@@ -82,31 +92,47 @@ def _text_lines(texts):
     for items in rows.values():
         items.sort(key=lambda t: t["p0"][0])
         size = median(t.get("size") or 1.0 for t in items)
-        prose = len(WORD_RE.findall(" ".join(t["text"] for t in items))) >= 3
+        prose = len(WORD_RE.findall(" ".join(t["text"] for t in items))) >= _PROSE_WORDS
         out.append((items[0]["p0"][1], size, [(t["p0"][0], t["p1"][0]) for t in items], prose))
     return out
+
+
+_FULL_STOP_EMS = 0.3     # a mark under 0.3 of the font size is a full stop drawn as a shape
+_TEXT_BEFORE_EMS = 0.75  # text ends at most 0.75 of a font size before a mark set in it
+_TEXT_OVERLAP_EMS = 0.1  # or overlaps it by 0.1 of a font size
 
 
 def _after_text(ln, x0, cy, msize):
     """A tiny mark (under 0.3 of the font size) just after text on a line
     within a font size of it (a full stop after a superscript)."""
     base, size, spans, _ = ln
-    if msize >= 0.3 * size or not base - size <= cy <= base + size:
+    if msize >= _FULL_STOP_EMS * size or not base - size <= cy <= base + size:
         return False
-    return any(x0 - 0.75 * size <= e <= x0 + 0.1 * size for _, e in spans)
+    return any(x0 - _TEXT_BEFORE_EMS * size <= e <= x0 + _TEXT_OVERLAP_EMS * size for _, e in spans)
+
+
+_BELOW_BASELINE_EMS = 0.3  # a mark set in a line lies from 0.3 of a font size below its baseline
+_ABOVE_BASELINE_EMS = 0.9  # to 0.9 of a font size above it
 
 
 def _in_line(ln, x0, x1, cy, msize):
     """A mark spanning x0..x1 set in line `ln`: text ends just left of it
     and starts just right of it."""
     base, size, spans, prose = ln
-    if msize > size or not (prose or msize < 0.3 * size):
+    if msize > size or not (prose or msize < _FULL_STOP_EMS * size):
         return False        # (a mark in a line of text is no bigger than the text)
-    if not base - 0.3 * size <= cy <= base + 0.9 * size:
+    if not base - _BELOW_BASELINE_EMS * size <= cy <= base + _ABOVE_BASELINE_EMS * size:
         return False
-    left = any(x0 - 0.75 * size <= e <= x0 + 0.1 * size for _, e in spans)
-    right = any(x1 - 0.1 * size <= b <= x1 + 0.75 * size for b, _ in spans)
+    left = any(x0 - _TEXT_BEFORE_EMS * size <= e <= x0 + _TEXT_OVERLAP_EMS * size for _, e in spans)
+    right = any(x1 - _TEXT_OVERLAP_EMS * size <= b <= x1 + _TEXT_BEFORE_EMS * size for b, _ in spans)
     return left and right
+
+
+_CORNER_TOL_PT = 0.5          # a tick at the corner where the axes cross: within 0.5 pt
+_CORNER_TOL_TICKS = 0.15      # or 0.15 of a tick length
+_CORNER_PLUS_MIN_TICKS = 0.7  # a corner plus is 0.7 to 2.2 tick lengths across
+_CORNER_PLUS_MAX_TICKS = 2.2  # (the widest corner plus, in tick lengths)
+_EDGE_ARM_PT = 0.3            # a plus near another corner: its arms end within 0.3 pt of both edges
 
 
 def drop_corner_ticks(symbols, graphs):
@@ -124,7 +150,7 @@ def drop_corner_ticks(symbols, graphs):
             continue
         cx, cy = ax["y"]["pos"], ax["x"]["pos"]
         L = max(ax["x"].get("tick_len") or 0, ax["y"].get("tick_len") or 0)
-        tol = max(0.5, 0.15 * L)
+        tol = max(_CORNER_TOL_PT, _CORNER_TOL_TICKS * L)
         if any(abs(t - cx) <= tol for t in ax["x"].get("tick_pos", ())) and \
                 any(abs(t - cy) <= tol for t in ax["y"].get("tick_pos", ())):
             corners.append((cx, cy, L, tol))
@@ -139,13 +165,20 @@ def drop_corner_ticks(symbols, graphs):
 
     def reaches(s, qx, qy, L):
         h = s["size"] / 2
-        return 0.7 * L <= s["size"] <= 2.2 * L and \
-            min(abs(s["cx"] - h - qx), abs(s["cx"] + h - qx)) <= 0.3 and \
-            min(abs(s["cy"] - h - qy), abs(s["cy"] + h - qy)) <= 0.3
+        return _CORNER_PLUS_MIN_TICKS * L <= s["size"] <= _CORNER_PLUS_MAX_TICKS * L and \
+            min(abs(s["cx"] - h - qx), abs(s["cx"] + h - qx)) <= _EDGE_ARM_PT and \
+            min(abs(s["cy"] - h - qy), abs(s["cy"] + h - qy)) <= _EDGE_ARM_PT
     return [s for s in symbols if not (
         s["shape"] == "plus" and (any(
-            abs(s["cx"] - cx) <= tol and abs(s["cy"] - cy) <= tol and 0.7 * L <= s["size"] <= 2.2 * L
+            abs(s["cx"] - cx) <= tol and abs(s["cy"] - cy) <= tol and _CORNER_PLUS_MIN_TICKS * L <= s["size"] <= _CORNER_PLUS_MAX_TICKS * L
             for cx, cy, L, tol in corners) or any(reaches(s, *e) for e in edges)))]
+
+
+_NOTE_MAX_GRAPH_FRAC = 0.25  # a note's box is under a quarter of the largest graph (else a plot frame)
+_DASH_EDGE_SIZES = 0.75      # a dash lies on the box's edge: within 0.75 of its size
+_DASH_EDGE_PT = 0.5          # plus 0.5 pt
+_DASH_MAX_BOX_FRAC = 0.25    # dashes are under a quarter of the box's shorter side
+_DASHES_PER_EDGE = 4         # an edge has 4 or more dashes of one size
 
 
 def drop_box_dashes(symbols, texts, boxes, graphs):
@@ -159,7 +192,7 @@ def drop_box_dashes(symbols, texts, boxes, graphs):
     if not boxes or not texts or not graphs:
         return symbols
     big = max(rect_area(g["rect"]) for g in graphs)
-    notes = [b for b in boxes if rect_area(b) <= 0.25 * big        # (else a plot frame)
+    notes = [b for b in boxes if rect_area(b) <= _NOTE_MAX_GRAPH_FRAC * big        # (else a plot frame)
              and any(encloses(b, t["bbox"]) for t in texts if t["text"].strip())]
     if not notes:
         return symbols
@@ -167,9 +200,9 @@ def drop_box_dashes(symbols, texts, boxes, graphs):
     for s in symbols:
         if s["shape"] not in ("square", "rectangle"):
             continue
-        tol = 0.75 * s["size"] + 0.5
+        tol = _DASH_EDGE_SIZES * s["size"] + _DASH_EDGE_PT
         for bi, (x0, y0, x1, y1) in enumerate(notes):
-            if s["size"] >= 0.25 * min(x1 - x0, y1 - y0):
+            if s["size"] >= _DASH_MAX_BOX_FRAC * min(x1 - x0, y1 - y0):
                 continue
             if not inside_rect(notes[bi], s["cx"], s["cy"], tol):
                 continue
@@ -177,8 +210,14 @@ def drop_box_dashes(symbols, texts, boxes, graphs):
                             ("b", abs(s["cy"] - y0)), ("t", abs(s["cy"] - y1))):
                 if d <= tol:
                     edges[(bi, side, round(s["size"], 1))].append(id(s))
-    dashes = {i for ids in edges.values() if len(ids) >= 4 for i in ids}
+    dashes = {i for ids in edges.values() if len(ids) >= _DASHES_PER_EDGE for i in ids}
     return [s for s in symbols if id(s) not in dashes]
+
+
+_RULE_MAX_PT = 1.5       # a rule (and its joint square) is at most 1.5 pt thick
+_RULE_MIN_LENGTHS = 3    # and at least 3 times as long as thick
+_JOINT_TOL_SIZES = 0.15  # a joint fits its rule within 0.15 of its size
+_JOINT_TOL_PT = 0.05     # plus 0.05 pt
 
 
 def drop_rule_joints(symbols, paths):
@@ -196,15 +235,15 @@ def drop_rule_joints(symbols, paths):
                 continue
             w, h = b[2] - b[0], b[3] - b[1]
             t = min(w, h)
-            if 0 < t <= 1.5 and max(w, h) >= 3 * t:
+            if 0 < t <= _RULE_MAX_PT and max(w, h) >= _RULE_MIN_LENGTHS * t:
                 rules.append((*b, t, w > h))
     if not rules:
         return symbols
 
     def joint(s):
-        if s["shape"] not in ("square", "rectangle") or not s.get("filled", True) or s["size"] > 1.5:
+        if s["shape"] not in ("square", "rectangle") or not s.get("filled", True) or s["size"] > _RULE_MAX_PT:
             return False
-        half, tol = s["size"] / 2, 0.15 * s["size"] + 0.05
+        half, tol = s["size"] / 2, _JOINT_TOL_SIZES * s["size"] + _JOINT_TOL_PT
         for x0, y0, x1, y1, t, horiz in rules:
             if abs(t - s["size"]) > tol:
                 continue
@@ -239,6 +278,13 @@ def drop_foreign_crowds(symbols, graphs):
     return [s for s in symbols if id(s) not in drop] if drop else symbols
 
 
+_CROWD_MIN = 100           # a crowd: 100 or more symbols
+_CROWD_OVER = 2            # over twice as many as the graph's own
+_STIPPLE_SIZE_FRAC = 0.25  # a crowd of one size: 80% of its sizes within 25% of the median
+_STIPPLE_ALIKE_FRAC = 0.8  # (the share of sizes near the median for one size)
+_LEGEND_KEY_SIZES = 3      # symbols over 3 times the median size are legend keys
+
+
 def _stippled_outside(symbols, graphs):
     """Ids of the symbols of crowds of mixed sizes outside a plot box (see
     drop_foreign_crowds)."""
@@ -253,13 +299,16 @@ def _stippled_outside(symbols, graphs):
             inside[id(g)] += 1
     drop = set()
     for gid, outs in outside.items():
-        if len(outs) < 100 or len(outs) <= 2 * inside[gid]:
+        if len(outs) < _CROWD_MIN or len(outs) <= _CROWD_OVER * inside[gid]:
             continue
         m = median(s["size"] for s in outs)
-        if sum(abs(s["size"] - m) <= 0.25 * m for s in outs) < 0.8 * len(outs):
+        if sum(abs(s["size"] - m) <= _STIPPLE_SIZE_FRAC * m for s in outs) < _STIPPLE_ALIKE_FRAC * len(outs):
             # (bigger ones, over three times the median, are legend keys)
-            drop.update(id(s) for s in outs if s["size"] <= 3 * m)
+            drop.update(id(s) for s in outs if s["size"] <= _LEGEND_KEY_SIZES * m)
     return drop
+
+
+_CLIPPED_OWN_MIN = 10  # a graph whose markers are clipped to its box: 10 or more
 
 
 def _foreign_crowds(symbols, graphs):
@@ -281,9 +330,12 @@ def _foreign_crowds(symbols, graphs):
             other[id(g)].append(s)
     drop = set()
     for gid, outs in other.items():
-        if own[gid] >= 10 and len(outs) >= 100 and len(outs) > 2 * own[gid]:
+        if own[gid] >= _CLIPPED_OWN_MIN and len(outs) >= _CROWD_MIN and len(outs) > _CROWD_OVER * own[gid]:
             drop.update(id(s) for s in outs)
     return drop
+
+
+_BACKGROUND_FRAC = 0.9  # a plot background spans 90% of the plot box both ways
 
 
 def drop_plot_backgrounds(symbols, graphs):
@@ -299,11 +351,30 @@ def drop_plot_backgrounds(symbols, graphs):
             return False
         for g in graphs:
             x0, y0, x1, y1 = g["rect"]
-            if (s["size"] >= 0.9 * (x1 - x0) and s["size"] >= 0.9 * (y1 - y0)
+            if (s["size"] >= _BACKGROUND_FRAC * (x1 - x0) and s["size"] >= _BACKGROUND_FRAC * (y1 - y0)
                     and x0 <= s["cx"] <= x1 and y0 <= s["cy"] <= y1):
                 return True
         return False
     return [s for s in symbols if not background(s)]
+
+
+_DASH_MAX_PT = 2.0      # a dash of a patterned line is no larger than 2 pt
+_DASH_ANGLE_DEG = 10    # dash shapes: the longer side's direction to 10 degrees
+_OBLONG_RATIO = 1.6     # an oblong dash: sides 1.6 : 1 or more
+_LEVEL_RUN = 4          # a line sample: 4 or more pieces on one level line
+_LEVEL_PT = 0.5         # level within 0.5 pt
+_RUN_MIN = 8            # a run of dashes: 8 or more pieces
+_RUN_SHAPES = 3         # of 3 or more shapes
+_RUN_OBLONG_FRAC = 0.4  # two in five of them oblong or more
+_DOTS_SHAPES_MAX = 2    # a dotted straight line: pieces of at most 2 shapes
+_DOTS_LINE_PT = 0.2     # on one line within 0.2 pt
+_DOTS_GAP_SIDES = 5     # the usual gap at most 5 sides
+_DOTS_GAP_FRAC = 0.25   # gaps within 25% of the usual one (or twice it)
+_DOTS_EVEN_FRAC = 0.8   # four in five gaps so
+_RUN_REACH_PT = 6.0     # pieces within 6 pt of one another make one run
+_RUN_CELL_PT = 6        # (filed in cells of that size)
+_CROWD_CELL_MAX = 12    # more than 12 pieces in a cell is a crowd, no dotted line
+_RUN_END_PT = 8.0       # a piece within 8 pt of a run's dash is a dash too
 
 
 def pattern_dash_paths(paths):
@@ -341,30 +412,30 @@ def pattern_dash_paths(paths):
             q = ([sp["start"]] + [g[-1] for g in sp["segs"]])[:4]
             xs = [v[0] for v in q]
             ys = [v[1] for v in q]
-            if max(max(xs) - min(xs), max(ys) - min(ys)) > 2.0:
+            if max(max(xs) - min(xs), max(ys) - min(ys)) > _DASH_MAX_PT:
                 continue
             e = [(q[(i + 1) % 4][0] - q[i][0], q[(i + 1) % 4][1] - q[i][1]) for i in range(4)]
             ln = [math.hypot(*v) for v in e]
             k = 0 if ln[0] >= ln[1] else 1
-            ang = round(math.degrees(math.atan2(e[k][1], e[k][0])) % 180 / 10) % 18
+            ang = round(math.degrees(math.atan2(e[k][1], e[k][0])) % 180 / _DASH_ANGLE_DEG) % 18
             shape = (round(min(ln[0], ln[1]), 1), round(max(ln[0], ln[1]), 1), ang)
-            slender = max(ln[0], ln[1]) >= 1.6 * max(1e-9, min(ln[0], ln[1]))
+            slender = max(ln[0], ln[1]) >= _OBLONG_RATIO * max(1e-9, min(ln[0], ln[1]))
             pieces.setdefault(p["fill_rgb"], []).append(
                 (sum(xs) / 4, p["idx"], shape, sum(ys) / 4, slender, many))
 
     def line_like(run):
         # a line sample: four or more pieces on one level line (a legend's
         # dotted sample, its pieces alike)
-        if len(run) >= 4 and max(x[3] for x in run) - min(x[3] for x in run) <= 0.5:
+        if len(run) >= _LEVEL_RUN and max(x[3] for x in run) - min(x[3] for x in run) <= _LEVEL_PT:
             return True
         if straight_dots(run):
             return True
         # dashes are mostly oblong (73% of logpaper5Rediscoveries-007's,
         # turned along the curve); scattered nodes of a network are squares
         # at all angles (none of 2204.07073-010's 60 000 is oblong)
-        if len(run) < 8 or len({x[2] for x in run}) < 3:
+        if len(run) < _RUN_MIN or len({x[2] for x in run}) < _RUN_SHAPES:
             return False
-        return sum(1 for x in run if x[4]) >= 0.4 * len(run)
+        return sum(1 for x in run if x[4]) >= _RUN_OBLONG_FRAC * len(run)
 
     def straight_dots(run):
         # a dotted straight line in any direction (cheyette2024limited-011's
@@ -373,7 +444,7 @@ def pattern_dash_paths(paths):
         # (the usual gap at most 5 sides) and evenly spaced (four in five
         # gaps within 25% of the usual one, or twice it: a dot hidden under
         # a marker)
-        if len(run) < 8 or len({x[2] for x in run}) > 2:
+        if len(run) < _RUN_MIN or len({x[2] for x in run}) > _DOTS_SHAPES_MAX:
             return False
         pts = [(x[0], x[3]) for x in run]
         mx = sum(p[0] for p in pts) / len(pts)
@@ -383,16 +454,16 @@ def pattern_dash_paths(paths):
         sxy = sum((p[0] - mx) * (p[1] - my) for p in pts)
         ang = 0.5 * math.atan2(2 * sxy, sxx - syy)
         ux, uy = math.cos(ang), math.sin(ang)
-        if any(abs(-(p[0] - mx) * uy + (p[1] - my) * ux) > 0.2 for p in pts):
+        if any(abs(-(p[0] - mx) * uy + (p[1] - my) * ux) > _DOTS_LINE_PT for p in pts):
             return False
         along = sorted((p[0] - mx) * ux + (p[1] - my) * uy for p in pts)
         gaps = [b - a for a, b in zip(along, along[1:])]
         g = median(gaps)
         size = max(run[0][2][1], 0.1)
-        if g <= 0 or g > 5 * size:
+        if g <= 0 or g > _DOTS_GAP_SIDES * size:
             return False
-        even = sum(1 for d in gaps if abs(d - g) <= 0.25 * g or abs(d - 2 * g) <= 0.25 * g)
-        return even >= 0.8 * len(gaps)
+        even = sum(1 for d in gaps if abs(d - g) <= _DOTS_GAP_FRAC * g or abs(d - 2 * g) <= _DOTS_GAP_FRAC * g)
+        return even >= _DOTS_EVEN_FRAC * len(gaps)
 
     drop = set()
     for rgb, ps in list(pieces.items()):
@@ -411,15 +482,15 @@ def pattern_dash_paths(paths):
         sets = DisjointSets(len(ps))
         cells = {}
         for i, x in enumerate(ps):
-            cells.setdefault((int(x[0] // 6), int(x[3] // 6)), []).append(i)
+            cells.setdefault((int(x[0] // _RUN_CELL_PT), int(x[3] // _RUN_CELL_PT)), []).append(i)
         for (cx, cy), idxs in cells.items():
-            if len(idxs) > 12:
+            if len(idxs) > _CROWD_CELL_MAX:
                 continue                  # crowded: no dotted line (network nodes)
             for dx in (-1, 0, 1):
                 for dy in (-1, 0, 1):
                     for j in cells.get((cx + dx, cy + dy), ()):
                         for i in idxs:
-                            if i < j and math.hypot(ps[i][0] - ps[j][0], ps[i][3] - ps[j][3]) <= 6.0:
+                            if i < j and math.hypot(ps[i][0] - ps[j][0], ps[i][3] - ps[j][3]) <= _RUN_REACH_PT:
                                 sets.union(j, i)
         mine = set()
         for group in sets.groups():
@@ -429,12 +500,12 @@ def pattern_dash_paths(paths):
         if mine:
             # (the run's pieces filed in cells of 8 pt: every piece against
             # every one of a long run took tens of seconds)
-            near = PointGrid(8.0)
+            near = PointGrid(_RUN_END_PT)
             for y in ps:
                 if y[1] in mine:
                     near.add(y, y[0], y[3])
             for x in ps:
-                if x[1] not in mine and any(math.hypot(x[0] - y[0], x[3] - y[3]) <= 8.0
+                if x[1] not in mine and any(math.hypot(x[0] - y[0], x[3] - y[3]) <= _RUN_END_PT
                                             for y in near.near(x[0], x[3])):
                     mine.add(x[1])
         drop |= mine
@@ -446,6 +517,14 @@ def drop_pattern_dashes(symbols, paths):
     are no markers."""
     drop = pattern_dash_paths(paths)
     return [s for s in symbols if s["idx"] not in drop]
+
+
+_DASH_MARKER_MAX_PT = 6.0   # a dash marker is no larger than 6 pt
+_DASH_MARKER_ASPECT = 0.85  # and longer than wide: aspect under 0.85
+_DASH_MARKER_SIZE_PT = 0.2  # a set's markers are of one size within 0.2 pt
+_DASH_MARKERS_MIN = 5       # a set has 5 or more
+_ON_BOTTOM_PT = 0.5         # one within 0.5 pt of the graph's bottom edge makes them bars
+_TOUCH_PT = 0.1             # markers touching one another (within 0.1 pt) are no set
 
 
 def add_dash_markers(symbols, paths, graphs):
@@ -477,9 +556,9 @@ def add_dash_markers(symbols, paths, graphs):
         xs = [v[0] for v in q]
         ys = [v[1] for v in q]
         w, h = max(xs) - min(xs), max(ys) - min(ys)
-        if min(w, h) <= 0 or max(w, h) > 6.0 or min(w, h) / max(w, h) >= 0.85:
+        if min(w, h) <= 0 or max(w, h) > _DASH_MARKER_MAX_PT or min(w, h) / max(w, h) >= _DASH_MARKER_ASPECT:
             continue
-        cand.append((round(w / 0.2), round(h / 0.2), p["fill_rgb"],
+        cand.append((round(w / _DASH_MARKER_SIZE_PT), round(h / _DASH_MARKER_SIZE_PT), p["fill_rgb"],
                      (min(xs), min(ys), max(xs), max(ys)), p))
     groups = {}
     for c in cand:
@@ -492,13 +571,13 @@ def add_dash_markers(symbols, paths, graphs):
             continue                      # the graph has markers of its own
         for cs in groups.values():
             mine = [c for c in cs if x0 <= (c[3][0] + c[3][2]) / 2 <= x1 and y0 <= (c[3][1] + c[3][3]) / 2 <= y1]
-            if len(mine) < 5 or any(abs(c[3][1] - y0) <= 0.5 for c in mine):
+            if len(mine) < _DASH_MARKERS_MIN or any(abs(c[3][1] - y0) <= _ON_BOTTOM_PT for c in mine):
                 continue
             boxes = [c[3] for c in mine]
             loose = [c for c in mine if not any(
-                b is not c[3] and b[0] <= c[3][2] + 0.1 and c[3][0] <= b[2] + 0.1 and
-                b[1] <= c[3][3] + 0.1 and c[3][1] <= b[3] + 0.1 for b in boxes)]
-            if len(loose) < 5:
+                b is not c[3] and b[0] <= c[3][2] + _TOUCH_PT and c[3][0] <= b[2] + _TOUCH_PT and
+                b[1] <= c[3][3] + _TOUCH_PT and c[3][1] <= b[3] + _TOUCH_PT for b in boxes)]
+            if len(loose) < _DASH_MARKERS_MIN:
                 continue
             for _, _, rgb, b, p in loose:
                 out.append({"shape": "rectangle", "cx": (b[0] + b[2]) / 2, "cy": (b[1] + b[3]) / 2,
@@ -506,6 +585,12 @@ def add_dash_markers(symbols, paths, graphs):
                             "idx": p["idx"], "clip": p.get("clip"), "res": p.get("res"),
                             "tool": p.get("tool"), "marker": True})
     return out
+
+
+_FRAME_MIN_W_PT = 5    # a legend frame is at least 5 pt wide
+_FRAME_MIN_H_PT = 3    # and 3 pt tall
+_FRAME_MAX_GRAPHS = 3  # no larger than a third of the largest graph
+_FRAME_MIN_SIZES = 3   # a frame round a symbol is over 3 sizes (plus 1 pt) wide
 
 
 def mark_legend_frames(symbols, paths, graphs):
@@ -533,7 +618,7 @@ def mark_legend_frames(symbols, paths, graphs):
                 continue
             b = bbox_of(vertices(sp))
             w, h = b[2] - b[0], b[3] - b[1]
-            if w < 5 or h < 3 or w * h > gmax / 3:
+            if w < _FRAME_MIN_W_PT or h < _FRAME_MIN_H_PT or w * h > gmax / _FRAME_MAX_GRAPHS:
                 continue
             if any(rect_distance(b, (g["rect"][0] + g["rect"][2]) / 2, (g["rect"][1] + g["rect"][3]) / 2) == 0
                    for g in graphs):
@@ -546,7 +631,7 @@ def mark_legend_frames(symbols, paths, graphs):
         if s.get("idx") is None:
             continue
         holding = [b for b in boxes if b[0] < s["cx"] < b[2] and b[1] < s["cy"] < b[3]
-                   and not (b[2] - b[0] < 3 * s.get("size", 0) + 1)]
+                   and not (b[2] - b[0] < _FRAME_MIN_SIZES * s.get("size", 0) + 1)]
         if not holding:
             continue
         b = min(holding, key=lambda b: (b[2] - b[0]) * (b[3] - b[1]))
@@ -556,6 +641,11 @@ def mark_legend_frames(symbols, paths, graphs):
         if held[key] >= 2:
             s["frame"] = b
     return symbols
+
+
+_DOT_CELL_PT = 5         # dot glyphs filed in cells of 5 pt
+_DOT_CENTRE_SIZES = 0.3  # the glyph centred on the circle within 0.3 of its size
+_DOT_COLOUR = 0.05       # of its colour within 0.05 in each channel
 
 
 def fill_circles_under_dots(symbols, texts):
@@ -574,21 +664,25 @@ def fill_circles_under_dots(symbols, texts):
         return symbols
     grid = {}
     for k, (x, y, _) in enumerate(dots):
-        grid.setdefault((int(x // 5), int(y // 5)), []).append(k)
+        grid.setdefault((int(x // _DOT_CELL_PT), int(y // _DOT_CELL_PT)), []).append(k)
     for s in symbols:
         if s["shape"] != "circle" or s["filled"]:
             continue
-        tol = 0.3 * max(s.get("size", 0.0), 1.0)
-        gx, gy = int(s["cx"] // 5), int(s["cy"] // 5)
+        tol = _DOT_CENTRE_SIZES * max(s.get("size", 0.0), 1.0)
+        gx, gy = int(s["cx"] // _DOT_CELL_PT), int(s["cy"] // _DOT_CELL_PT)
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
                 for k in grid.get((gx + dx, gy + dy), ()):
                     x, y, rgb = dots[k]
                     if abs(x - s["cx"]) <= tol and abs(y - s["cy"]) <= tol and \
                             (rgb is None or s["rgb"] is None or
-                             max(abs(a - b) for a, b in zip(rgb, s["rgb"])) <= 0.05):
+                             max(abs(a - b) for a, b in zip(rgb, s["rgb"])) <= _DOT_COLOUR):
                         s["filled"] = True
     return symbols
+
+
+_CROSSED_CENTRE_SIZES = 0.1  # square and plus centred within a tenth of the square's size
+_CROSSED_SIZE_FRAC = 0.15    # their sizes within 15%
 
 
 def merge_crossed_squares(symbols):
@@ -611,9 +705,9 @@ def merge_crossed_squares(symbols):
         for key in ((cx + i, cy + j) for i in (-1, 0, 1) for j in (-1, 0, 1)):
             hit = next((k for k in plus.get(key, ()) if k not in gone and
                         symbols[k]["rgb"] == s["rgb"] and
-                        abs(symbols[k]["cx"] - s["cx"]) <= 0.1 * size and
-                        abs(symbols[k]["cy"] - s["cy"]) <= 0.1 * size and
-                        abs(symbols[k].get("size", 0.0) - size) <= 0.15 * size), None)
+                        abs(symbols[k]["cx"] - s["cx"]) <= _CROSSED_CENTRE_SIZES * size and
+                        abs(symbols[k]["cy"] - s["cy"]) <= _CROSSED_CENTRE_SIZES * size and
+                        abs(symbols[k].get("size", 0.0) - size) <= _CROSSED_SIZE_FRAC * size), None)
             if hit is not None:
                 gone.add(hit)
                 s["shape"] = "square-plus"

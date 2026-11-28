@@ -5,7 +5,6 @@ inset graphs, assigning symbols to graphs and recognising graphs turned by
 
 import math
 
-from .context import PAGE
 from .geometry import (
     axis_aligned, bbox_of, frame_rect, median, merge_collinear, overlap_area, rect_area,
     rect_distance, rects_gap, straight_segments, to_frame, vertices)
@@ -13,7 +12,14 @@ from .scales import map_value
 from .titles import find_title
 
 
-def borrows_axis(shared, other):
+_BORROW_TOL_FRAC = 0.08  # a borrowed axis lines up within 8% of the longer span
+_BARE_MIN_TICKS = 3      # a bare axis has 3 ticks or more
+_TICK_TOL_PT = 0.5       # ticks agree within 0.5 pt
+_TICK_TOL_FRAC = 0.005   # or 0.5% of the span
+_END_TOL_FRAC = 0.01     # ends agree within 1% of the span
+
+
+def borrows_axis(shared, other, *, page):
     """May a graph whose axis `other` lies away from the labelled axis
     `shared` (stacked graphs with the x labels under the bottom one only,
     or side-by-side graphs with the y labels left of the first only) use
@@ -26,8 +32,8 @@ def borrows_axis(shared, other):
     span = shared["hi"] - shared["lo"]
     # as far from the end of `other` as a corner may be (some programs
     # leave a gap between the axes)
-    tol = 0.08 * max(span, other["hi"] - other["lo"])
-    lines = PAGE.dark_lines[0 if k == "x" else 1]
+    tol = _BORROW_TOL_FRAC * max(span, other["hi"] - other["lo"])
+    lines = page.dark_lines[0 if k == "x" else 1]
     want = sorted(shared.get("tick_pos") or [])
     # its own axis line is at the end facing the labelled axis (a left axis
     # serves the plots to its right through their left sides)
@@ -38,24 +44,86 @@ def borrows_axis(shared, other):
     else:
         edges = (other["lo"], other["hi"])
     # its own ticks decide (rows of two are the frame's side lines)
-    bare = [b for b in PAGE.bare_axes if b["orient"] == k and len(b["tick_pos"]) >= 3
+    bare = [b for b in page.bare_axes if b["orient"] == k and len(b["tick_pos"]) >= _BARE_MIN_TICKS
             and any(abs(b["pos"] - e) <= tol for e in edges)
             and b["lo"] < shared["hi"] and shared["lo"] < b["hi"]]
     if bare:
-        ttol = max(0.5, 0.005 * span)
+        ttol = max(_TICK_TOL_PT, _TICK_TOL_FRAC * span)
         return any(len(b["tick_pos"]) == len(want) and all(
             abs(u - v) <= ttol for u, v in zip(sorted(b["tick_pos"]), want)) for b in bare)
     # no ticks: a plain axis line spanning the same stretch (dark; or, when
     # the labelled axis has no ticks either - ggplot2 facets without ticks,
     # grey panel borders - a line of any shade)
-    etol = max(1.0, 0.01 * span)
+    etol = max(1.0, _END_TOL_FRAC * span)
     if not shared.get("tick_len") or shared.get("label_ticks"):
-        lines = list(lines) + list(PAGE.all_lines[0 if k == "x" else 1])
+        lines = list(lines) + list(page.all_lines[0 if k == "x" else 1])
     return any(abs(pp - e) <= tol and lo <= shared["lo"] + etol and hi >= shared["hi"] - etol
                for lo, hi, pp in lines for e in edges)
 
 
-def build_graphs(axes):
+_ROW_STEP = 2      # the panels of a row step at most twice the axis's length
+_ROW_CORNER_PT = 2.0  # a bare axis at the end of an x axis: within 2 pt
+
+
+def share_row_scales(graphs, axes, *, page):
+    """Small multiples in a row with the y scale written beside the first
+    only, each panel with an axis line and ticks (or grid lines) of its own
+    but no labels: an x axis left without a graph whose low end meets a bare
+    y axis (page.bare_axes: ticks with no labels; within 2 pt), whose ticks
+    lie where the ticks of a graph's labelled y axis lie (as many, within
+    0.5 pt or 0.5% of the span) and which spans the same stretch (within
+    1%), the panels stepping along the row from that axis (each at most
+    twice the axis's length on from the one before), makes a graph with
+    that y axis's scale (2411.16433v1-066: twelve bar charts with grid lines
+    at 0 ... 3, labelled left of the first only; their x axes are their
+    zero lines, above the plots' feet, so the corners do not meet).
+    Returns the graphs with the new ones added (their y axes marked
+    "shared")."""
+    used = {id(g["x"]) for g in graphs}
+    orphans = [a for a in axes if a["orient"] == "x" and id(a) not in used and a["has_line"]]
+    if not orphans:
+        return graphs
+    out = list(graphs)
+    for g in graphs:
+        a = g["y"]
+        if not a["has_line"] or a["map"]["kind"] == "nominal" or a.get("shared"):
+            continue
+        span = a["hi"] - a["lo"]
+        ttol = max(_TICK_TOL_PT, _TICK_TOL_FRAC * span)
+        etol = max(1.0, _END_TOL_FRAC * span)
+        want = sorted(a.get("tick_pos") or [])
+        if len(want) < _BARE_MIN_TICKS:
+            continue
+        same = [b for b in page.bare_axes if b["orient"] == "y" and b["pos"] > a["pos"] and
+                abs(b["lo"] - a["lo"]) <= etol and abs(b["hi"] - a["hi"]) <= etol and
+                len(b["tick_pos"]) == len(want) and
+                all(abs(u - v) <= ttol for u, v in zip(sorted(b["tick_pos"]), want))]
+        last = a["pos"]
+        for b in sorted(same, key=lambda b: b["pos"]):
+            if b["pos"] - last > _ROW_STEP * span:
+                break
+            last = b["pos"]
+            xa = next((x for x in orphans if abs(x["lo"] - b["pos"]) <= _ROW_CORNER_PT and
+                       a["lo"] <= x["pos"] <= a["hi"]), None)
+            if xa is None:
+                continue
+            orphans.remove(xa)
+            ya = dict(a, pos=b["pos"], labels=[], shared=True)
+            out.append({"x": xa, "y": ya, "rect": (b["pos"], a["lo"], xa["hi"], a["hi"])})
+    return order_graphs(out) if len(out) > len(graphs) else graphs
+
+
+_LINED_PT = 3.0          # an axis on a drawn line: within 3 pt
+_PAIR_GAP_FRAC = 0.08    # a pair of axes meets within 8% of the longer
+_PAIR_SLACK_FRAC = 0.02  # axes overlap by 2% of their span
+_PAIR_ALONG = 0.5        # a far axis within half its span
+_PAIR_ASPECT_LO = 0.3    # a graph's sides 0.3 to 3 times each other
+_PAIR_ASPECT_HI = 3      # (the most elongated)
+_INSET_LO = 0.05         # an inset lies from 5%
+_INSET_HI = 0.95         # to 95% of its host
+
+
+def build_graphs(axes, *, page):
     """Pair x and y axes whose lines meet at a corner into graphs:
     {'x': axis, 'y': axis, 'rect': plot box}.  Axes with an axis line are
     preferred to those without.  An axis may also serve a graph further
@@ -68,7 +136,7 @@ def build_graphs(axes):
         # heat map of 2020.01.30.927558.full-048, its ticks hanging from the
         # frame, beside lined axes elsewhere on the page)
         xs = lined + [a for a in xs if not a["has_line"] and not any(
-            abs(b["pos"] - a["pos"]) <= 3.0 and b["lo"] < a["hi"] and a["lo"] < b["hi"] for b in lined)]
+            abs(b["pos"] - a["pos"]) <= _LINED_PT and b["lo"] < a["hi"] and a["lo"] < b["hi"] for b in lined)]
         ys = [a for a in ys if a["has_line"]]
 
     def corner(xa, ya):
@@ -85,7 +153,7 @@ def build_graphs(axes):
         return dx, dy
 
     def tol(xa, ya):
-        return 0.08 * max(xa["hi"] - xa["lo"], ya["hi"] - ya["lo"])
+        return _PAIR_GAP_FRAC * max(xa["hi"] - xa["lo"], ya["hi"] - ya["lo"])
 
     def wrong_side(a, b):
         """Is axis `a` beyond an end of axis `b` with its labels in the gap
@@ -96,7 +164,7 @@ def build_graphs(axes):
             return False
         k = 0 if a["orient"] == "y" else 1
         mid = sum((tx["bbox"][k] + tx["bbox"][k + 2]) / 2 for _, tx in labs) / len(labs)
-        gap = 0.02 * (b["hi"] - b["lo"])
+        gap = _PAIR_SLACK_FRAC * (b["hi"] - b["lo"])
         if a["pos"] > b["hi"] + gap:
             return b["hi"] < mid < a["pos"]
         if a["pos"] < b["lo"] - gap:
@@ -110,7 +178,7 @@ def build_graphs(axes):
         for k, b in enumerate(others):
             along_a, along_b = gaps(a, b)
             if along_b <= tol(a, b) and not wrong_side(b, a) and (
-                    along_a <= 0.5 * (a["hi"] - a["lo"]) or borrows_axis(b, a)):
+                    along_a <= _PAIR_ALONG * (a["hi"] - a["lo"]) or borrows_axis(b, a, page=page)):
                 cands.append(((along_a, along_b), k))
         return min(cands)[1] if cands else None
 
@@ -129,7 +197,7 @@ def build_graphs(axes):
         i = partner(ya, xs, lambda a, b: corner(b, a)[::-1])
         if i is not None:
             pairs.add((i, j))
-    stack_on_shared_x(xs, ys, pairs)
+    stack_on_shared_x(xs, ys, pairs, page=page)
     row_on_shared_y(xs, ys, pairs)
     # axes that cross inside the plot (Excel's log axes crossing at 1, axes
     # through the origin): each line runs across the other one, well inside
@@ -145,11 +213,11 @@ def build_graphs(axes):
             if j in used_y or not ya["has_line"]:
                 continue
             wx, wy = xa["hi"] - xa["lo"], ya["hi"] - ya["lo"]
-            if not (0.3 * wx <= wy <= 3 * wx):
+            if not (_PAIR_ASPECT_LO * wx <= wy <= _PAIR_ASPECT_HI * wx):
                 continue
             ix = (ya["pos"] - xa["lo"]) / wx
             iy = (xa["pos"] - ya["lo"]) / wy
-            if 0.05 < ix < 0.95 and 0.05 < iy < 0.95:
+            if _INSET_LO < ix < _INSET_HI and _INSET_LO < iy < _INSET_HI:
                 d = abs(ix - 0.5) + abs(iy - 0.5)
                 if best is None or d < best[0]:
                     best = (d, j)
@@ -165,6 +233,9 @@ def build_graphs(axes):
     return order_graphs(merge_twin_axes(graphs))
 
 
+_FOOT_FRAC = 0.5  # a y axis standing at the foot within half the x axis's length
+
+
 def _foot_of(xa, ya):
     """An x axis of ticks only (no line) at the foot of a y axis (within
     2 pt), the y axis left of its first tick by at most half its length:
@@ -174,7 +245,10 @@ def _foot_of(xa, ya):
     frame's edge): 978-3-031-36060-2_2-006's lineless right-hand y axes
     stand left of the next chart's x axis."""
     return not xa["has_line"] and ya["has_line"] and abs(xa["pos"] - ya["lo"]) <= 2.0 and \
-        ya["pos"] < xa["lo"] and xa["lo"] - ya["pos"] <= 0.5 * (xa["hi"] - xa["lo"])
+        ya["pos"] < xa["lo"] and xa["lo"] - ya["pos"] <= _FOOT_FRAC * (xa["hi"] - xa["lo"])
+
+
+_SAME_PLOT = 0.85  # graphs overlapping by 85% are one plot
 
 
 def drop_same_plot_graphs(graphs):
@@ -188,12 +262,15 @@ def drop_same_plot_graphs(graphs):
     out = []
     for g in sorted(graphs, key=lambda g: -labels(g)):
         a = rect_area(g["rect"])
-        if a > 0 and any(overlap_area(g["rect"], o["rect"]) >= 0.85 * max(a, rect_area(o["rect"]))
+        if a > 0 and any(overlap_area(g["rect"], o["rect"]) >= _SAME_PLOT * max(a, rect_area(o["rect"]))
                          for o in out):
             continue
         out.append(g)
     keep = {id(g) for g in out}
     return [g for g in graphs if id(g) in keep]
+
+
+_ROW_GAP_FRAC = 0.25  # panels of a row within a quarter of the span
 
 
 def row_on_shared_y(xs, ys, pairs):
@@ -216,13 +293,17 @@ def row_on_shared_y(xs, ys, pairs):
                 # 2020.01.30.927558.full-048 beside its heat map's rows)
                 gap = xa["lo"] - xb["hi"]
                 if abs(xb["pos"] - xa["pos"]) <= 1.0 and (abs(gap) <= 2.0 or (
-                        ys[j]["map"]["kind"] == "nominal" and 0 < gap <= 0.25 * (xa["hi"] - xa["lo"]))):
+                        ys[j]["map"]["kind"] == "nominal" and 0 < gap <= _ROW_GAP_FRAC * (xa["hi"] - xa["lo"]))):
                     pairs.add((i, j))
                     changed = True
                     break
 
 
-def stack_on_shared_x(xs, ys, pairs):
+_SHARED_X_TOL_FRAC = 0.01  # a shared x axis lines up within 1%
+_STACK_GAP_FRAC = 0.5      # panels stacked within half the span
+
+
+def stack_on_shared_x(xs, ys, pairs, *, page):
     """Stacked panels each with a labelled y axis line of its own but one x
     axis, under the bottom panel only, and no x axis line in the others
     (plot d of song2025rigorous-002): a y axis left without a graph, on
@@ -238,17 +319,21 @@ def stack_on_shared_x(xs, ys, pairs):
         best = None
         for i, k in pairs:
             yb, xa = ys[k], xs[i]
-            if abs(yb["pos"] - ya["pos"]) > max(1.0, 0.01 * span) or \
+            if abs(yb["pos"] - ya["pos"]) > max(1.0, _SHARED_X_TOL_FRAC * span) or \
                     not xa["lo"] - 1 <= ya["pos"] <= xa["hi"] + 1:
                 continue
             gap = max(yb["lo"] - ya["hi"], ya["lo"] - yb["hi"])
-            if 0 <= gap <= 0.5 * span and (best is None or gap < best[0]):
+            if 0 <= gap <= _STACK_GAP_FRAC * span and (best is None or gap < best[0]):
                 best = (gap, i)
-        if best and not _own_x_line(xs[best[1]], ya):
+        if best and not _own_x_line(xs[best[1]], ya, page=page):
             pairs.add((best[1], j))
 
 
-def _own_x_line(xa, ya):
+_OWN_LINE_FRAC = 0.05  # a graph's own x line within 5% of its height
+_OWN_LINE_COVER = 0.5  # covering half its length
+
+
+def _own_x_line(xa, ya, *, page):
     """Does a horizontal line (of any shade) lie at an end of y axis `ya`,
     over half as long as x axis `xa` and across from it?  Then the panel
     has an x axis (or frame) of its own and borrows no other - unless the
@@ -256,16 +341,20 @@ def _own_x_line(xa, ya):
     shared x axis lies on (within 2 pt) (2020.01.30.927558.full-012: each
     upper panel has the bottom panel's x axis line again, unlabelled; a
     panel whose y axis already has a graph borrows nothing anyway)."""
-    tol = 0.05 * (ya["hi"] - ya["lo"])
-    need = 0.5 * (xa["hi"] - xa["lo"])
-    for lo, hi, pp in list(PAGE.dark_lines[0]) + list(PAGE.all_lines[0]):
+    tol = _OWN_LINE_FRAC * (ya["hi"] - ya["lo"])
+    need = _OWN_LINE_COVER * (xa["hi"] - xa["lo"])
+    for lo, hi, pp in list(page.dark_lines[0]) + list(page.all_lines[0]):
         if min(hi, xa["hi"]) - max(lo, xa["lo"]) >= need and \
-                min(abs(pp - ya["lo"]), abs(pp - ya["hi"])) <= tol and not _copy_of_axis_line(lo, hi, pp, xa):
+                min(abs(pp - ya["lo"]), abs(pp - ya["hi"])) <= tol and not _copy_of_axis_line(lo, hi, pp, xa, page=page):
             return True
     return False
 
 
-def _copy_of_axis_line(lo, hi, pp, xa):
+_COPY_MIN_TICKS = 3  # a copied axis line has a row of 3 ticks or more
+_COPY_AGREE = 0.8    # 80% of them agreeing
+
+
+def _copy_of_axis_line(lo, hi, pp, xa, *, page):
     """Is the horizontal line lo...hi at height pp a copy of the line under
     x axis xa - the same ends (within 2 pt) as a line at xa's own place,
     and either no tick row (of three or more) on it or one ticked at xa's
@@ -276,16 +365,20 @@ def _copy_of_axis_line(lo, hi, pp, xa):
     with other unlabelled ticks takes no scale)."""
     ticks = list(xa.get("tick_pos") or ())
     # (rows of three ticks or more: the frame's two corners are no row)
-    rows = [b.get("tick_pos") or () for b in PAGE.bare_axes
-            if b["orient"] == "x" and abs(b["pos"] - pp) <= 1.0 and len(b.get("tick_pos") or ()) >= 3]
+    rows = [b.get("tick_pos") or () for b in page.bare_axes
+            if b["orient"] == "x" and abs(b["pos"] - pp) <= 1.0 and len(b.get("tick_pos") or ()) >= _COPY_MIN_TICKS]
 
     def agrees(row):
         n = sum(1 for t in row if any(abs(t - u) <= 1.0 for u in ticks))
-        return n >= 3 and n >= 0.8 * len(row)
+        return n >= _COPY_MIN_TICKS and n >= _COPY_AGREE * len(row)
     if rows and not any(agrees(r) for r in rows):
         return False
     return any(abs(l2 - lo) <= 2.0 and abs(h2 - hi) <= 2.0 and abs(p2 - xa["pos"]) <= 2.0
-               for l2, h2, p2 in list(PAGE.dark_lines[0]) + list(PAGE.all_lines[0]))
+               for l2, h2, p2 in list(page.dark_lines[0]) + list(page.all_lines[0]))
+
+
+_TWIN_TOL_FRAC = 0.02  # twin axes line up within 2% of the span
+_TWIN_APART = 0.8      # on opposite sides: 80% of the span apart
 
 
 def merge_twin_axes(graphs):
@@ -305,7 +398,7 @@ def merge_twin_axes(graphs):
                 h = out[j]
                 a, b = g[other], h[other]
                 span = g[shared]["hi"] - g[shared]["lo"]
-                tol = max(1.0, 0.02 * span)
+                tol = max(1.0, _TWIN_TOL_FRAC * span)
                 ends = (g[shared]["lo"], g[shared]["hi"])
                 # (the far ends may differ when both axes start on the shared
                 # axis line: R draws each axis() only as far as its last
@@ -316,7 +409,7 @@ def merge_twin_axes(graphs):
                         abs(a["lo"] - b["lo"]) <= tol and (
                             abs(a["hi"] - b["hi"]) <= tol or
                             abs(a["lo"] - base) <= tol and abs(b["lo"] - base) <= tol) and \
-                        abs(a["pos"] - b["pos"]) > 0.8 * span and \
+                        abs(a["pos"] - b["pos"]) > _TWIN_APART * span and \
                         all(min(abs(ax["pos"] - e) for e in ends) <= tol for ax in (a, b)) and \
                         other + "2" not in g and other + "2" not in h:
                     first, second = (a, b) if a["pos"] < b["pos"] else (b, a)
@@ -338,6 +431,9 @@ def merge_twin_axes(graphs):
     return out
 
 
+_AGREE_FRAC = 1e-3  # values agree within 0.1%
+
+
 def _agree(ma, mb, p, tol):
     """Do two value mappings agree at position p, to within what tol points
     of position mean there?  (w21074-042's right labels stand 0.2 pt above
@@ -347,7 +443,7 @@ def _agree(ma, mb, p, tol):
         return False
     vt = map_value(ma, p + tol)
     slack = abs(vt - va) if vt is not None else 0.0
-    return abs(va - vb) <= max(slack, 1e-3 * max(abs(va), abs(vb), 1e-12))
+    return abs(va - vb) <= max(slack, _AGREE_FRAC * max(abs(va), abs(vb), 1e-12))
 
 
 def _same_values(a, b, tol=0.5):
@@ -360,6 +456,12 @@ def _same_values(a, b, tol=0.5):
     if len(a.get("ticks", ())) < 2 or len(b.get("ticks", ())) < 2:
         return False
     return all(_agree(ma, mb, p, tol) for p, _ in pts)
+
+
+_MIRROR_MIN = 3           # a mirrored axis has 3 ticks or more
+_MIRROR_TOL_PT = 0.5      # mirrored ticks agree within 0.5 pt
+_MIRROR_TOL_FRAC = 0.005  # or 0.5% of the span
+_MIRROR_FRAC = 0.9        # 90% of them
 
 
 def _mirrored(a, b):
@@ -377,12 +479,12 @@ def _mirrored(a, b):
     the same places."""
     ta, tb = a.get("tick_pos") or [], b.get("tick_pos") or []
     small, big = (ta, tb) if len(ta) <= len(tb) else (tb, ta)
-    if len(small) < 3:
+    if len(small) < _MIRROR_MIN:
         return _same_values(a, b)
-    tol = max(0.5, 0.005 * (max(big) - min(big) if big else 0))
+    tol = max(_MIRROR_TOL_PT, _MIRROR_TOL_FRAC * (max(big) - min(big) if big else 0))
     # (a tick at an end of the axis may be lost in the frame's corner)
     big = [*list(big), a["lo"], a["hi"], b["lo"], b["hi"]]
-    if sum(1 for p in small if any(abs(p - q) <= tol for q in big)) < 0.9 * len(small):
+    if sum(1 for p in small if any(abs(p - q) <= tol for q in big)) < _MIRROR_FRAC * len(small):
         return False
     ma, mb = a.get("map"), b.get("map")
     if not ma or not mb:
@@ -395,11 +497,14 @@ def _mirrored(a, b):
     return all(_agree(ma, mb, p, tol) for p, _ in b.get("ticks", ()))
 
 
+_DARK_SUM = 1.5  # a dark line: channels sum under 1.5
+
+
 def dark_frame_lines(paths):
     """Merged dark horizontal and vertical stroked lines (frames, borders)."""
     hs, vs = [], []
     for p in paths:
-        if not p["stroke"] or sum(p["stroke_rgb"] or (0, 0, 0)) >= 1.5:
+        if not p["stroke"] or sum(p["stroke_rgb"] or (0, 0, 0)) >= _DARK_SUM:
             continue
         for a, b in straight_segments(p):
             aa = axis_aligned(a, b)
@@ -408,18 +513,23 @@ def dark_frame_lines(paths):
     return merge_collinear(hs), merge_collinear(vs)
 
 
-def add_panel_graphs(graphs, axes, paths):
+_PANELS_MIN = 4        # a lattice has 4 panels or more
+_PANEL_COVER_PT = 0.6  # a panel side covered by a line within 0.6 pt
+_PANEL_OVERLAP = 0.5   # a panel over half covered by a graph is no new graph
+
+
+def add_panel_graphs(graphs, axes, paths, *, page):
     """Small multiples (lattice / facet plots): only the outer panels carry
     labelled axes; every panel shares the x scale of its column and the y
     scale of its row.  Each framed rectangle spanned by a column's x axis
     and a row's y axis is a graph."""
     xs = [a for a in axes if a["orient"] == "x" and a["has_line"]]
     ys = [a for a in axes if a["orient"] == "y" and a["has_line"]]
-    if len(xs) * len(ys) < 4:
+    if len(xs) * len(ys) < _PANELS_MIN:
         return graphs
     hl, vl = dark_frame_lines(paths)
 
-    def covered(lines, pos, lo, hi, tol=0.6):
+    def covered(lines, pos, lo, hi, tol=_PANEL_COVER_PT):
         """Is there a frame line at `pos` running at least from lo to hi?"""
         return any(abs(pp - pos) <= tol and l0 <= lo + tol and l1 >= hi - tol
                    for l0, l1, pp in lines)
@@ -436,14 +546,14 @@ def add_panel_graphs(graphs, axes, paths):
             # a panel is a rectangle framed on all four sides by dark lines
             if (covered(hl, r[1], r[0], r[2]) and covered(hl, r[3], r[0], r[2]) and
                     covered(vl, r[0], r[1], r[3]) and covered(vl, r[2], r[1], r[3])) or \
-                    (_open_panel(r, ya, hl, vl) and not any(
-                        overlap_area(r, h) > 0.5 * min(rect_area(r), rect_area(h)) for h in have)):
+                    (_open_panel(r, ya, hl, vl, page=page) and not any(
+                        overlap_area(r, h) > _PANEL_OVERLAP * min(rect_area(r), rect_area(h)) for h in have)):
                 out.append({"x": xa, "y": ya, "rect": r})
                 have.append(r)
     return order_graphs(out) if len(out) > len(graphs) else graphs
 
 
-def _open_panel(r, ya, hl, vl):
+def _open_panel(r, ya, hl, vl, *, page):
     """A panel of open axes in a lattice: a line along its foot and one up
     its left side (within 2 pt of the column's and row's ends), the left
     one ticked at two or more of the row's y ticks (an unlabelled tick row
@@ -460,7 +570,10 @@ def _open_panel(r, ya, hl, vl):
     ticks = list(ya.get("tick_pos") or ())
     return any(b["orient"] == "y" and any(abs(b["pos"] - pp) <= 1.0 for pp in side) and
                sum(1 for t in b.get("tick_pos") or () if any(abs(t - u) <= 1.0 for u in ticks)) >= 2
-               for b in PAGE.bare_axes)
+               for b in page.bare_axes)
+
+
+_ORDER_OVERLAP = 0.5  # graphs of one row overlap by half their height
 
 
 def order_graphs(graphs):
@@ -475,11 +588,14 @@ def order_graphs(graphs):
         for g in rest:
             h = g["rect"][3] - g["rect"][1]
             ov = min(top["rect"][3], g["rect"][3]) - max(top["rect"][1], g["rect"][1])
-            if ov > 0.5 * min(h0, h):
+            if ov > _ORDER_OVERLAP * min(h0, h):
                 row.append(g)
         rest = [g for g in rest if not any(g is r for r in row)]
         out += sorted(row, key=lambda g: g["rect"][0])
     return out
+
+
+_UPRIGHT_DEG = 10  # text within 10 degrees of level is not rotated
 
 
 def frame_texts(texts, rot):
@@ -495,7 +611,7 @@ def frame_texts(texts, rot):
         u["up"] = to_frame(t["up"], rot)
         ang = (t.get("angle", 0.0) - rot + 180) % 360 - 180
         u["angle"] = ang
-        u["rotated"] = not (abs(ang) < 10 or abs(abs(ang) - 180) < 10)
+        u["rotated"] = not (abs(ang) < _UPRIGHT_DEG or abs(abs(ang) - 180) < _UPRIGHT_DEG)
         out.append(u)
     return out
 
@@ -513,7 +629,10 @@ def frame_symbols(symbols, rot):
     return out
 
 
-def graph_rotation(g, texts, symbols):
+_ROTATION_MARGIN = 1.05  # turned labels must outnumber upright ones by 5%
+
+
+def graph_rotation(g, texts, symbols, *, page):
     """0, or the angle by which the whole graph is turned.  A graph is turned
     when the tick labels of both axes read in the same non-horizontal
     direction (or the page-y axis's at r and the page-x axis's, not
@@ -530,16 +649,25 @@ def graph_rotation(g, texts, symbols):
         # 90 degrees on the page: iteration labels at 90, the values at 180)
         rot = ay
     else:
-        return 0, find_title(g["rect"], texts, symbols)
+        return 0, find_title(g["rect"], texts, symbols, page=page)
     t_rot = find_title(frame_rect(g["rect"], rot), frame_texts(texts, rot),
-                       frame_symbols(symbols, rot), with_size=True)
-    t_0 = find_title(g["rect"], texts, symbols, with_size=True)
-    if t_0[0] and (not t_rot[0] or t_0[1] > t_rot[1] * 1.05):
+                       frame_symbols(symbols, rot), with_size=True, page=page)
+    t_0 = find_title(g["rect"], texts, symbols, with_size=True, page=page)
+    if t_0[0] and (not t_rot[0] or t_0[1] > t_rot[1] * _ROTATION_MARGIN):
         return 0, t_0[0]
     return rot, t_rot[0]
 
 
-def set_graph_backgrounds(graphs, paths):
+_BG_MAX_SEGS = 5      # a background box has at most 5 segments
+_BG_CORNER_PT = 0.1   # its corners within 0.1 pt of its box
+_BG_OUTSIDE_PT = 0.5  # it holds the plot within 0.5 pt
+_BG_MAX_AREA = 4      # and is at most 4 times its area
+_PAPER_WIDTH = 1.6    # paper at most 1.6 times the plot's width
+_BG_TOL_PT = 1.5      # a plot background matches its box within 1.5 pt
+_BG_TOL_FRAC = 0.01   # or 1% of its size
+
+
+def set_graph_backgrounds(graphs, paths, *, page):
     """Drawing step at which each graph's own opaque background box was
     painted (an inset is painted over its parent graph), or -1."""
     boxes = []                       # (box, drawing step) of filled single shapes
@@ -555,8 +683,8 @@ def set_graph_backgrounds(graphs, paths):
         b = bbox_of(pts)
         if p["fill"]:
             boxes.append((b, p["idx"]))
-        if all(s[0] == "l" for s in sp["segs"]) and len(sp["segs"]) <= 5 and all(
-                min(abs(x - b[0]), abs(x - b[2])) < 0.1 and min(abs(y - b[1]), abs(y - b[3])) < 0.1
+        if all(s[0] == "l" for s in sp["segs"]) and len(sp["segs"]) <= _BG_MAX_SEGS and all(
+                min(abs(x - b[0]), abs(x - b[2])) < _BG_CORNER_PT and min(abs(y - b[1]), abs(y - b[3])) < _BG_CORNER_PT
                 for x, y in pts):
             rects.append(b)
             if p["fill"] and p.get("opaque", True):
@@ -572,8 +700,8 @@ def set_graph_backgrounds(graphs, paths):
         x0, y0, x1, y1 = g["rect"]
         best = None
         for b in papers:
-            if min(x0 - b[0], y0 - b[1], b[2] - x1, b[3] - y1) >= -0.5 and \
-                    rect_area(b) <= 4 * rect_area(g["rect"]) and not any(
+            if min(x0 - b[0], y0 - b[1], b[2] - x1, b[3] - y1) >= -_BG_OUTSIDE_PT and \
+                    rect_area(b) <= _BG_MAX_AREA * rect_area(g["rect"]) and not any(
                         o is not g and b[0] <= (o["rect"][0] + o["rect"][2]) / 2 <= b[2] and
                         b[1] <= (o["rect"][1] + o["rect"][3]) / 2 <= b[3] for o in graphs) and (
                     best is None or rect_area(b) < rect_area(best)):
@@ -588,15 +716,15 @@ def set_graph_backgrounds(graphs, paths):
         best = None
         for b in rects:
             m = min(x0 - b[0], y0 - b[1], b[2] - x1, b[3] - y1)
-            if m >= 2.0 and b[2] - b[0] <= 1.6 * w and b[3] - b[1] <= 2.0 * h and (
+            if m >= 2.0 and b[2] - b[0] <= _PAPER_WIDTH * w and b[3] - b[1] <= 2.0 * h and (
                     best is None or rect_area(b) < rect_area(best)):
                 best = b
         if best:
-            PAGE.chart_frames[tuple(g["rect"])] = best
+            page.chart_frames[tuple(g["rect"])] = best
     for g in graphs:
         g["bg"] = -1
         x0, y0, x1, y1 = g["rect"]
-        tol = max(1.5, 0.01 * max(x1 - x0, y1 - y0))
+        tol = max(_BG_TOL_PT, _BG_TOL_FRAC * max(x1 - x0, y1 - y0))
         for b, idx in boxes:
             if abs(b[0] - x0) <= tol and abs(b[1] - y0) <= tol and \
                     abs(b[2] - x1) <= tol and abs(b[3] - y1) <= tol and idx > g["bg"]:
@@ -637,6 +765,10 @@ def clip_graph(graphs, s):
     return memo[key]
 
 
+_CLIP_COVER = 0.9  # a clip holding a graph covers 90% of it
+_CLIP_MAX = 1.5    # and is at most 1.5 times its area
+
+
 def _clip_graph(graphs, c):
     """The graph whose box lies (at least 90%) inside clipping box c, c
     being at most 1.5 times its area (the smallest such c's graph), or
@@ -646,7 +778,7 @@ def _clip_graph(graphs, c):
     for g in graphs:
         area = max(rect_area(g["rect"]), 1e-9)
         ov = overlap_area(g["rect"], c)
-        if ov >= 0.9 * area and carea <= 1.5 * area and (best is None or carea < best[0]):
+        if ov >= _CLIP_COVER * area and carea <= _CLIP_MAX * area and (best is None or carea < best[0]):
             best = (carea, g)
     return best[1] if best else None
 

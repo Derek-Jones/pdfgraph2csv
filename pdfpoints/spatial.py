@@ -1,8 +1,23 @@
-"""Grouping helpers: disjoint sets (union-find), used to gather glyph
-outlines into words and stroke pieces into crosses, and uniform grids of
-boxes (BoxGrid) and of points (PointGrid) for finding the neighbours of a
-shape among many (pages can hold hundreds of thousands of shapes)."""
+"""Spatial indexes and grouping, shared by every step.
 
+Pages can hold hundreds of thousands of shapes, and a step that compares
+every shape with every other takes minutes (ESEUR-slowpages, 2602.03839v2-
+029, gopinath2014mutations-004, BehavioralNetworkScience-319: each was
+fixed with an index of its own).  The standard indexes here:
+
+  SortedIndex   items sorted by one coordinate: those whose key lies in a
+                range (bisection), in key order, ties in the items' order
+  PointGrid     items at points filed in square cells: those in the cells
+                around a point
+  BoxGrid       boxes filed in every cell they touch: those near a box
+  DisjointSets  union-find, to gather pieces into groups
+  PageIndex     the indexes of one page, each built once on first use and
+                shared by the steps that need it (page.index)
+
+Callers test the exact condition themselves: an index gives a superset.
+"""
+
+import bisect
 import math
 
 
@@ -100,3 +115,54 @@ class PointGrid:
                 got = cells.get((gx + dx, gy + dy))
                 if got:
                     yield from got
+
+
+class SortedIndex:
+    """`items` sorted by `key(item)` (a stable sort: items with equal keys
+    keep their order).  `between(lo, hi)` gives, in that order, the items
+    whose key k has lo <= k <= hi (lo < k with lo_open, k < hi with
+    hi_open)."""
+
+    __slots__ = ("keys", "items")
+
+    def __init__(self, items, key):
+        pairs = sorted(((key(it), n) for n, it in enumerate(items)), key=lambda p: p[0])
+        items = list(items)
+        self.keys = [k for k, _ in pairs]
+        self.items = [items[n] for _, n in pairs]
+
+    def __len__(self):
+        return len(self.items)
+
+    def span(self, lo, hi, lo_open=False, hi_open=False):
+        """(start, stop): the positions in `items` of the keys in the range."""
+        a = (bisect.bisect_right if lo_open else bisect.bisect_left)(self.keys, lo)
+        b = (bisect.bisect_left if hi_open else bisect.bisect_right)(self.keys, hi)
+        return a, b
+
+    def between(self, lo, hi, lo_open=False, hi_open=False):
+        a, b = self.span(lo, hi, lo_open, hi_open)
+        return self.items[a:b]
+
+
+class PageIndex:
+    """The spatial indexes of one page (page.index), each built once, on
+    first use, and shared by the steps that need it.  An index is named
+    and built from a collection (the page's paths, its texts, a list of
+    symbols); it is rebuilt when asked for a different collection (a new
+    list, or one whose length changed), so that a step never sees an
+    index of a list it no longer uses."""
+
+    def __init__(self, page):
+        self.page = page
+        self._built = {}                 # name -> (collection, its length, index)
+
+    def get(self, name, source, build):
+        """The index `name` of `source`, made by `build()` when not yet made
+        for this very collection."""
+        got = self._built.get(name)
+        if got is not None and got[0] is source and got[1] == len(source):
+            return got[2]
+        index = build()
+        self._built[name] = (source, len(source), index)
+        return index

@@ -8,7 +8,7 @@ import bisect
 import math
 
 from .geometry import (axis_aligned, bbox_of, flatten_subpath, inside_rect, line_intersection, median, polygon_area, rect_area, rect_of, subpath_bbox, vertices)
-from .grouping import PointGrid
+from .spatial import PointGrid
 
 
 def _open_bar_outlines(p):
@@ -31,6 +31,15 @@ def _open_bar_outlines(p):
     return [bbox_of(pts)]
 
 
+_BAR_BASE_PT = 0.75         # a bar stands on the baseline: within 0.75 pt
+_BAR_BASE_FRAC = 0.005      # or 0.5% of the plot's height
+_CATEGORY_WIDTH_FRAC = 0.9  # a bar is at most 90% of the category spacing wide
+_BARS_MIN = 3               # 3 bars or more (outlined, hanging)
+_BAR_MIN_PT = 0.3           # a bar is over 0.3 pt wide
+_BAR_MAX_FRAC = 0.25        # and at most a quarter of the plot wide (or past the top)
+_BAR_WIDTH_SAME = 0.05      # bars of one width: within 5%
+
+
 def find_bars(graph, paths):
     """Bars of a bar chart: filled axis-aligned rectangles standing on the
     graph's baseline (its x axis line, or the line of value 0).  Each bar is
@@ -45,7 +54,7 @@ def find_bars(graph, paths):
         yz = -graph["y"]["map"]["b"] / graph["y"]["map"]["a"]      # where value 0 is
         if y0 < yz < y1:
             bases.append(yz)
-    tol = max(0.75, 0.005 * h)
+    tol = max(_BAR_BASE_PT, _BAR_BASE_FRAC * h)
     # (on a category axis a bar may be as wide as 90% of the categories'
     # spacing: 2020.01.30.927558.full-030's panel A, three bars 17 pt wide
     # in a plot 64 pt wide)
@@ -53,7 +62,7 @@ def find_bars(graph, paths):
     mx = graph["x"]["map"]
     if mx.get("kind") == "nominal" and len(mx.get("ticks") or ()) >= 2:
         cs = sorted(c for c, _ in mx["ticks"])
-        cat_w = 0.9 * min(b - a for a, b in zip(cs, cs[1:]))
+        cat_w = _CATEGORY_WIDTH_FRAC * min(b - a for a, b in zip(cs, cs[1:]))
     bars = []
     hanging = []                    # bars going down from the lowest line
     loose = []                      # rectangles off the baseline: stacked segments?
@@ -83,7 +92,7 @@ def find_bars(graph, paths):
             bw, bh = bx1 - bx0, by1 - by0
             # (the box of a category axis ends at the outer categories'
             # centres: a bar's middle must be inside it, not the whole bar)
-            if bw <= 0.3 or bw > max(0.25 * w, cat_w) or bh <= 0 or \
+            if bw <= _BAR_MIN_PT or bw > max(_BAR_MAX_FRAC * w, cat_w) or bh <= 0 or \
                     not x0 - tol <= (bx0 + bx1) / 2 <= x1 + tol:
                 continue
             for base in (() if thick else bases):
@@ -91,9 +100,9 @@ def find_bars(graph, paths):
                 # height: a chart without a frame ends its box at the top
                 # grid line, and 3485513-020's tallest bars pass it)
                 clip = p.get("clip")
-                if abs(by0 - base) <= tol and by1 <= y1 + max(tol, 0.25 * h):
+                if abs(by0 - base) <= tol and by1 <= y1 + max(tol, _BAR_MAX_FRAC * h):
                     top = by1
-                elif base == y0 and by0 < y0 - tol and y0 + tol < by1 <= y1 + max(tol, 0.25 * h) and \
+                elif base == y0 and by0 < y0 - tol and y0 + tol < by1 <= y1 + max(tol, _BAR_MAX_FRAC * h) and \
                         clip and abs(clip[1] - y0) <= max(tol, 1.0):
                     # (on a log axis a bar's foot, at 0, lies far below:
                     # clipped at the plot's bottom, it stands there -
@@ -102,7 +111,7 @@ def find_bars(graph, paths):
                     by0 = y0
                 elif abs(by1 - base) <= tol and by0 >= y0 - tol and base != y0:
                     top = by0                # a bar going down from zero
-                elif abs(by1 - base) <= tol and base == y0 and by0 >= y0 - 0.25 * h:
+                elif abs(by1 - base) <= tol and base == y0 and by0 >= y0 - _BAR_MAX_FRAC * h:
                     # going down from the lowest line, which is not 0 (bars of
                     # ratios from 1x): kept if as wide as the standing bars
                     hanging.append(((bx0 + bx1) / 2, by0, bw, p))
@@ -126,18 +135,21 @@ def find_bars(graph, paths):
                 if by1 <= y1 + tol:
                     if not opened:
                         loose.append((bx0, by0, bx1, by1, p, _paint(p, thick)))
-    if sum(1 for b in bars if b.get("outline")) < 3:
+    if sum(1 for b in bars if b.get("outline")) < _BARS_MIN:
         bars = [b for b in bars if not b.get("outline")]     # (a box or two: no bars)
     _stack(bars, loose, tol, seen)
-    if hanging and len(bars) >= 3:
+    if hanging and len(bars) >= _BARS_MIN:
         wm = median(b["size"] for b in bars)
         for cx, top, bw, p in hanging:
             key = (round(cx - bw / 2, 2), round(cx + bw / 2, 2), round(top, 2))
-            if abs(bw - wm) <= 0.05 * wm and key not in seen:
+            if abs(bw - wm) <= _BAR_WIDTH_SAME * wm and key not in seen:
                 seen.add(key)
                 bars.append({"shape": "bar", "cx": cx, "cy": top, "size": bw,
                              "filled": True, "rgb": p["fill_rgb"], "idx": p["idx"]})
     return _drop_bands(bars, y1, tol)
+
+
+_HBAR_END_PT = 0.1  # a horizontal bar's end beyond a marker's centre: by 0.1 pt
 
 
 def _find_hbars(graph, paths):
@@ -155,7 +167,7 @@ def _find_hbars(graph, paths):
         xz = -m["b"] / m["a"]
         if x0 < xz < x1:
             bases.append(xz)
-    tol = max(0.75, 0.005 * w)
+    tol = max(_BAR_BASE_PT, _BAR_BASE_FRAC * w)
     bars, seen, loose = [], set(), []
     for p in paths:
         if not p["fill"]:
@@ -169,11 +181,11 @@ def _find_hbars(graph, paths):
                        for a, b in zip(pts, pts[1:] + pts[:1])):
                 continue
             bh = by1 - by0
-            if bh <= 0.3 or bh > 0.25 * h or bx1 - bx0 <= 0 or \
+            if bh <= _BAR_MIN_PT or bh > _BAR_MAX_FRAC * h or bx1 - bx0 <= 0 or \
                     not y0 - tol <= (by0 + by1) / 2 <= y1 + tol:
                 continue
             for base in bases:
-                if abs(bx0 - base) <= tol and bx1 <= x1 + max(tol, 0.25 * w):
+                if abs(bx0 - base) <= tol and bx1 <= x1 + max(tol, _BAR_MAX_FRAC * w):
                     end, foot = bx1, bx0
                 elif abs(bx1 - base) <= tol and base != x0 and bx0 >= x0 - tol:
                     end, foot = bx0, bx1          # a bar going left from zero
@@ -199,7 +211,7 @@ def _find_hbars(graph, paths):
             for r in loose:
                 rx0, ry0, rx1, ry1, p = r
                 if abs(ry0 - b0) <= tol and abs(ry1 - b1) <= tol and abs(rx0 - b["cx"]) <= tol and \
-                        rx1 > b["cx"] + 0.1:
+                        rx1 > b["cx"] + _HBAR_END_PT:
                     key = (round(ry0, 2), round(ry1, 2), round(rx1, 2))
                     if key in seen:
                         continue
@@ -212,6 +224,11 @@ def _find_hbars(graph, paths):
         loose = [r for r in loose if (round(r[1], 2), round(r[3], 2), round(r[2], 2)) not in seen]
         ends = nxt
     return bars
+
+
+_THICK_STROKE_PT = 0.5  # a thick upright stroke drawn as a bar: 0.5 pt wide or more
+_UPRIGHT_PT = 0.01      # upright: its ends within 0.01 pt across
+_UPRIGHT_MIN_PT = 0.05  # and over 0.05 pt long
 
 
 def _thick_upright_strokes(p):
@@ -227,14 +244,14 @@ def _thick_upright_strokes(p):
     style = p.get("style") or ()
     lw = style[0] if style and isinstance(style[0], (int, float)) else 0.0
     cap = style[1] if len(style) > 1 else None
-    if lw < 0.5 or cap not in (None, 0):
+    if lw < _THICK_STROKE_PT or cap not in (None, 0):
         return []
     out = []
     for sp in p["subpaths"]:
         if len(sp["segs"]) != 1 or sp["segs"][0][0] != "l":
             continue
         a, b = sp["start"], sp["segs"][0][-1]
-        if abs(a[0] - b[0]) <= 0.01 and abs(a[1] - b[1]) > 0.05:
+        if abs(a[0] - b[0]) <= _UPRIGHT_PT and abs(a[1] - b[1]) > _UPRIGHT_MIN_PT:
             x = (a[0] + b[0]) / 2
             out.append((x - lw / 2, min(a[1], b[1]), x + lw / 2, max(a[1], b[1])))
     return out
@@ -242,6 +259,11 @@ def _thick_upright_strokes(p):
 
 def _paint(p, thick):
     return p["stroke_rgb"] if thick else p["fill_rgb"]
+
+
+_ROUNDED_MAX_SEGS = 16   # a rounded bar has at most 16 segments
+_ROUNDED_MAX_CURVES = 4  # and 1 to 4 curves
+_ROUNDED_EPS_PT = 0.01   # corner arcs found within 0.01 pt
 
 
 def _rounded_bar_box(sp):
@@ -254,18 +276,18 @@ def _rounded_bar_box(sp):
     circle's arcs end on its box too).  (The soft shadows drawn round such bars have corner
     points inside their box: not bars.)"""
     segs = sp["segs"]
-    if not segs or len(segs) > 16 or any(s[0] not in ("l", "c") for s in segs):
+    if not segs or len(segs) > _ROUNDED_MAX_SEGS or any(s[0] not in ("l", "c") for s in segs):
         return None
     n_c = sum(1 for s in segs if s[0] == "c")
-    if not 1 <= n_c <= 4:
+    if not 1 <= n_c <= _ROUNDED_MAX_CURVES:
         return None
     pts = [sp["start"]] + [s[-1] for s in segs]
     x0, y0, x1, y1 = bbox_of(pts)
     w, h = x1 - x0, y1 - y0
-    if w <= 0.3 or h <= 0:
+    if w <= _BAR_MIN_PT or h <= 0:
         return None
     r = 0.5 * min(w, h)
-    e = 0.01
+    e = _ROUNDED_EPS_PT
 
     def on_edge(q):
         return abs(q[0] - x0) <= e or abs(q[0] - x1) <= e or abs(q[1] - y0) <= e or abs(q[1] - y1) <= e
@@ -293,6 +315,10 @@ def _rounded_bar_box(sp):
     return (x0, y0, x1, y1)
 
 
+_STACK_CELL_PT = 0.5  # stacked segments' corners filed in cells of at least 0.5 pt
+_STACK_END_PT = 0.1   # a segment's top above the bar's by 0.1 pt
+
+
 def _stack(bars, loose, tol, seen):
     """Stacked bars: a rectangle as wide as a bar, standing on its top, is
     the next segment of the stack (2204.07073-010: the share of physical
@@ -304,7 +330,7 @@ def _stack(bars, loose, tol, seen):
     # against 31 000 squares, each pair tried - 90 s; candidates in their
     # order in `loose`, those taken skipped by their key - refiling the
     # rest for each layer cost gopinath2014mutations-004 seconds)
-    corners = PointGrid(max(tol, 0.5))
+    corners = PointGrid(max(tol, _STACK_CELL_PT))
     for i, r in enumerate(loose):
         corners.add((i, r), r[0], r[1])
     while tops and loose:
@@ -316,7 +342,7 @@ def _stack(bars, loose, tol, seen):
                 # (a segment may be thin: Memory_systems_cacheDRAMdisk-051's
                 # 0.17 pt grey layers between the black and white ones)
                 if abs(rx0 - bx0) <= tol and abs(rx1 - bx1) <= tol and abs(ry0 - b["cy"]) <= tol and \
-                        ry1 > b["cy"] + 0.1:
+                        ry1 > b["cy"] + _STACK_END_PT:
                     key = (round(rx0, 2), round(rx1, 2), round(ry1, 2))
                     if key in seen:
                         continue
@@ -328,6 +354,9 @@ def _stack(bars, loose, tol, seen):
         tops = nxt
 
 
+_BAND_LIGHT = 0.6  # a band of one light colour (channels 0.6 or more) is no bar
+
+
 def _drop_bands(bars, y1, tol):
     """Bars that all run the full height of the plot box in one light
     colour are bands shading periods of the x axis (2204.07073-010: grey
@@ -336,9 +365,15 @@ def _drop_bands(bars, y1, tol):
     if not bars or not all(abs(b["cy"] - y1) <= tol for b in bars):
         return bars
     rgbs = {b["rgb"] for b in bars}
-    if len(rgbs) == 1 and None not in rgbs and min(next(iter(rgbs))) >= 0.6:
+    if len(rgbs) == 1 and None not in rgbs and min(next(iter(rgbs))) >= _BAND_LIGHT:
         return []
     return bars
+
+
+_DARK_SUM = 1.5          # a dark frame: its colour's channels sum under 1.5
+_INNER_FRAME_AREA = 3    # an inner frame is under a third of the plot
+_INNER_FRAME_MIN_PT = 5  # and 5 pt or more across
+_INNER_FRAME_PT = 0.5    # inside the plot box within 0.5 pt
 
 
 def _inner_frames(rect, paths):
@@ -347,15 +382,20 @@ def _inner_frames(rect, paths):
     area = rect_area(rect)
     out = []
     for p in paths:
-        if not p["stroke"] or sum(p["stroke_rgb"] or (0, 0, 0)) >= 1.5:
+        if not p["stroke"] or sum(p["stroke_rgb"] or (0, 0, 0)) >= _DARK_SUM:
             continue
         for sp in p["subpaths"]:
             b = rect_of(sp)
-            if b and rect_area(b) < area / 3 and min(b[2] - b[0], b[3] - b[1]) >= 5 and \
-                    rect[0] - 0.5 <= b[0] and b[2] <= rect[2] + 0.5 and \
-                    rect[1] - 0.5 <= b[1] and b[3] <= rect[3] + 0.5:
+            if b and rect_area(b) < area / _INNER_FRAME_AREA and min(b[2] - b[0], b[3] - b[1]) >= _INNER_FRAME_MIN_PT and \
+                    rect[0] - _INNER_FRAME_PT <= b[0] and b[2] <= rect[2] + _INNER_FRAME_PT and \
+                    rect[1] - _INNER_FRAME_PT <= b[1] and b[3] <= rect[3] + _INNER_FRAME_PT:
                 out.append(b)
     return out
+
+
+_LINE_TOL_FRAC = 0.01  # positions near a graph: within 1% of its size
+_SAME_POINT_PT = 0.05  # consecutive vertices this close (pt) are one point
+_SERIES_MIN = 3        # a line series has 3 points or more
 
 
 def find_line_series(graph, paths):
@@ -373,24 +413,37 @@ def find_line_series(graph, paths):
     nor are lines inside a framed box within the plot (an inset with axes
     of its own, as the density curves of 2204.07073-010, or a legend)."""
     rect = graph["rect"]
-    tol = max(1.0, 0.01 * max(rect[2] - rect[0], rect[3] - rect[1]))
+    tol = max(1.0, _LINE_TOL_FRAC * max(rect[2] - rect[0], rect[3] - rect[1]))
     frames = _inner_frames(rect, paths)
 
     def inside(q):
         return inside_rect(rect, q[0], q[1], tol) and not any(
             inside_rect(f, q[0], q[1]) for f in frames)
 
-    series = _regrid(_stroked_lines(paths, inside, rect, tol)) + _dashed_lines(graph, paths, inside) + \
-        _outlined_lines(graph, paths, inside)
+    stroked = _regrid(_stroked_lines(paths, inside, rect, tol))
+    drawn = {id(s) for s in stroked}
+    series = stroked + _dashed_lines(graph, paths, inside) + _outlined_lines(graph, paths, inside)
     out = []
     for s in series:
-        pts = []
-        for q in s["pts"]:
-            if not pts or math.hypot(q[0] - pts[-1][0], q[1] - pts[-1][1]) > 0.05:
-                pts.append(q)           # (repeated corners once)
-        if len(pts) >= 3:
+        # every vertex of a stroked line is a data point, a repeated one
+        # too (points with the same x and y are all reported); the corners
+        # of lines traced from dashes or outlines repeat by the tracing,
+        # and are taken once
+        if id(s) in drawn:
+            pts = list(s["pts"])
+        else:
+            pts = []
+            for q in s["pts"]:
+                if not pts or math.hypot(q[0] - pts[-1][0], q[1] - pts[-1][1]) > _SAME_POINT_PT:
+                    pts.append(q)
+        if len(pts) >= _SERIES_MIN:
             out.append(dict(s, points=pts))
     return _drop_arrowheads(out, rect)
+
+
+_ON_LINE_PT = 0.5       # a point on a line: within 0.5 pt
+_HEAD_MAX_FRAC = 0.05   # an arrowhead's sides are under 5% of the plot's diagonal
+_HEAD_SIDES_FRAC = 0.1  # and equal within 10%
 
 
 def _drop_arrowheads(series, rect):
@@ -406,7 +459,7 @@ def _drop_arrowheads(series, rect):
             dx, dy = b[0] - a[0], b[1] - a[1]
             L2 = dx * dx + dy * dy
             t = 0.0 if L2 == 0 else max(0.0, min(1.0, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / L2))
-            if math.hypot(a[0] + t * dx - q[0], a[1] + t * dy - q[1]) <= 0.5:
+            if math.hypot(a[0] + t * dx - q[0], a[1] + t * dy - q[1]) <= _ON_LINE_PT:
                 return True
         return False
 
@@ -417,11 +470,14 @@ def _drop_arrowheads(series, rect):
             continue
         l1 = math.hypot(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1])
         l2 = math.hypot(pts[2][0] - pts[1][0], pts[2][1] - pts[1][1])
-        if not (0 < l1 < 0.05 * diag and 0 < l2 < 0.05 * diag and abs(l1 - l2) <= 0.1 * max(l1, l2)):
+        if not (0 < l1 < _HEAD_MAX_FRAC * diag and 0 < l2 < _HEAD_MAX_FRAC * diag and abs(l1 - l2) <= _HEAD_SIDES_FRAC * max(l1, l2)):
             continue
         if any(on_line(pts[1], o["points"]) for j, o in enumerate(series) if j != i and len(o["points"]) > 3):
             heads.add(i)
     return [s for i, s in enumerate(series) if i not in heads]
+
+
+_STRAIGHT_PT = 0.02  # a vertex this far (pt) from the chord makes a bend
 
 
 def _straight_segs(sp):
@@ -437,7 +493,7 @@ def _straight_segs(sp):
             L = math.hypot(dx, dy)
             for c in s[1:3]:
                 d = abs(dx * (c[1] - a[1]) - dy * (c[0] - a[0])) / L if L else math.dist(c, a)
-                if d > 0.02:
+                if d > _STRAIGHT_PT:
                     return False
         elif s[0] != "l":
             return False
@@ -449,6 +505,15 @@ def _clipped_to(p, rect, tol):
     """Was the path drawn clipped to the plot box (within tol)?"""
     c = p.get("clip")
     return bool(c) and all(abs(a - b) <= tol for a, b in zip(c, rect))
+
+
+_DASH_GAP_MIN_PT = 0.05    # dash gaps are 0.05 pt or more
+_DASHES_MIN = 6            # a dashed line has 6 dashes or more
+_DASH_GAPS_MIN = 5         # (5 gaps or more)
+_DASH_GAP_MAX_FRAC = 0.03  # its gaps under 3% of the plot
+_DASH_GAP_LO = 0.5         # and within 0.5 to 1.3 times the median gap
+_DASH_GAP_HI = 1.3         # (the longest gap, in median gaps)
+_DASH_JOIN_PT = 0.1        # dashes join across a gap within 0.1 pt of a vertex
 
 
 def _chain_stroked_dashes(pieces, rect):
@@ -471,23 +536,23 @@ def _chain_stroked_dashes(pieces, rect):
     out = []
     for key, ps in groups.items():
         breaks = [math.dist(a["pts"][-1], b["pts"][0]) for a, b in zip(ps, ps[1:])]
-        gaps = [d for d in breaks if d >= 0.05]
+        gaps = [d for d in breaks if d >= _DASH_GAP_MIN_PT]
         med = median(gaps) if gaps else None
-        if len(ps) < 6 or len(gaps) < 5 or med > 0.03 * big or \
-                any(not 0.5 * med <= d <= 1.3 * med for d in gaps):
+        if len(ps) < _DASHES_MIN or len(gaps) < _DASH_GAPS_MIN or med > _DASH_GAP_MAX_FRAC * big or \
+                any(not _DASH_GAP_LO * med <= d <= _DASH_GAP_HI * med for d in gaps):
             out += ps
             continue
         pts = list(ps[0]["pts"])
         for pc in ps[1:]:
             q = pc["pts"]
-            if math.dist(pts[-1], q[0]) >= 0.05 and len(pts) >= 2:
+            if math.dist(pts[-1], q[0]) >= _DASH_GAP_MIN_PT and len(pts) >= 2:
                 a1, a2 = pts[-2], pts[-1]
                 d1 = (a2[0] - a1[0], a2[1] - a1[1])
                 d2 = (q[1][0] - q[0][0], q[1][1] - q[0][1])
                 ang = abs(math.atan2(d1[0] * d2[1] - d1[1] * d2[0], d1[0] * d2[0] + d1[1] * d2[1]))
                 if ang > math.radians(2):
                     v = line_intersection(a2, d1, q[0], d2)
-                    if v and min(a2[0], q[0][0]) - 0.1 <= v[0] <= max(a2[0], q[0][0]) + 0.1 and \
+                    if v and min(a2[0], q[0][0]) - _DASH_JOIN_PT <= v[0] <= max(a2[0], q[0][0]) + _DASH_JOIN_PT and \
                             math.dist(v, a2) + math.dist(v, q[0]) <= 2 * math.dist(a2, q[0]):
                         pts.append(v)    # (a peak lies above both dash ends)
                 pts += q
@@ -499,10 +564,16 @@ def _chain_stroked_dashes(pieces, rect):
     return out
 
 
+_RIGHTWARD_PT = 0.1  # points running rightward, back by 0.1 pt at most
+
+
 def _rightward(xs):
     """Do the x positions run left to right (a corner put in a dash gap
     may lie a hair, 0.1 pt, before the dash end it follows)?"""
-    return all(b > a - 0.1 for a, b in zip(xs, xs[1:])) and xs[-1] > xs[0]
+    return all(b > a - _RIGHTWARD_PT for a, b in zip(xs, xs[1:])) and xs[-1] > xs[0]
+
+
+_GRID_MIN = 5  # a gridded series has 5 points or more
 
 
 def _grid_of(pts, tol=0.35):
@@ -511,7 +582,7 @@ def _grid_of(pts, tol=0.35):
     from its first to its last vertex, of four steps or more and steps of
     1 pt or more.  None if there is none."""
     xs = [q[0] for q in pts]
-    if len(xs) < 5 or not _rightward(xs):
+    if len(xs) < _GRID_MIN or not _rightward(xs):
         return None
     a, b = xs[0], xs[-1]
     for m in range(len(xs) - 1, 3, -1):
@@ -538,6 +609,9 @@ def _at(pts, x):
         if u[0] <= x <= v[0]:
             return u[1] if v[0] == u[0] else u[1] + (x - u[0]) / (v[0] - u[0]) * (v[1] - u[1])
     return pts[-1][1]
+
+
+_REGRID_PIECES = 0.8  # pieces of a series stroked one by one: 80% of its segments
 
 
 def _regrid(series, tol=0.35, near=0.4):
@@ -569,7 +643,7 @@ def _regrid(series, tol=0.35, near=0.4):
     # nearly: a polyline drawn as one path has no printer's vertices, and
     # a dense curve has a vertex near every point of many grids)
     def printed(s):
-        return s.get("pieces", 1) >= 0.8 * (len(s["pts"]) - 1)
+        return s.get("pieces", 1) >= _REGRID_PIECES * (len(s["pts"]) - 1)
     # the grid that reads the most lines (a coarser one on a tie: a dense
     # dashed chain may have a vertex at every point of a fine grid too)
     best = None
@@ -581,6 +655,9 @@ def _regrid(series, tol=0.35, near=0.4):
     if best is None:
         return series
     return [dict(s, pts=r) if r is not None else s for s, r in zip(series, best[2])]
+
+
+_JOIN_PT = 0.01  # series pieces meet within 0.01 pt
 
 
 def _stroked_lines(paths, inside, rect=None, tol=1.0):
@@ -627,11 +704,11 @@ def _stroked_lines(paths, inside, rect=None, tol=1.0):
 
     def out_of_clip(pc, q):
         c = pc["clip"]
-        return c is not None and not inside_rect(c, q[0], q[1], 0.01)
+        return c is not None and not inside_rect(c, q[0], q[1], _JOIN_PT)
 
     def cut_pair(a, b):
         return out_of_clip(a, a["pts"][-1]) and out_of_clip(b, b["pts"][0]) and (
-            abs(a["pts"][-1][0] - b["pts"][0][0]) <= 0.01 or abs(a["pts"][-1][1] - b["pts"][0][1]) <= 0.01)
+            abs(a["pts"][-1][0] - b["pts"][0][0]) <= _JOIN_PT or abs(a["pts"][-1][1] - b["pts"][0][1]) <= _JOIN_PT)
 
     # programs split long lines into pieces (R: one per few hundred points);
     # an axis-parallel piece joins only pieces drawn next to it (within two
@@ -659,7 +736,7 @@ def _stroked_lines(paths, inside, rect=None, tol=1.0):
     for pc in sorted(pieces, key=lambda pc: pc["idx"]):
         k = (pc["rgb"], pc["style"])
         if k not in heads:
-            heads[k], tails[k], members[k] = PointGrid(0.05), PointGrid(0.05), []
+            heads[k], tails[k], members[k] = PointGrid(_SAME_POINT_PT), PointGrid(_SAME_POINT_PT), []
         a0, a1 = pc["pts"][0], pc["pts"][-1]
         cands = {n for n in tails[k].near(*a0)} | {n for n in heads[k].near(*a1)}
         if out_of_clip(pc, a0):
@@ -668,10 +745,10 @@ def _stroked_lines(paths, inside, rect=None, tol=1.0):
             s = series[n]
             if not (not (pc["flat"] or s["flat"]) or abs(pc["idx"] - s["last"]) <= 2):
                 continue
-            if math.hypot(s["pts"][-1][0] - a0[0], s["pts"][-1][1] - a0[1]) < 0.05:
+            if math.hypot(s["pts"][-1][0] - a0[0], s["pts"][-1][1] - a0[1]) < _SAME_POINT_PT:
                 unfile_ends(k, n)
                 s["pts"] += pc["pts"][1:]
-            elif math.hypot(a1[0] - s["pts"][0][0], a1[1] - s["pts"][0][1]) < 0.05:
+            elif math.hypot(a1[0] - s["pts"][0][0], a1[1] - s["pts"][0][1]) < _SAME_POINT_PT:
                 unfile_ends(k, n)
                 s["pts"] = pc["pts"][:-1] + s["pts"]
             elif cut_pair(s, pc):
@@ -743,6 +820,17 @@ def _seg_near(q, a, b):
     return (a[0] + t * dx, a[1] + t * dy)
 
 
+_OUTLINE_MIN_SEGS = 40      # an outlined line has 40 segments or more
+_OUTLINE_CLOSE_PT = 0.01    # its outline closed within 0.01 pt
+_OUTLINE_SPAN_FRAC = 0.2    # small outlines span under 20% of the plot both ways
+_OUTLINE_MAX_W_PT = 3.0     # an outlined line is at most 3 pt wide
+_OUTLINE_MAX_W_FRAC = 0.02  # and 2% of the plot's diagonal
+_OUTLINE_MIN_LENGTHS = 15   # and at least 15 widths long
+_OUTLINE_SPREAD_WIDTHS = 6  # a slice's crossings within 6 widths
+_OUTLINE_REACH_WIDTHS = 12  # slice middles chained within 12 widths
+_OUTLINE_FOUND_FRAC = 0.8   # 80% of the slices on the centre line
+
+
 def _outlined_lines(graph, paths, inside):
     """Lines converted to outlines (978-3-031-36060-2_2-006: each d3 curve
     of Figure 2.3 is one filled shape of 1 600 - 2 300 edges, a staircase of
@@ -765,20 +853,20 @@ def _outlined_lines(graph, paths, inside):
         if not p["fill"] or p["stroke"] or len(p["subpaths"]) != 1:
             continue
         sp = p["subpaths"][0]
-        if len(sp["segs"]) < 40:
+        if len(sp["segs"]) < _OUTLINE_MIN_SEGS:
             continue
         pts = flatten_subpath(sp)
-        if len(pts) > 2 and math.dist(pts[0], pts[-1]) < 0.01:
+        if len(pts) > 2 and math.dist(pts[0], pts[-1]) < _OUTLINE_CLOSE_PT:
             pts = pts[:-1]
         if not all(inside(q) for q in pts):
             continue
         bx0, by0, bx1, by1 = bbox_of(pts)
-        if bx1 - bx0 < 0.2 * (x1 - x0) and by1 - by0 < 0.2 * (y1 - y0):
+        if bx1 - bx0 < _OUTLINE_SPAN_FRAC * (x1 - x0) and by1 - by0 < _OUTLINE_SPAN_FRAC * (y1 - y0):
             continue
         n = len(pts)
         half = sum(math.dist(pts[k], pts[(k + 1) % n]) for k in range(n)) / 2
         width = abs(polygon_area(pts)) / half if half else 0.0
-        if not 0 < width <= min(3.0, 0.02 * diag) or half < 15 * width:
+        if not 0 < width <= min(_OUTLINE_MAX_W_PT, _OUTLINE_MAX_W_FRAC * diag) or half < _OUTLINE_MIN_LENGTHS * width:
             continue
         if all(axis_aligned(pts[k], pts[(k + 1) % n]) for k in range(n)) and \
                 (bx1 - bx0 < 3 * width or by1 - by0 < 3 * width):
@@ -811,7 +899,7 @@ def _outlined_lines(graph, paths, inside):
                         cuts[i].append(a[1 - k] + f * (b[1 - k] - a[1 - k]))
                     i += 1
             for v, cs in zip(vs, cuts):
-                if cs and max(cs) - min(cs) <= 6 * width:
+                if cs and max(cs) - min(cs) <= _OUTLINE_SPREAD_WIDTHS * width:
                     c = (min(cs) + max(cs)) / 2
                     mids.append((v, c) if k == 0 else (c, v))
         if len(mids) < 3:
@@ -824,7 +912,7 @@ def _outlined_lines(graph, paths, inside):
         # (the nearest slice found through cells of the 12 widths a step may
         # span: every slice against every other took minutes on
         # 2602.03839v2-029's long outlined curves)
-        reach = 12 * width
+        reach = _OUTLINE_REACH_WIDTHS * width
         grid = PointGrid(reach)
         for k, q in enumerate(mids):
             grid.add(k, q[0], q[1])
@@ -841,15 +929,21 @@ def _outlined_lines(graph, paths, inside):
             left.discard(m)
             cur = mids[m]
             centre.append(cur)
-        if len(centre) < 0.8 * len(mids) or len(centre) < 3:
+        if len(centre) < _OUTLINE_FOUND_FRAC * len(mids) or len(centre) < 3:
             continue
         # the slices' middles wobble where the outline steps: averaged along
         # the trace over a width either way, the ends kept; then wiggles
         # within half a width are hidden in the line
-        line = _simplify(_smooth(centre, width), max(0.05, 0.5 * width))
+        line = _simplify(_smooth(centre, width), max(_SAME_POINT_PT, 0.5 * width))
         out.append({"pts": line, "rgb": p["fill_rgb"], "style": ("solid", round(width, 2)),
                     "idx": p["idx"]})
     return out
+
+
+_DASH_ASPECT = 2.5       # a dash is 2.5 times as long as wide or more
+_DASH_MAX_FRAC = 0.1     # and under 10% of the plot
+_DASHED_MIN = 6          # 6 dashes or more
+_DASHED_GAP_FRAC = 0.05  # a dash gap under 5% of the plot's width
 
 
 def _dashed_lines(graph, paths, inside):
@@ -871,7 +965,7 @@ def _dashed_lines(graph, paths, inside):
                 continue
             e = [math.hypot(q[(i + 1) % 4][0] - q[i][0], q[(i + 1) % 4][1] - q[i][1]) for i in range(4)]
             longs = max(e[0], e[1]), min(e[0], e[1])
-            if longs[1] <= 0 or longs[0] / longs[1] < 2.5 or longs[0] > 0.1 * max(w, h):
+            if longs[1] <= 0 or longs[0] / longs[1] < _DASH_ASPECT or longs[0] > _DASH_MAX_FRAC * max(w, h):
                 continue        # not slender, or too long for a dash
             # the dash's centre line runs between the middles of its short sides
             if e[0] >= e[1]:     # short sides are 1-2 and 3-0
@@ -883,12 +977,12 @@ def _dashed_lines(graph, paths, inside):
             dashes.setdefault(p["fill_rgb"], []).append((min(a, b), max(a, b), p["idx"]))
     series = []
     for rgb, ds in dashes.items():
-        if len(ds) < 6:
+        if len(ds) < _DASHED_MIN:
             continue
         ds.sort()
         # gaps between dashes are short; the chain must run left to right
         gap = median(ds[i + 1][0][0] - ds[i][1][0] for i in range(len(ds) - 1))
-        if gap is None or gap > 0.05 * w:
+        if gap is None or gap > _DASHED_GAP_FRAC * w:
             continue
         pts = [ds[0][0]]
         for (a1, b1, _), (a2, b2, _) in zip(ds, ds[1:]):
@@ -897,7 +991,7 @@ def _dashed_lines(graph, paths, inside):
             ang = abs(math.atan2(d1[0] * d2[1] - d1[1] * d2[0], d1[0] * d2[0] + d1[1] * d2[1]))
             if ang > math.radians(2):
                 v = line_intersection(a1, d1, a2, d2)
-                if v and b1[0] - 0.1 <= v[0] <= a2[0] + 0.1:
+                if v and b1[0] - _DASH_JOIN_PT <= v[0] <= a2[0] + _DASH_JOIN_PT:
                     pts.append(v)              # corner in the gap
                 elif v and a1[0] <= v[0] <= b1[0]:
                     pts.append(v)              # corner inside a dash
@@ -906,7 +1000,7 @@ def _dashed_lines(graph, paths, inside):
         # corners at the label positions: read the dashed line there, as
         # gentle bends between dashes are easy to miss
         xs_lab = sorted(t for t, _ in graph["x"].get("ticks", ()))
-        if graph["x"]["map"]["kind"] != "log" and len(xs_lab) >= 6:
+        if graph["x"]["map"]["kind"] != "log" and len(xs_lab) >= _DASHED_MIN:
             samp = _sample_chain(ds, xs_lab)
             if len(samp) >= len(pts) - 1:
                 pts = samp
@@ -933,6 +1027,17 @@ def _sample_chain(ds, xs):
                 samp.append((xv, u[1] + f * (v[1] - u[1])))
                 break
     return samp
+
+
+_STEM_FOOT_PT = 0.25     # a stem's foot: within 0.25 pt of the zero line
+_STEM_EDGE_PT = 0.3      # the plot's edge: within 0.3 pt
+_STEM_EDGE_FRAC = 0.003  # or 0.3% of its width
+_STEM_ON_TICK_PT = 0.1   # a stem on a tick: within 0.1 pt
+_STEM_UPRIGHT_PT = 0.01  # upright within 0.01 pt
+_STEM_MAX_FRAC = 0.99    # under 99% of the plot's height
+_STEMS_EVEN_MIN = 4      # evenly spaced stems: 4 or more
+_STEMS_EVEN_PT = 0.05    # gaps equal within 0.05 pt
+_STEM_HEIGHTS_MIN = 3    # 3 heights or more
 
 
 def find_stems(graph, paths, marks):
@@ -962,10 +1067,10 @@ def find_stems(graph, paths, marks):
     ym = graph["y"]["map"]
     if ym["kind"] == "linear" and ym["a"]:
         yz = -ym["b"] / ym["a"]                  # where value 0 is
-        if y0 + 0.25 < yz < y1:
+        if y0 + _STEM_FOOT_PT < yz < y1:
             bases.append(yz)
-    tol = 0.25
-    edge = max(0.3, 0.003 * w)
+    tol = _STEM_FOOT_PT
+    edge = max(_STEM_EDGE_PT, _STEM_EDGE_FRAC * w)
     xa = graph["x"]
     tick_len = xa.get("tick_len") or 0.0
     labelled = sorted(p for p, _ in xa.get("ticks", ()))
@@ -975,7 +1080,7 @@ def find_stems(graph, paths, marks):
         if not step or step <= 0:
             return False
         k = round((x - labelled[0]) / step)
-        return abs(labelled[0] + k * step - x) <= 0.1
+        return abs(labelled[0] + k * step - x) <= _STEM_ON_TICK_PT
 
     found = {}                                     # (x, base, top) -> stem
     for p in paths:
@@ -985,7 +1090,7 @@ def find_stems(graph, paths, marks):
             if sp["closed"] or len(sp["segs"]) != 1 or sp["segs"][0][0] != "l":
                 continue
             a, b = sp["start"], sp["segs"][0][-1]
-            if abs(a[0] - b[0]) > 0.01:
+            if abs(a[0] - b[0]) > _STEM_UPRIGHT_PT:
                 continue
             x = (a[0] + b[0]) / 2
             if not (x0 + edge < x < x1 - edge):
@@ -997,9 +1102,9 @@ def find_stems(graph, paths, marks):
                     top = a[1]
                 else:
                     continue
-                if not (y0 - tol <= top <= y1 + tol) or abs(top - base) >= 0.99 * h:
+                if not (y0 - tol <= top <= y1 + tol) or abs(top - base) >= _STEM_MAX_FRAC * h:
                     break
-                if (tick_len and base == y0 and abs(abs(top - base) - tick_len) <= 0.1
+                if (tick_len and base == y0 and abs(abs(top - base) - tick_len) <= _STEM_ON_TICK_PT
                         and on_tick_run(x)):
                     break                          # a tick mark of the x axis
                 key = (round(x, 2), round(base, 2), round(top, 2))
@@ -1021,11 +1126,11 @@ def find_stems(graph, paths, marks):
     for group in by_len.values():
         xs = sorted(s["cx"] for s in group)
         gaps = [b - a for a, b in zip(xs, xs[1:])]
-        if len(xs) >= 4 and max(gaps) - min(gaps) <= 0.05:
+        if len(xs) >= _STEMS_EVEN_MIN and max(gaps) - min(gaps) <= _STEMS_EVEN_PT:
             ticks.update(id(s) for s in group)
     stems = [s for s in stems if id(s) not in ticks]
     heights = sorted(abs(s["cy"] - s["base"]) for s in stems if abs(s["cy"] - s["base"]) > tol)
-    if len(heights) < 3 or heights[-1] - heights[0] <= max(1.0, tick_len):
+    if len(heights) < _STEM_HEIGHTS_MIN or heights[-1] - heights[0] <= max(1.0, tick_len):
         return [], set()
     dots = set()
     for m in marks:
@@ -1043,6 +1148,10 @@ def find_stems(graph, paths, marks):
 BOX_SHAPES = ("box-min", "box-q1", "box-median", "box-q3", "box-max")
 
 
+_BOX_CLOSE_PT = 0.01  # a box's outline closed within 0.01 pt
+_BOX_MIN_PT = 0.5     # a box is 0.5 pt or more one way
+
+
 def _box_rect(sp):
     """(x0, y0, x1, y1) of an axis-aligned rectangle traced by a subpath of
     straight segments (closed, or ending where it began), allowing one of
@@ -1050,21 +1159,37 @@ def _box_rect(sp):
     if not sp["segs"] or any(seg[0] != "l" for seg in sp["segs"]):
         return None
     pts = vertices(sp)
-    if len(pts) == 5 and math.hypot(pts[4][0] - pts[0][0], pts[4][1] - pts[0][1]) <= 0.01:
+    if len(pts) == 5 and math.hypot(pts[4][0] - pts[0][0], pts[4][1] - pts[0][1]) <= _BOX_CLOSE_PT:
         pts = pts[:4]
     if len(pts) != 4:
         return None
     for p, q in zip(pts, pts[1:] + pts[:1]):
-        if abs(p[0] - q[0]) > 0.01 and abs(p[1] - q[1]) > 0.01:
+        if abs(p[0] - q[0]) > _BOX_CLOSE_PT and abs(p[1] - q[1]) > _BOX_CLOSE_PT:
             return None
     xs = [p[0] for p in pts]
     ys = [p[1] for p in pts]
     # (0.5 pt across in one direction at least: a horizontal box may be
     # shorter along x - 2305.15675v1-015's are 0.42 pt long, 9 pt thick;
     # the thickness across is tested with the boxes)
-    if max(xs) - min(xs) < 0.5 and max(ys) - min(ys) < 0.5:
+    if max(xs) - min(xs) < _BOX_MIN_PT and max(ys) - min(ys) < _BOX_MIN_PT:
         return None
     return (min(xs), min(ys), max(xs), max(ys))
+
+
+_VIOLIN_EDGE_PT = 0.3      # violin pieces at one x, colours and edges within 0.3
+_VIOLIN_MIN_SEGS = 20      # a violin outline has 20 segments or more
+_VIOLIN_MIN_PT = 0.5       # pieces 0.5 pt or more
+_VIOLIN_STROKE_PT = 1.5    # thin upright strokes at most 1.5 pt wide
+_VIOLIN_MIN_H_PT = 0.02    # and over 0.02 pt tall
+_VIOLIN_SQUAT_PT = 0.8     # (not as wide as tall when 0.8 pt or more)
+_VIOLIN_LEVEL_MAX_PT = 12  # level marks at most 12 pt wide
+_VIOLIN_THIN_PT = 0.05     # a hairline: 0.05 pt or less
+_VIOLINS_MIN_STROKES = 6   # 6 upright strokes or more
+_VIOLIN_THICK = 1.6        # a thick stroke: 1.6 times the thin one or more
+_VIOLIN_MEDIAN_MIN = 1.5   # a median mark 1.5 to 6 times the thick stroke's width
+_VIOLIN_MEDIAN_MAX = 6     # (the widest median mark, in thick widths)
+_VIOLINS_MIN = 3           # 3 violins or more
+_VIOLIN_REF_FRAC = 0.8     # a reference level in 80% of the violins
 
 
 def find_violins(graph, paths):
@@ -1104,31 +1229,31 @@ def find_violins(graph, paths):
             if not (x0 <= cx <= x1 and y0 - 1 <= cy <= y1 + 1):
                 continue
             # (tick marks start on the plot's edge: no part of a violin)
-            on_edge = b[1] <= y0 + 0.3 or b[3] >= y1 - 0.3
+            on_edge = b[1] <= y0 + _VIOLIN_EDGE_PT or b[3] >= y1 - _VIOLIN_EDGE_PT
             # (a flat violin may be under 2 pt tall: the bottom panel's #26)
-            if p["fill"] and len(sp["segs"]) >= 20 and w > 2 and h > 0.5 and \
+            if p["fill"] and len(sp["segs"]) >= _VIOLIN_MIN_SEGS and w > 2 and h > _VIOLIN_MIN_PT and \
                     any(s[0] == "c" for s in sp["segs"]):
                 outlines.append(b)
             if p["fill"] and not p["stroke"]:
                 # (pieces of any height: a flat violin's whisker and box are
                 # specks - not the dots of a dotted grid line, wider than tall)
-                if w <= 1.5 and h >= 0.02 and not on_edge and not (w >= 0.8 and h < w):
+                if w <= _VIOLIN_STROKE_PT and h >= _VIOLIN_MIN_H_PT and not on_edge and not (w >= _VIOLIN_SQUAT_PT and h < w):
                     ups.append((cx, b[1], b[3], w, p))
-                elif h <= 1.5 and w >= 1.5 * h and w <= 12:
+                elif h <= _VIOLIN_STROKE_PT and w >= _VIOLIN_STROKE_PT * h and w <= _VIOLIN_LEVEL_MAX_PT:
                     levels.append((cx, cy, w, h, p))
             elif p["stroke"] and not p["fill"] and len(sp["segs"]) == 1 and \
                     sp["segs"][0][0] == "l":
                 lw = (p.get("style") or (1.0,))[0] or 0.1
-                if w <= 0.05 and h > 0.5 and not on_edge:
+                if w <= _VIOLIN_THIN_PT and h > _VIOLIN_MIN_PT and not on_edge:
                     ups.append((cx, b[1], b[3], lw, p))
-                elif h <= 0.05 and 1.5 * lw <= w <= 12:
+                elif h <= _VIOLIN_THIN_PT and _VIOLIN_STROKE_PT * lw <= w <= _VIOLIN_LEVEL_MAX_PT:
                     levels.append((cx, cy, w, lw, p))
-    if len(ups) < 6 or not outlines:
+    if len(ups) < _VIOLINS_MIN_STROKES or not outlines:
         return []
     ups.sort(key=lambda u: u[0])
     groups, cur = [], [ups[0]]
     for u in ups[1:]:
-        if u[0] - cur[-1][0] <= 0.3:
+        if u[0] - cur[-1][0] <= _VIOLIN_EDGE_PT:
             cur.append(u)
         else:
             groups.append(cur)
@@ -1146,8 +1271,8 @@ def find_violins(graph, paths):
         # line laid over the violins - dark red where it crosses them - are
         # no part of them)
         ref = colour(max(grp, key=lambda u: u[3]))
-        grp = [u for u in grp if max(abs(a - b) for a, b in zip(colour(u), ref)) <= 0.3]
-        if not grp or max(u[2] - u[1] for u in grp) < 0.5:
+        grp = [u for u in grp if max(abs(a - b) for a, b in zip(colour(u), ref)) <= _VIOLIN_EDGE_PT]
+        if not grp or max(u[2] - u[1] for u in grp) < _VIOLIN_MIN_PT:
             continue            # (specks alone - slivers - make no violin)
         gx = sum(u[0] for u in grp) / len(grp)
         glo, ghi = min(u[1] for u in grp), max(u[2] for u in grp)
@@ -1160,12 +1285,12 @@ def find_violins(graph, paths):
     out = []
     for box, grp in by_box.items():
         ref = colour(max(grp, key=lambda u: u[3]))
-        grp = [u for u in grp if max(abs(a - b) for a, b in zip(colour(u), ref)) <= 0.3]
+        grp = [u for u in grp if max(abs(a - b) for a, b in zip(colour(u), ref)) <= _VIOLIN_EDGE_PT]
         # (the commonest width is the whisker's: slivers 0.2 pt wide, where
         # pieces overlap, are no measure)
         widths = collections.Counter(round(u[3], 2) for u in grp)
         thin = min(w for w, n in widths.items() if n == max(widths.values()))
-        thick = [u for u in grp if u[3] >= 1.6 * thin]
+        thick = [u for u in grp if u[3] >= _VIOLIN_THICK * thin]
         if len(thick) == len(grp):
             continue
         x = sum(u[0] for u in grp) / len(grp)
@@ -1177,8 +1302,8 @@ def find_violins(graph, paths):
             # (no box: the quartiles coincide - a median line and the
             # whisker only, reported without them)
             q1, q3, tw = lo, hi, 2 * thin
-        meds = [lv for lv in levels if abs(lv[0] - x) <= 0.3 and q1 - 0.5 <= lv[1] <= q3 + 0.5
-                and 1.5 * tw <= lv[2] <= 6 * tw]
+        meds = [lv for lv in levels if abs(lv[0] - x) <= _VIOLIN_EDGE_PT and q1 - _VIOLIN_MIN_PT <= lv[1] <= q3 + _VIOLIN_MIN_PT
+                and _VIOLIN_MEDIAN_MIN * tw <= lv[2] <= _VIOLIN_MEDIAN_MAX * tw]
         ys = [lo, q1 if thick else None, None, q3 if thick else None, hi]
         if meds:
             # (the darkest, drawn first: a reference line laid over it is
@@ -1201,11 +1326,18 @@ def find_violins(graph, paths):
     # each benchmark is normalised to, the mark below some violins' first
     # quartile): no medians
     meds = [p["cy"] for _, pts in out for p in pts if p["shape"] == "box-median"]
-    if len(meds) >= 3:
-        common = max(sum(1 for m in meds if abs(m - c) <= 0.5) for c in meds)
-        if common >= 0.8 * len(meds):
+    if len(meds) >= _VIOLINS_MIN:
+        common = max(sum(1 for m in meds if abs(m - c) <= _VIOLIN_MIN_PT) for c in meds)
+        if common >= _VIOLIN_REF_FRAC * len(meds):
             out = [(box, [p for p in pts if p["shape"] != "box-median"]) for box, pts in out]
-    return out if len(out) >= 3 else []
+    return out if len(out) >= _VIOLINS_MIN else []
+
+
+_BOX_TOL_PT = 0.3       # box plot parts meet within 0.3 pt
+_BOX_SAME_PT = 0.2      # boxes alike within 0.2 pt
+_BOX_AXIS_PT = 0.01     # box edges axis-aligned within 0.01 pt
+_BOX_BASE_PT = 0.75     # boxes on the baseline: within 0.75 pt
+_BOX_BASE_FRAC = 0.005  # or 0.5% of the plot's height
 
 
 def find_boxes(graph, paths):
@@ -1235,7 +1367,7 @@ def find_boxes(graph, paths):
     equal: just a median line), as wide as the others (within 10%), are
     boxes too."""
     x0, y0, x1, y1 = graph["rect"]
-    tol = 0.3
+    tol = _BOX_TOL_PT
     rects = {}
     hs, vs = [], []
     for p in paths:
@@ -1251,7 +1383,7 @@ def find_boxes(graph, paths):
                     same = None
                     for kk in ((key[0] + i, key[1] + j) for i in (-1, 0, 1) for j in (-1, 0, 1)):
                         for n, (q, _) in enumerate(rects.get(kk, ())):
-                            if all(abs(u - v) <= 0.2 for u, v in zip(q, r)):
+                            if all(abs(u - v) <= _BOX_SAME_PT for u, v in zip(q, r)):
                                 same = (kk, n)
                     if same is None:
                         rects.setdefault(key, []).append((r, p))
@@ -1261,9 +1393,9 @@ def find_boxes(graph, paths):
             if not p["stroke"] or len(sp["segs"]) != 1 or sp["segs"][0][0] != "l":
                 continue
             a, b = sp["start"], sp["segs"][0][-1]
-            if abs(a[1] - b[1]) <= 0.01 and abs(a[0] - b[0]) > 0.01:
+            if abs(a[1] - b[1]) <= _BOX_AXIS_PT and abs(a[0] - b[0]) > _BOX_AXIS_PT:
                 hs.append((min(a[0], b[0]), max(a[0], b[0]), a[1]))
-            elif abs(a[0] - b[0]) <= 0.01 and abs(a[1] - b[1]) > 0.01:
+            elif abs(a[0] - b[0]) <= _BOX_AXIS_PT and abs(a[1] - b[1]) > _BOX_AXIS_PT:
                 vs.append(((a[0] + b[0]) / 2, min(a[1], b[1]), max(a[1], b[1])))
     allr = [rp for lst in rects.values() for rp in lst]
     # a box's values are read along its length: never along a category
@@ -1281,7 +1413,7 @@ def find_boxes(graph, paths):
     m = graph["y"]["map"]
     if out and m.get("kind") == "linear" and m.get("a"):
         yz = -m["b"] / m["a"]
-        if all(min(abs(r[1] - yz), abs(r[3] - yz)) <= max(0.75, 0.005 * (y1 - y0)) for r, _ in out):
+        if all(min(abs(r[1] - yz), abs(r[3] - yz)) <= max(_BOX_BASE_PT, _BOX_BASE_FRAC * (y1 - y0)) for r, _ in out):
             return []
     if out or not numeric("x"):
         return out
@@ -1298,6 +1430,9 @@ def find_boxes(graph, paths):
     return back
 
 
+_BOX_FLAT_PT = 0.01  # a flat box edge: 0.01 pt thick or less
+
+
 def _box_rect_flat(sp):
     """A box of no length drawn as a closed outline of two coinciding
     lines (a rectangle of no height or width), or None."""
@@ -1307,11 +1442,18 @@ def _box_rect_flat(sp):
     xs = [q[0] for q in pts]
     ys = [q[1] for q in pts]
     w, h = max(xs) - min(xs), max(ys) - min(ys)
-    if (w <= 0.01) == (h <= 0.01):
+    if (w <= _BOX_FLAT_PT) == (h <= _BOX_FLAT_PT):
         return None
-    if not sp.get("closed") and math.hypot(pts[-1][0] - pts[0][0], pts[-1][1] - pts[0][1]) > 0.01:
+    if not sp.get("closed") and math.hypot(pts[-1][0] - pts[0][0], pts[-1][1] - pts[0][1]) > _BOX_FLAT_PT:
         return None
     return (min(xs), min(ys), max(xs), max(ys))
+
+
+_BOX_MAX_SPAN = 3        # a box is under a third of the plot wide
+_BOX_MIN_W_PT = 1.5      # and 1.5 pt or more
+_BOX_EDGE_FRAC = 0.1     # box parts line up within 10% of its width
+_BOX_WHISKER_FRAC = 0.9  # a box side spans 90% of it
+_BOXES_MIN = 3           # 3 boxes or more
 
 
 def _boxes_upright(rects, hs, vs, span, tol):
@@ -1324,10 +1466,10 @@ def _boxes_upright(rects, hs, vs, span, tol):
         bw, cx = bx1 - bx0, (bx0 + bx1) / 2
         # (at least 1.5 pt thick: logpaper5Rediscoveries-007's data markers,
         # 0.8 pt dashes with a piece of error bar across, are no boxes)
-        if bw >= span / 3 or bw < 1.5:
+        if bw >= span / _BOX_MAX_SPAN or bw < _BOX_MIN_W_PT:
             continue
         meds = [y for lo, hi, y in hs
-                if abs(lo - bx0) <= 0.1 * bw and abs(hi - bx1) <= 0.1 * bw and by0 - tol <= y <= by1 + tol]
+                if abs(lo - bx0) <= _BOX_EDGE_FRAC * bw and abs(hi - bx1) <= _BOX_EDGE_FRAC * bw and by0 - tol <= y <= by1 + tol]
         if not meds:
             continue
         med = min(meds, key=lambda y: abs(y - (by0 + by1) / 2))
@@ -1336,9 +1478,9 @@ def _boxes_upright(rects, hs, vs, span, tol):
         # 12: wp_21_1036-019), no box (whiskers lie outside a box)
         # (within a tenth of the box's length of its ends: a whisker stub
         # beside a box 0.25 pt long is no such stroke, 2305.15675v1-015)
-        end_tol = min(tol, 0.1 * (by1 - by0))
+        end_tol = min(tol, _BOX_EDGE_FRAC * (by1 - by0))
         if any(abs(x - cx) <= tol and lo >= by0 - end_tol and hi <= by1 + end_tol and
-               hi - lo >= 0.9 * (by1 - by0) for x, lo, hi in vs):
+               hi - lo >= _BOX_WHISKER_FRAC * (by1 - by0) for x, lo, hi in vs):
             continue
         low = [lo for x, lo, hi in vs if abs(x - cx) <= tol and abs(hi - by0) <= tol and lo < by0 - tol]
         high = [hi for x, lo, hi in vs if abs(x - cx) <= tol and abs(lo - by1) <= tol and hi > by1 + tol]
@@ -1351,11 +1493,11 @@ def _boxes_upright(rects, hs, vs, span, tol):
     sure = [b for b in found if b["whisker"] and b["inside"]]
     if len(sure) < 2:
         inside = [b for b in found if b["inside"]]
-        if any(b["whisker"] for b in found) or len(inside) < 3:
+        if any(b["whisker"] for b in found) or len(inside) < _BOXES_MIN:
             return []
         sure = inside
     bw = median([b["w"] for b in sure])
-    boxes = [b for b in found if any(b is s for s in sure) or abs(b["w"] - bw) <= 0.1 * bw]
+    boxes = [b for b in found if any(b is s for s in sure) or abs(b["w"] - bw) <= _BOX_EDGE_FRAC * bw]
     out = []
     for b in sorted(boxes, key=lambda b: b["cx"]):
         ys = (b["min"], b["rect"][1], b["med"], b["rect"][3], b["max"])
@@ -1365,6 +1507,12 @@ def _boxes_upright(rects, hs, vs, span, tol):
                 "rgb": b["rgb"], "idx": b["idx"], "clip": b["clip"]} for name, y in zip(BOX_SHAPES, ys)]
         out.append((b["rect"], pts))
     return out
+
+
+_BAND_MIN_SEGS = 20    # a band's outline has 20 segments or more
+_BAND_STEP_PT = 0.01   # band vertices apart by 0.01 pt
+_BAND_MIN_POINTS = 10  # a band has 10 x positions or more
+_BAND_SPAN_FRAC = 0.5  # spanning half the plot or more
 
 
 def _band_chains(p, rect, tol):
@@ -1378,20 +1526,20 @@ def _band_chains(p, rect, tol):
     if not p["fill"] or len(p["subpaths"]) != 1:
         return None
     sp = p["subpaths"][0]
-    if len(sp["segs"]) < 20 or any(s[0] != "l" for s in sp["segs"]):
+    if len(sp["segs"]) < _BAND_MIN_SEGS or any(s[0] != "l" for s in sp["segs"]):
         return None
     pts = vertices(sp)
-    if len(pts) > 2 and math.dist(pts[0], pts[-1]) < 0.01:
+    if len(pts) > 2 and math.dist(pts[0], pts[-1]) < _BAND_STEP_PT:
         pts = pts[:-1]
     # x positions (within 0.01 pt), and the outline's walk over them: up
     # to the right end, then back down to the left
     xs = []
     for x in sorted(q[0] for q in pts):
-        if not xs or x - xs[-1] > 0.01:
+        if not xs or x - xs[-1] > _BAND_STEP_PT:
             xs.append(x)
-    if len(xs) < 10:
+    if len(xs) < _BAND_MIN_POINTS:
         return None
-    at = [bisect.bisect_left(xs, q[0] - 0.01) for q in pts]
+    at = [bisect.bisect_left(xs, q[0] - _BAND_STEP_PT) for q in pts]
     k0 = at.index(0)
     walk = at[k0:] + at[:k0]
     turn = 0
@@ -1405,10 +1553,13 @@ def _band_chains(p, rect, tol):
     if any(not 1 <= len(v) <= 2 for v in ys):
         return None
     x0, y0, x1, y1 = rect
-    if xs[-1] - xs[0] < 0.5 * (x1 - x0) or not all(
+    if xs[-1] - xs[0] < _BAND_SPAN_FRAC * (x1 - x0) or not all(
             inside_rect(rect, q[0], q[1], tol) for q in pts):
         return None
     return xs, [max(v) for v in ys], [min(v) for v in ys]
+
+
+_BAND_SAME_PT = 0.05  # bands share an edge within 0.05 pt
 
 
 def find_stacked_areas(graph, paths):
@@ -1421,7 +1572,7 @@ def find_stacked_areas(graph, paths):
     top is a point ("area") at the band's top, with the band's bottom in
     "base_y": the series' own share is the difference."""
     rect = graph["rect"]
-    tol = max(1.0, 0.01 * max(rect[2] - rect[0], rect[3] - rect[1]))
+    tol = max(1.0, _LINE_TOL_FRAC * max(rect[2] - rect[0], rect[3] - rect[1]))
     bands = []
     for p in paths:
         ch = _band_chains(p, rect, tol)
@@ -1429,7 +1580,7 @@ def find_stacked_areas(graph, paths):
             bands.append((p, ch))
 
     def same(u, v):
-        return len(u) == len(v) and all(abs(s - t) <= 0.05 for s, t in zip(u, v))
+        return len(u) == len(v) and all(abs(s - t) <= _BAND_SAME_PT for s, t in zip(u, v))
     stacked = [(p, (xs, top, bot)) for p, (xs, top, bot) in bands if any(
         q is not p and same(xs, xs2) and (same(top, bot2) or same(bot, top2))
         for q, (xs2, top2, bot2) in bands)]

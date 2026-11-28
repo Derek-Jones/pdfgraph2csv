@@ -3,7 +3,6 @@ axes and graphs, find the markers (or bars / line vertices), name their
 series from the legends and map each point through its graph's axes.
 """
 
-import bisect
 import collections
 import math
 import re
@@ -12,27 +11,28 @@ import time
 
 from .axes import drop_duplicate_axes, drop_scattered_tick_axes, find_axes
 from .charts import find_bars, find_boxes, find_line_series, find_stacked_areas, find_stems, find_violins
-from .context import PAGE
 from .datalabels import add_data_labels
 from .document import Document
 from .errbars import find_error_bars, lone_capped_bars
-from .fragments import rebuild_fragmented_circles, rebuild_strip_discs
+from .fragments import rebuild_fragmented_circles
 from .geometry import fmt_rect, median
 from .colourbar import add_heat_tiles, heatmap_values
 from .grouplabels import group_categories, label_bar_groups
 from .graphs import (
     add_panel_graphs, build_graphs, drop_same_plot_graphs, forget_graphs, graph_for_symbol, graph_rotation,
-    set_graph_backgrounds)
+    set_graph_backgrounds, share_row_scales)
 from .image_marks import image_symbols
 from .interpreter import Interpreter
 from .labels import apply_axis_multipliers, resolve_shared_labels
 from .legend import SeriesNamer, find_page_legend, legend_for_lines, patch_swatches
 from .meta import graph_meta
+from .model import CHECKING, check_records
 from .nongraphs import axis_labels, drop_tables, text_boxes
-from .occlusion import cover_rects, drop_hidden_glyphs, drop_hidden_paths
-from .outlined_text import outlined_text
+from .page import Page
+from .normalise import normalise_page
 from .rows import legend_looks, make_rows, marker_sized, name_box_slots, reportable
-from .scales import find_break_marks
+from .rules import Context, Rule, Tracer, run_rules
+from .spatial import SortedIndex
 from .strays import (drop_box_dashes, drop_corner_ticks, drop_foreign_crowds, drop_plot_backgrounds,
                      drop_pattern_dashes, drop_rule_joints, drop_symbols_in_prose, add_dash_markers,
                      mark_legend_frames, fill_circles_under_dots, merge_crossed_squares)
@@ -40,8 +40,7 @@ from .styles import guess_tool
 from .symbols import (drop_covered_bits, drop_lone_turned, drop_hidden_dots, drop_highlight_boxes,
                       drop_marker_faces,
                       drop_outline_rings, drop_specks, find_symbols, drop_arrowheads)
-from .text import (attach_vector_minus, billions_not_bytes, drop_repeated_texts, merge_texts,
-                   split_numbers)
+from .text import join_subscripts, split_numbers
 from .titles import find_figure_caption, text_lines
 from .tools import PathsByX, graph_tool
 from .twin import twin_axes, warn_twin_unsure
@@ -94,6 +93,12 @@ def extract(pdf_path, pages=None, inside_only=False, max_frac=0.1, debug=False,
     return rows
 
 
+_LEVEL_DEG = 10       # text within 10 degrees of a direction reads that way
+_TURN_MIN_CHARS = 60  # a page is turned with 60 characters or more read one way
+_TURN_SHARE = 0.6     # 60% of them
+_TURN_OVER = 3        # three times as many as any other way
+
+
 def page_turn(texts):
     """The angle (90, -90 or 180) by which a page's content is drawn turned,
     or 0.  Seongmin-PhD-044 (cairo, a thesis page set sideways) turns four
@@ -113,13 +118,13 @@ def page_turn(texts):
             continue
         a = math.degrees(math.atan2(-ux, uy))
         r = min((0, 90, -90, 180), key=lambda r: abs((a - r + 180) % 360 - 180))
-        if abs((a - r + 180) % 360 - 180) <= 10:
+        if abs((a - r + 180) % 360 - 180) <= _LEVEL_DEG:
             count[r] += n
     total = sum(count.values())
-    if total < 60:
+    if total < _TURN_MIN_CHARS:
         return 0
     (r, n), rest = count.most_common(1)[0], count.most_common()[1:]
-    return r if r and n >= 0.6 * total and all(n >= 3 * m for _, m in rest) else 0
+    return r if r and n >= _TURN_SHARE * total and all(n >= _TURN_OVER * m for _, m in rest) else 0
 
 
 def turn_matrix(page, rot):
@@ -136,7 +141,10 @@ def turn_matrix(page, rot):
     return (-1, 0, 0, -1, w, h), lambda p: (w - p[0], h - p[1])
 
 
-def share_pair_titles(graphs, texts, symbols):
+_PAIR_GAP_FRAC = 0.1  # a pair of graphs side by side within a tenth of their width
+
+
+def share_pair_titles(graphs, texts, symbols, *, page):
     """Two panels side by side under one title, centred over the pair
     (Seongmin-PhD-044: "commons-cli criterion5" over its deleted-lines and
     time panels): graphs left without a title look for one over the union
@@ -152,23 +160,27 @@ def share_pair_titles(graphs, texts, symbols):
                 continue
             ox0, oy0, ox1, oy1 = o["rect"]
             gap = max(ox0 - x1, x0 - ox1)
-            if abs(oy0 - y0) > 2 or abs(oy1 - y1) > 2 or not 0 <= gap < 0.1 * min(x1 - x0, ox1 - ox0):
+            if abs(oy0 - y0) > 2 or abs(oy1 - y1) > 2 or not 0 <= gap < _PAIR_GAP_FRAC * min(x1 - x0, ox1 - ox0):
                 continue
             title = find_title((min(x0, ox0), min(y0, oy0), max(x1, ox1), max(y1, oy1)),
-                               texts, symbols)
+                               texts, symbols, page=page)
             if title:
                 g["title"] = o["title"] = title
                 break
 
 
-def extract_page(pdf, pno, page, opts, info):
+_COLUMN_FRAC = 0.1  # a graph's paths: those within its width plus 10%
+
+
+def extract_page(pdf, pno, pdf_page, opts, info):
     """The pipeline for one page: draw it, read its text, find the axes and
     graphs, find the markers (or bars / line vertices), name the series from
-    the legends and map every point through its graph's axes."""
-    PAGE.reset()
-    PAGE.number = pno
-    it = Interpreter(pdf)
-    it.run_page(page)
+    the legends and map every point through its graph's axes.  The facts
+    found about the page are kept in its page model (page.Page), passed to
+    the steps that read or add them."""
+    page = Page(pno)
+    it = Interpreter(pdf, pno)
+    it.run_page(pdf_page)
     if opts.debug and it.op_errors:
         for (op, kind), (n, msg) in sorted(it.op_errors.items()):
             print("[debug] page %d: operator %s raised %s %d time(s) (ignored): %s"
@@ -176,15 +188,21 @@ def extract_page(pdf, pno, page, opts, info):
     turn = page_turn(it.texts)
     if turn:
         # a page whose content is drawn turned is read turned upright
-        ctm, PAGE.unturn = turn_matrix(page, turn)
-        PAGE.turn = turn
-        it = Interpreter(pdf)
-        it.run_page(page, ctm)
-    texts, text_parts, blobs = read_page_text(it)
+        ctm, page.unturn = turn_matrix(pdf_page, turn)
+        page.turn = turn
+        it = Interpreter(pdf, pno)
+        it.run_page(pdf_page, ctm)
+    page.drawn = it
+    tracer = Tracer(pno, opts.debug)
+    texts, text_parts, blobs = read_page_text(it, page=page, tracer=tracer)
     # boxes that may hold notes: they excuse their text from the word limit
     # of a graph and their dashed borders from being points
     boxes = text_boxes(it.paths)
-    graphs = find_page_graphs(it, texts, boxes, pno, opts.debug)
+    graphs = find_page_graphs(it, texts, boxes, pno, opts.debug, page=page)
+    if CHECKING:
+        check_records("text", texts, "page text")
+        check_records("path", it.paths, "page paths")
+        check_records("subpath", (sp for p in it.paths for sp in p["subpaths"]), "page paths")
     if not graphs:
         return []
     info["graphs"] += len(graphs)
@@ -194,48 +212,27 @@ def extract_page(pdf, pno, page, opts, info):
 
     # markers, less the shapes that only look like markers once the
     # graphs are known (strays.py)
-    symbols = find_page_symbols(pdf, it, text_parts)
-    symbols = drop_plot_backgrounds(symbols, graphs)
-    symbols = _drop_redrawn(symbols, graphs)
-    # round letters of unread outlined names ("o", "e") outside every plot:
-    # flanked by letters of those names on both sides, close
-    # (2355585.2355594-006's slanted benchmark names; a legend key has its
-    # name on one side only, and markers inside a plot may crowd into
-    # unread "words" of marker shapes)
-    blob_boxes = [t["bbox"] for t in PAGE.nominal_labels if t.get("text") is None]
-    if blob_boxes:
-        symbols = [s for s in symbols if any(
-            g["rect"][0] - 0.5 * s["size"] <= s["cx"] <= g["rect"][2] + 0.5 * s["size"] and
-            g["rect"][1] - 0.5 * s["size"] <= s["cy"] <= g["rect"][3] + 0.5 * s["size"]
-            for g in graphs) or not _flanked_by_letters(s, blob_boxes)]
-    symbols = drop_corner_ticks(symbols, graphs)
-    symbols = drop_symbols_in_prose(symbols, texts, graphs)
-    symbols = drop_box_dashes(symbols, texts, boxes, graphs)
-    symbols = drop_rule_joints(symbols, it.paths)
-    symbols = drop_pattern_dashes(symbols, it.paths)
-    symbols = add_dash_markers(symbols, it.paths, graphs)
-    symbols = drop_foreign_crowds(symbols, graphs)
-    symbols = mark_legend_frames(symbols, it.paths, graphs)
-    symbols = fill_circles_under_dots(symbols, it.texts)
-    symbols = merge_crossed_squares(symbols)
+    symbols = find_page_symbols(pdf, it, text_parts, page=page, tracer=tracer)
+    ctx = Context(page=page, it=it, paths=it.paths, graphs=graphs, texts=texts, boxes=boxes)
+    symbols = run_rules(GRAPH_RULES, symbols, ctx, tracer)
 
     # titles and turned graphs before anything that reads text around a
     # graph (legends, twin scales)
-    describe_graphs(graphs, texts, symbols, first_no, opts.debug)
-    share_pair_titles(graphs, texts, symbols)
-    by_x = PathsByX(it.paths)
+    describe_graphs(graphs, texts, symbols, first_no, opts.debug, page=page)
+    share_pair_titles(graphs, texts, symbols, page=page)
+    by_x = page.index.get("paths by x", it.paths, lambda: PathsByX(it.paths))
     for g in graphs:
         x0, _, x1, _ = g["rect"]
-        mine = by_x.between(x0 - 0.1 * (x1 - x0), x1 + 0.1 * (x1 - x0))
+        mine = by_x.between(x0 - _COLUMN_FRAC * (x1 - x0), x1 + _COLUMN_FRAC * (x1 - x0))
         g["tool"] = graph_tool(g, mine, it.glyph_symbols) or pdf.tool
         g["tool_guess"] = guess_tool(g["rect"], mine, it.texts, it.glyph_symbols)
     line_names = add_bars_and_lines(graphs, symbols, it.paths, texts,
-                                    lambda s, g, d: reportable(graphs, s, g, d, opts))
+                                    lambda s, g, d: reportable(graphs, s, g, d, opts), page=page)
     # heat maps: a point per tile, valued by the colour bar beside it
     add_heat_tiles(graphs, symbols, it.paths, it.colour_strips, texts, it.pictures, opts.heatmap)
     # capped error bars with no marker: a group's mean (an "H" on its side)
     symbols += lone_capped_bars(graphs, symbols, it.paths,
-                                lambda s: graph_for_symbol(graphs, s)[1])
+                                lambda s: graph_for_symbol(graphs, s)[1], page=page)
     # the resolution of each symbol's coordinates (from the path drawing
     # it) decides how many digits its values are written with
     res_of = {p["idx"]: (p.get("res"), p.get("scale")) for p in it.paths}
@@ -247,23 +244,27 @@ def extract_page(pdf, pno, page, opts, info):
             s["scale"] = sc
     # (bar-legend patches, too oblong to be markers, are swatches)
     symbols += patch_swatches(it.paths, texts, graphs)
-    legend = find_page_legend(symbols, texts, blobs, graphs, it.paths)
+    legend = find_page_legend(symbols, texts, blobs, graphs, it.paths, page=page)
     if opts.debug and legend:
         print("[debug] legend keys: %s" % sorted(set(legend.values())), file=sys.stderr)
     # the short texts beside points ("55%"): the label column
     names = set(legend.values()) | set(line_names.values())
     add_data_labels(graphs, symbols, texts, legend, names, boxes,
-                    _labellable(graphs, symbols, legend, opts))
+                    _labellable(graphs, symbols, legend, opts), page=page)
     namer = SeriesNamer(symbols, legend, graphs, line_names)
     # with a scale on both sides, each series must be mapped by its own
     twin_axes(graphs, symbols, namer, texts, opts.debug)
     bars = find_error_bars(symbols, it.paths,
-                           lambda s: graph_for_symbol(graphs, s)[1]) if opts.errbars else {}
+                           lambda s: graph_for_symbol(graphs, s)[1], page=page) if opts.errbars else {}
     if opts.heatmap:
         # markers coloured along a colour bar: the value each colour stands for
         heatmap_values(graphs, symbols, it.colour_strips, texts,
                        lambda s: graph_for_symbol(graphs, s)[1])
-    rows = make_rows(pno, graphs, symbols, legend, namer, opts, bars)
+    if CHECKING:
+        check_records("graph", graphs, "graphs")
+        check_records("axis", (g[k] for g in graphs for k in ("x", "y", "x2", "y2") if k in g), "axes")
+        check_records("symbol", symbols, "symbols")
+    rows = make_rows(pno, graphs, symbols, legend, namer, opts, bars, page=page)
     name_box_slots(rows)
     renumber_graphs(graphs, rows, info)
     warn_twin_unsure(graphs, rows, pdf.warnings)
@@ -305,80 +306,33 @@ def _labellable(graphs, symbols, legend, opts):
             s, graph_for_symbol(graphs, s)[1], opts, keyed if id(s) not in keys else ())
     return test
 
-def drop_clipped_texts(texts):
-    """Text whose middle lies outside its clipping box or the /BBox of the
-    form drawing it (by more than 0.5 pt) is not seen: a figure included
-    with its edges trimmed off keeps them in the file (Sovinsky-paper-017: the Stata figure, printed to PDF
-    with its first caption "Figure 4: ...", clipped to the graph in the
-    paper, whose caption reads "Figure 5: ...")."""
-    out = []
-    for t in texts:
-        x, y = t["center"] if "center" in t else t["p0"]
-        if all(c is None or c[0] - 0.5 <= x <= c[2] + 0.5 and c[1] - 0.5 <= y <= c[3] + 0.5
-               for c in (t.get("clip"), t.get("form_box"))):
-            out.append(t)
-    return out
 
 
-def _drop_redrawn(symbols, graphs):
-    """A graph whose markers were all drawn again, in the same order and
-    places (to 0.01 pt), keeps one drawing: its markers in drawing order
-    are k equal runs (k = 2 ... 4, 50 markers a run or more), and only the
-    first is data.  460-201's Q-Q plot draws its 37 676 squares twice
-    over.  (Points drawn twice here and there - ties - stay: the whole
-    sequence must repeat.)"""
-    by = {}
-    for s in symbols:
-        _d, g = graph_for_symbol(graphs, s)
-        by.setdefault(id(g), []).append(s)
-    drop = set()
-    for mine in by.values():
-        # (the graph's main kind of marker: a stray rectangle - a piece of
-        # its fitted line - is no part of the run)
-        kinds = collections.Counter((s["shape"], s.get("filled")) for s in mine)
-        top = kinds.most_common(1)[0][0] if kinds else None
-        mine = sorted((s for s in mine if (s["shape"], s.get("filled")) == top), key=lambda s: s["idx"])
-        keys = [(s["shape"], s.get("filled"), round(s["cx"], 2), round(s["cy"], 2)) for s in mine]
-        n = len(keys)
-        for k in (2, 3, 4):
-            if n % k or n // k < 50:
-                continue
-            m = n // k
-            if all(keys[i] == keys[i % m] for i in range(m, n)):
-                drop.update(id(s) for s in mine[m:])
-                break
-    if not drop:
-        return symbols
-    return [s for s in symbols if id(s) not in drop]
+_NOMINAL_MAX_CHARS = 40  # category label candidates are at most 40 characters
 
 
-def read_page_text(it):
-    """All text of the page: real text (minus glyphs painted over by later
-    boxes) and text drawn as glyph outlines, read by shape.  Returns
-    (texts, outline parts that are text, unreadable outlined words).
-    The outline parts are returned so that the letters 'o' and full stops
-    of outlined text are not taken for markers; the unreadable words still
-    serve as category and legend labels (numbered #1, #2, ...)."""
-    covers = cover_rects(it.paths, it.images)
-    it.texts = drop_hidden_glyphs(drop_repeated_texts(drop_clipped_texts(it.texts)), covers)
-    it.paths = drop_hidden_paths(it.paths)
-    # (axis-break wiggles must be known before outlined text is read: they
-    # are no glyphs)
-    PAGE.break_marks = find_break_marks(it.paths)
-    blobs = []
-    read_parts = set()
-    out_texts, text_parts = outlined_text(it.paths, blobs, covers, read_parts)
-    # (parts of unread "words": a marker drawn as filled strokes may be
-    # grouped as one - 1356058.1356080-007's 'x' of four filled half-arms)
-    PAGE.blob_parts = text_parts - read_parts
-    texts = merge_texts(it.texts) + merge_texts(out_texts)
-    billions_not_bytes(texts)
-    attach_vector_minus(texts, it.paths)
+def read_page_text(it, *, page, tracer=None):
+    """All text of the page, as the analysis needs it: the normalisation
+    stage (normalise.py) run on the drawing - text as it is seen, discs
+    of strips, break marks, outlined text read by shape, words, minus signs
+    - and the page's category-label candidates.  Returns (texts, outline
+    parts that are text, unreadable outlined words).  The outline parts are
+    returned so that the letters 'o' and full stops of outlined text are
+    not taken for markers; the unreadable words still serve as category and
+    legend labels (numbered #1, #2, ...)."""
+    d = normalise_page(it, page, tracer)
+    texts = d.words
     # short texts and unreadable words: the candidates for category labels
     # (several numbers set as one string, "12.8 25.6", one label each)
-    PAGE.nominal_labels = [u for t in texts if t["text"].strip()
-                           and len(t["text"].strip()) <= 40 for u in split_numbers(t)] + blobs
-    return texts, text_parts, blobs
+    # (subscripts joined to their words: "N2", "DT3")
+    labels, page.subscripts = join_subscripts(texts)
+    page.nominal_labels = [u for t in labels if t["text"].strip()
+                           and len(t["text"].strip()) <= _NOMINAL_MAX_CHARS for u in split_numbers(t)] + d.blobs
+    return texts, d.text_parts, d.blobs
+
+
+_STRIP_AXIS_PT = 1.5  # an axis along a colour bar: within 1.5 pt
+_STRIP_COVER = 0.8    # over 80% of its length
 
 
 def _off_colour_bars(axes, strips):
@@ -397,41 +351,45 @@ def _off_colour_bars(axes, strips):
     def along(ax):
         for x0, y0, x1, y1 in boxes:
             if ax["orient"] == "y" and y1 - y0 > x1 - x0:
-                if min(abs(ax["pos"] - x0), abs(ax["pos"] - x1)) <= 1.5 and \
-                        min(ax["hi"], y1) - max(ax["lo"], y0) >= 0.8 * (y1 - y0):
+                if min(abs(ax["pos"] - x0), abs(ax["pos"] - x1)) <= _STRIP_AXIS_PT and \
+                        min(ax["hi"], y1) - max(ax["lo"], y0) >= _STRIP_COVER * (y1 - y0):
                     return True
             if ax["orient"] == "x" and x1 - x0 > y1 - y0:
-                if min(abs(ax["pos"] - y0), abs(ax["pos"] - y1)) <= 1.5 and \
-                        min(ax["hi"], x1) - max(ax["lo"], x0) >= 0.8 * (x1 - x0):
+                if min(abs(ax["pos"] - y0), abs(ax["pos"] - y1)) <= _STRIP_AXIS_PT and \
+                        min(ax["hi"], x1) - max(ax["lo"], x0) >= _STRIP_COVER * (x1 - x0):
                     return True
         return False
     return [ax for ax in axes if not along(ax)]
 
 
-def find_page_graphs(it, texts, boxes, pno, debug):
+def find_page_graphs(it, texts, boxes, pno, debug, *, page):
     """Axes (ticks + labels + value mapping) paired into graphs, less the
     candidates that are tables or text (nongraphs.py)."""
     axes = drop_duplicate_axes(_off_colour_bars(resolve_shared_labels(drop_scattered_tick_axes(
-        find_axes(it.paths, texts, debug))), it.colour_strips))
+        find_axes(it.paths, texts, debug, page=page))), it.colour_strips))
     apply_axis_multipliers(axes, texts)
-    graphs = drop_same_plot_graphs(add_panel_graphs(build_graphs(axes), axes, it.paths))
-    graphs = drop_tables(graphs, texts, debug, boxes, it.paths)
+    graphs = drop_same_plot_graphs(add_panel_graphs(build_graphs(axes, page=page), axes, it.paths, page=page))
+    graphs = share_row_scales(graphs, axes, page=page)
+    graphs = drop_tables(graphs, texts, debug, boxes, it.paths, page=page)
     if debug:
         for g in graphs:
             print("[debug] page %d graph rect %s  x:%s  y:%s" % (
                 pno, fmt_rect(g["rect"]), g["x"]["map"], g["y"]["map"]), file=sys.stderr)
     if graphs:
-        PAGE.graph_rects = [g["rect"] for g in graphs]
+        page.graph_rects = [g["rect"] for g in graphs]
         # where each graph's x tick labels end: text just below them is its
         # axis title, not the title of a graph further down
-        PAGE.xlabel_zones = [(g["rect"][0], g["rect"][2],
+        page.xlabel_zones = [(g["rect"][0], g["rect"][2],
                               min(tx["bbox"][1] for _, tx in g["x"]["labels"]), tuple(g["rect"]))
                              for g in graphs if g["x"].get("labels") and g["x"]["orient"] == "x"]
         # the page's typical tick-label size: a graph's title is set no
         # smaller than its labels (titles.py)
-        PAGE.label_size = median((t["size"] for g in graphs for t in axis_labels(g)), 0.0)
-        set_graph_backgrounds(graphs, it.paths)
+        page.label_size = median((t["size"] for g in graphs for t in axis_labels(g)), 0.0)
+        set_graph_backgrounds(graphs, it.paths, page=page)
     return graphs
+
+
+_ON_BAR_FRAC = 0.3  # a shape on a bar: centred within 30% of its width
 
 
 class _BarsAcross:
@@ -444,16 +402,18 @@ class _BarsAcross:
         self.sides = []
         for horizontal in (False, True):
             j = "cy" if horizontal else "cx"
-            mine = sorted((b[j], k, b) for k, b in enumerate(bars) if bool(b.get("horizontal")) == horizontal)
+            mine = SortedIndex([b for b in bars if bool(b.get("horizontal")) == horizontal],
+                               key=lambda b, j=j: b[j])
             if mine:
-                reach = 0.3 * max(b["size"] for _, _, b in mine)
-                self.sides.append((j, [m[0] for m in mine], [m[2] for m in mine], reach))
+                reach = _ON_BAR_FRAC * max(b["size"] for b in mine.items)
+                self.sides.append((j, mine, reach))
 
     def near(self, s):
-        for j, keys, mine, reach in self.sides:
-            lo = bisect.bisect_left(keys, s[j] - reach)
-            hi = bisect.bisect_right(keys, s[j] + reach)
-            yield from mine[lo:hi]
+        for j, mine, reach in self.sides:
+            yield from mine.between(s[j] - reach, s[j] + reach)
+
+
+_ON_BAR_PT = 0.5  # between its foot and end within 0.5 pt
 
 
 def _on_bar(s, b):
@@ -463,8 +423,14 @@ def _on_bar(s, b):
     outline, as tall as long, taken for a square)."""
     j, k = ("cy", "cx") if b.get("horizontal") else ("cx", "cy")
     end, foot = b[k], b.get("base", b[k])
-    return abs(s[j] - b[j]) <= 0.3 * b["size"] and \
-        min(end, foot) - 0.5 <= s[k] <= max(end, foot) + 0.5
+    return abs(s[j] - b[j]) <= _ON_BAR_FRAC * b["size"] and \
+        min(end, foot) - _ON_BAR_PT <= s[k] <= max(end, foot) + _ON_BAR_PT
+
+
+_TEXT_GREY = 0.1            # grey or black like text: channels within 0.1
+_LETTER_MIN_SIZES = 0.67    # letter boxes 0.67 to 2 times the mark's size tall
+_LETTER_MAX_SIZES = 2.0     # (the tallest letter box beside a mark)
+_LETTER_GAP_HEIGHTS = 0.35  # within 0.35 of their height of it
 
 
 def _flanked_by_letters(s, boxes):
@@ -476,50 +442,29 @@ def _flanked_by_letters(s, boxes):
     if s["shape"] in ("line", "bar", "stem", "tile") or s["size"] <= 0:
         return False
     rgb = s.get("rgb") or (0.0, 0.0, 0.0)
-    if max(rgb) - min(rgb) > 0.1:
+    if max(rgb) - min(rgb) > _TEXT_GREY:
         return False
     near = []
     for b in boxes:
         h = b[3] - b[1]
-        if not 0.67 * s["size"] <= h <= 2.0 * s["size"]:
+        if not _LETTER_MIN_SIZES * s["size"] <= h <= _LETTER_MAX_SIZES * s["size"]:
             continue
         gx = max(b[0] - s["cx"], s["cx"] - b[2], 0.0) - 0.5 * s["size"]
         gy = max(b[1] - s["cy"], s["cy"] - b[3], 0.0) - 0.5 * s["size"]
-        if max(gx, gy) <= 0.35 * h:
+        if max(gx, gy) <= _LETTER_GAP_HEIGHTS * h:
             near.append(((b[0] + b[2]) / 2 - s["cx"], (b[1] + b[3]) / 2 - s["cy"]))
     return any(u[0] * v[0] + u[1] * v[1] < 0 for i, u in enumerate(near) for v in near[i + 1:])
 
 
-def find_page_symbols(pdf, it, text_parts):
+def find_page_symbols(pdf, it, text_parts, *, page, tracer=None):
     """The marker symbols of the page.  Markers outside the axis ranges are
     kept, even when the plot clips them out of view (the user asked for
     them); each symbol notes the clipping box it was drawn with ('clip'),
-    which tells which graph it belongs to."""
-    symbols = drop_lone_turned(find_symbols(it.paths, it.glyph_symbols, text_parts,
-                                            getattr(PAGE, "blob_parts", frozenset())))
-    # markers some programs break into pieces (flattened transparency,
-    # strips of a disc) are put back together before the filters below,
-    # which would take the pieces for specks
-    symbols = rebuild_fragmented_circles(it.paths, symbols, text_parts, pdf.warnings)
-    # (circles rebuilt from curved pieces outside every plot box are the
-    # round letters of axis labels and titles drawn as outlines, not
-    # markers: PhysRevResearch.3.033169-009's blue and red tick labels -
-    # coloured, so the circle rebuilder may use their pieces - and its
-    # unread epsilon gave circles of the markers' size beside the axes)
-    symbols = [s for s in symbols if not s.get("rebuilt") or any(
-        r[0] - 0.5 * s["size"] <= s["cx"] <= r[2] + 0.5 * s["size"] and
-        r[1] - 0.5 * s["size"] <= s["cy"] <= r[3] + 0.5 * s["size"] for r in PAGE.graph_rects)]
-    symbols = rebuild_strip_discs(it.paths, symbols)
-    # shapes that are painted over, highlight boxes and rings round a
-    # marker, specks and stray bits: none of them is a point of its own
-    symbols = [s for s in symbols if s["idx"] not in PAGE.hiding_paths]
-    symbols = drop_hidden_dots(drop_outline_rings(drop_marker_faces(drop_highlight_boxes(symbols), it.paths)), it.paths)
-    symbols = drop_specks(drop_covered_bits(symbols, it.paths))
-    # heads of arrows pointing at points from their labels
-    PAGE.arrows = []
-    symbols = drop_arrowheads(symbols, it.paths, PAGE.arrows)
-    # markers drawn as small pictures (shadows dropped)
-    symbols += image_symbols(it.image_marks, it.paths)
+    which tells which graph it belongs to.  The steps are the rules of
+    FIND_RULES, in order."""
+    page.arrows = []
+    ctx = Context(page=page, it=it, paths=it.paths, text_parts=text_parts, pdf=pdf)
+    symbols = run_rules(FIND_RULES, [], ctx, tracer)
     clip_of = {p["idx"]: p.get("clip") for p in it.paths}
     for s in symbols:
         # (glyph markers carry their own clipping box)
@@ -527,17 +472,102 @@ def find_page_symbols(pdf, it, text_parts):
     return symbols
 
 
-def describe_graphs(graphs, texts, symbols, first_no, debug):
+_TOUCHES_SIZES = 0.5  # a symbol touches a box when its centre is within half its size of it
+
+
+def _drop_rebuilt_outside(symbols, ctx):
+    """Circles rebuilt from curved pieces outside every plot box are the
+    round letters of axis labels and titles drawn as outlines, not
+    markers: PhysRevResearch.3.033169-009's blue and red tick labels -
+    coloured, so the circle rebuilder may use their pieces - and its
+    unread epsilon gave circles of the markers' size beside the axes."""
+    rects = ctx.page.graph_rects
+    return [s for s in symbols if not s.get("rebuilt") or any(
+        r[0] - _TOUCHES_SIZES * s["size"] <= s["cx"] <= r[2] + _TOUCHES_SIZES * s["size"] and
+        r[1] - _TOUCHES_SIZES * s["size"] <= s["cy"] <= r[3] + _TOUCHES_SIZES * s["size"] for r in rects)]
+
+
+def _drop_painted_over(symbols, ctx):
+    """Shapes painted over by a later opaque box that hides text (the
+    page's hiding paths, occlusion.py) are no points."""
+    hidden = ctx.page.hiding_paths
+    return [s for s in symbols if s["idx"] not in hidden]
+
+
+def _drop_unread_name_letters(symbols, ctx):
+    """Round letters of unread outlined names ("o", "e") outside every
+    plot: flanked by letters of those names on both sides, close
+    (2355585.2355594-006's slanted benchmark names; a legend key has its
+    name on one side only, and markers inside a plot may crowd into unread
+    "words" of marker shapes)."""
+    blob_boxes = [t["bbox"] for t in ctx.page.nominal_labels if t.get("text") is None]
+    if not blob_boxes:
+        return symbols
+    graphs = ctx.graphs
+    return [s for s in symbols if any(
+        g["rect"][0] - _TOUCHES_SIZES * s["size"] <= s["cx"] <= g["rect"][2] + _TOUCHES_SIZES * s["size"] and
+        g["rect"][1] - _TOUCHES_SIZES * s["size"] <= s["cy"] <= g["rect"][3] + _TOUCHES_SIZES * s["size"]
+        for g in graphs) or not _flanked_by_letters(s, blob_boxes)]
+
+
+# The marker symbols of a page (find_page_symbols), before the graphs are
+# described: the shapes that may be markers; markers broken into pieces
+# put back together (before the filters below, which would take the
+# pieces for specks); then shapes that are painted over, highlight boxes
+# and rings round a marker, specks, stray bits and arrowheads, none of
+# them a point of its own; and markers drawn as small pictures.
+FIND_RULES = [
+    Rule("find_symbols", lambda s, c: find_symbols(c.paths, c.it.glyph_symbols, c.text_parts,
+                                                   c.page.blob_parts),
+         "the shapes that may be markers: vector shapes, crossing strokes, Dingbats glyphs"),
+    Rule("drop_lone_turned", lambda s, c: drop_lone_turned(s), drop_lone_turned.__doc__),
+    Rule("rebuild_fragmented_circles",
+         lambda s, c: rebuild_fragmented_circles(c.paths, s, c.text_parts, c.pdf.warnings),
+         rebuild_fragmented_circles.__doc__),
+    Rule("drop_rebuilt_outside", _drop_rebuilt_outside),
+    Rule("drop_painted_over", _drop_painted_over),
+    Rule("drop_highlight_boxes", lambda s, c: drop_highlight_boxes(s), drop_highlight_boxes.__doc__),
+    Rule("drop_marker_faces", lambda s, c: drop_marker_faces(s, c.paths), drop_marker_faces.__doc__),
+    Rule("drop_outline_rings", lambda s, c: drop_outline_rings(s), drop_outline_rings.__doc__),
+    Rule("drop_hidden_dots", lambda s, c: drop_hidden_dots(s, c.paths), drop_hidden_dots.__doc__),
+    Rule("drop_covered_bits", lambda s, c: drop_covered_bits(s, c.paths), drop_covered_bits.__doc__),
+    Rule("drop_specks", lambda s, c: drop_specks(s), drop_specks.__doc__),
+    Rule("drop_arrowheads", lambda s, c: drop_arrowheads(s, c.paths, c.page.arrows), drop_arrowheads.__doc__),
+    Rule("add_image_symbols", lambda s, c: s + image_symbols(c.it.image_marks, c.paths),
+         "markers drawn as small pictures (shadows dropped)"),
+]
+
+# The shapes that only look like markers once the graphs are known
+# (strays.py), run on the page's symbols after FIND_RULES.
+GRAPH_RULES = [
+    Rule("drop_plot_backgrounds", lambda s, c: drop_plot_backgrounds(s, c.graphs), drop_plot_backgrounds.__doc__),
+    Rule("drop_unread_name_letters", _drop_unread_name_letters),
+    Rule("drop_corner_ticks", lambda s, c: drop_corner_ticks(s, c.graphs), drop_corner_ticks.__doc__),
+    Rule("drop_symbols_in_prose", lambda s, c: drop_symbols_in_prose(s, c.texts, c.graphs),
+         drop_symbols_in_prose.__doc__),
+    Rule("drop_box_dashes", lambda s, c: drop_box_dashes(s, c.texts, c.boxes, c.graphs), drop_box_dashes.__doc__),
+    Rule("drop_rule_joints", lambda s, c: drop_rule_joints(s, c.paths), drop_rule_joints.__doc__),
+    Rule("drop_pattern_dashes", lambda s, c: drop_pattern_dashes(s, c.paths), drop_pattern_dashes.__doc__),
+    Rule("add_dash_markers", lambda s, c: add_dash_markers(s, c.paths, c.graphs), add_dash_markers.__doc__),
+    Rule("drop_foreign_crowds", lambda s, c: drop_foreign_crowds(s, c.graphs), drop_foreign_crowds.__doc__),
+    Rule("mark_legend_frames", lambda s, c: mark_legend_frames(s, c.paths, c.graphs), mark_legend_frames.__doc__),
+    Rule("fill_circles_under_dots", lambda s, c: fill_circles_under_dots(s, c.it.texts),
+         fill_circles_under_dots.__doc__),
+    Rule("merge_crossed_squares", lambda s, c: merge_crossed_squares(s), merge_crossed_squares.__doc__),
+]
+
+
+def describe_graphs(graphs, texts, symbols, first_no, debug, *, page):
     """Number, title, figure number and caption, and orientation of each
     graph (for the -meta file; the orientation also decides which axis
     gives x and which y)."""
     lines = None
     for no, g in enumerate(graphs, first_no):
         g["no"] = no
-        g["rot"], g["title"] = graph_rotation(g, texts, symbols)
+        g["rot"], g["title"] = graph_rotation(g, texts, symbols, page=page)
         if lines is None:
             lines = text_lines(texts)
-        g["figure"], g["caption"] = find_figure_caption(g["rect"], lines, PAGE.graph_rects)
+        g["figure"], g["caption"] = find_figure_caption(g["rect"], lines, page.graph_rects)
         if g["figure"] and g["title"] and re.match(
                 r"(?i)\s*fig(ure|\.)?\s*%s\b" % re.escape(g["figure"]), g["title"]):
             g["title"] = ""     # the caption below, taken for want of a title: not one
@@ -559,7 +589,14 @@ def describe_graphs(graphs, texts, symbols, first_no, debug):
                       file=sys.stderr)
 
 
-def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
+_OUTSIDE_CROWD = 100  # markers outside a box are its own unless 100 or more
+_IN_BOX_PT = 0.5      # a mark in a box (violin, box plot): within 0.5 pt
+_BARS_OVER = 3        # bars outnumber other squares 3 to 1
+_TWIN_BARS_MIN = 3    # 3 bars or more under line series
+_OUTLINE_WIDTH = 0.2  # a bar's outline as wide within 20%
+
+
+def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None, *, page):
     """Graphs without marker symbols: report their bars (bar charts,
     histograms) or, failing that, the vertices of their data lines, so that
     such graphs still give their data.  Short bars that look like squares
@@ -584,7 +621,7 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
     # plot (the networks above 2204.07073-010's bars), reported, but no
     # reason to leave out the bars inside
     for gid, outs in outside.items():
-        if len(outs) < 100 or len(outs) <= 2 * len(owner.get(gid, ())):
+        if len(outs) < _OUTSIDE_CROWD or len(outs) <= 2 * len(owner.get(gid, ())):
             owner.setdefault(gid, []).extend(outs)
 
     def bars_of(g):
@@ -608,7 +645,7 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
         violins = find_violins(g, paths)
         if violins:
             gone = {id(s) for s in marks if any(
-                r[0] - 0.5 <= s["cx"] <= r[2] + 0.5 and r[1] - 0.5 <= s["cy"] <= r[3] + 0.5
+                r[0] - _IN_BOX_PT <= s["cx"] <= r[2] + _IN_BOX_PT and r[1] - _IN_BOX_PT <= s["cy"] <= r[3] + _IN_BOX_PT
                 for r, _ in violins)}
             symbols[:] = [s for s in symbols if id(s) not in gone]
             for _, pts in violins:
@@ -620,7 +657,7 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
         if boxes:
             def in_box(s, boxes=boxes):
                 return s["shape"] in ("square", "rectangle") and any(
-                    r[0] - 0.5 <= s["cx"] <= r[2] + 0.5 and r[1] - 0.5 <= s["cy"] <= r[3] + 0.5
+                    r[0] - _IN_BOX_PT <= s["cx"] <= r[2] + _IN_BOX_PT and r[1] - _IN_BOX_PT <= s["cy"] <= r[3] + _IN_BOX_PT
                     for r, _ in boxes)
             gone = {id(s) for s in marks if in_box(s)}
             symbols[:] = [s for s in symbols if id(s) not in gone]
@@ -660,7 +697,7 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
             # short bars taken for squares are bars; squares that are no
             # bars (legend keys of the bar colours) stay, if the bars are
             # most of the shapes
-            if bars and (len(short) == len(marks) or len(bars) >= 3 * (len(marks) - len(short))):
+            if bars and (len(short) == len(marks) or len(bars) >= _BARS_OVER * (len(marks) - len(short))):
                 gone = {id(s) for s in short}
                 symbols[:] = [s for s in symbols if id(s) not in gone]
                 marks = []
@@ -675,7 +712,7 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
             # markers and background grids pass for bars)
             if "y2" in g or "x2" in g:
                 bars = bars_of(g) if bars is None else bars
-            if ("y2" in g or "x2" in g) and len(bars) >= 3:
+            if ("y2" in g or "x2" in g) and len(bars) >= _TWIN_BARS_MIN:
                 bar_paths = {b["idx"] for b in bars}
                 short = {id(s) for s in marks if s["shape"] in ("square", "rectangle") and (
                     s["idx"] in bar_paths or any(
@@ -692,7 +729,7 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
             # and as wide, go: 2020.01.30.927558.full-048)
             across = _BarsAcross(bars)
             outl = {id(s) for s in symbols if s["shape"] == "rectangle" and not s.get("marker") and
-                    any(abs(s["size"] - b["size"]) <= 0.2 * b["size"] and _on_bar(s, b) for b in across.near(s))}
+                    any(abs(s["size"] - b["size"]) <= _OUTLINE_WIDTH * b["size"] and _on_bar(s, b) for b in across.near(s))}
             if outl:
                 symbols[:] = [s for s in symbols if id(s) not in outl]
             # a second row of x labels naming groups of bars; categories
@@ -705,7 +742,7 @@ def add_bars_and_lines(graphs, symbols, paths, texts, reportable=None):
             symbols += stems
             continue
         series = find_line_series(g, paths)
-        names = legend_for_lines(series, paths, texts, g["rect"])
+        names = legend_for_lines(series, paths, texts, g["rect"], page=page)
         line_sets.append((g, series, names))
         for k, line in enumerate(series):
             for q in line["points"]:

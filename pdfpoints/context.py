@@ -1,7 +1,6 @@
-"""Shared state: command-line settings and facts about the page being
-analysed (graph boxes, typical label size, ...) that several steps need.
-`PAGE` is reset by the pipeline at the start of every page.
-"""
+"""Command-line settings that change how markers are read.  (Facts about
+the page being analysed live in the page model: page.Page.)"""
+
 
 class Settings:
     """Options that change how markers are read (set from the command line)."""
@@ -9,32 +8,4 @@ class Settings:
     max_words = 20                # --max-words: running text allowed in a graph
 
 
-class PageState:
-    """Facts about the page being analysed that several steps consult.
-    Reset at the start of every page by extract()."""
-
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        """Forget everything about the previous page."""
-        self.nominal_labels = []  # non-numeric label candidates (category axes)
-        self.break_marks = []     # bboxes of small curved strokes (axis-break wiggles)
-        self.hiding_paths = set() # drawing steps of boxes painted over text
-        self.graph_rects = []     # rectangles of all graphs found on the page
-        self.xlabel_zones = []    # (x0, x1, bottom of the x tick labels, graph rect) of each graph
-        self.label_size = 0.0     # typical tick-label font size on the page
-        self.minus_paths = set()  # drawing steps of dashes that are minus signs of labels
-        self.number = 0           # page number (for progress messages)
-        self.bare_axes = []       # axis lines with ticks but no labels: {orient, pos, lo, hi, tick_pos}
-        self.dark_lines = ([], [])  # merged dark horizontal, vertical lines (lo, hi, pos)
-        self.all_lines = ([], [])   # merged horizontal, vertical lines of any shade
-        self.chart_frames = {}    # graph rect -> the box drawn round the whole chart
-        self.turn = 0             # degrees the page was turned to be read (pipeline.page_turn)
-        self.unturn = None        # turned point -> PDF page point
-
-
 SETTINGS = Settings()
-
-
-PAGE = PageState()

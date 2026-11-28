@@ -18,12 +18,15 @@ import math
 import re
 
 from .geometry import median
-from .grouping import PointGrid
+from .spatial import PointGrid
 from .labels import LabelPairs
 from .scales import fit_axis, map_value
 
 # a tile colour farther than this (RGB, 0..1) from the bar's colours has no value
 _FAR = 0.08
+
+
+_PNG_PREDICTORS = 10  # PNG predictors are 10 and up
 
 
 def strip_pixels(data, w, h, predictor=1):
@@ -32,7 +35,7 @@ def strip_pixels(data, w, h, predictor=1):
     and CMYK by their length.  None if the bytes do not fit."""
     n = w * h
     rows = h
-    if predictor >= 10:
+    if predictor >= _PNG_PREDICTORS:
         # each row: a filter byte, then the row's bytes
         per = len(data) // rows - 1 if rows else 0
         comps = per // w if w else 0
@@ -76,6 +79,9 @@ def strip_pixels(data, w, h, predictor=1):
     return rgb
 
 
+_STRIP_EVEN = 0.02  # a strip's rows are even within 0.02 (of 1)
+
+
 def colour_strip(image):
     """A long thin image (read_image's (w, h, rgb, alpha)) whose every row
     across it is one colour (within 0.02): a colour bar's gradient,
@@ -90,7 +96,7 @@ def colour_strip(image):
     else:
         rows = [[rgb[r * w + c] for r in range(h)] for c in range(w)]
     for row in rows:
-        if any(max(abs(a - b) for a, b in zip(px, row[0])) > 0.02 for px in row):
+        if any(max(abs(a - b) for a, b in zip(px, row[0])) > _STRIP_EVEN for px in row):
             return None
     mid = [row[len(row) // 2] for row in rows]
     return {"w": 1, "h": h, "rgb": mid} if h >= w else {"w": w, "h": 1, "rgb": mid}
@@ -99,6 +105,12 @@ def colour_strip(image):
 def _apply(ctm, u, v):
     a, b, c, d, e, f = ctm
     return (a * u + c * v + e, b * u + d * v + f)
+
+
+_BAR_MIN_PT = 5              # a colour bar is 5 pt long or more
+_BAR_LABEL_REACH_EMS = 0.6   # bar labels within its extent plus 0.6 of a font size
+_BAR_LABEL_BEFORE_EMS = 0.2  # from 0.2 of a font size inside
+_BAR_LABEL_AFTER_EMS = 3     # to 3 font sizes beside it
 
 
 def colour_bars(strips, texts):
@@ -113,7 +125,7 @@ def colour_bars(strips, texts):
         xs, ys = [p[0] for p in corners], [p[1] for p in corners]
         box = (min(xs), min(ys), max(xs), max(ys))
         bw, bh = box[2] - box[0], box[3] - box[1]
-        if max(bw, bh) < 5 or min(bw, bh) <= 0:
+        if max(bw, bh) < _BAR_MIN_PT or min(bw, bh) <= 0:
             continue
         orient = "y" if bh >= bw else "x"
         k = 1 if orient == "y" else 0
@@ -145,13 +157,13 @@ def colour_bars(strips, texts):
                 continue
             s = t["size"] or 1.0
             c = t["center"][k]
-            if not lo - 0.6 * s <= c <= hi + 0.6 * s:
+            if not lo - _BAR_LABEL_REACH_EMS * s <= c <= hi + _BAR_LABEL_REACH_EMS * s:
                 continue
             if orient == "y":
                 gap = max(t["bbox"][0] - box[2], box[0] - t["bbox"][2])
             else:
                 gap = max(t["bbox"][1] - box[3], box[1] - t["bbox"][3])
-            if -0.2 * s <= gap <= 3 * s:
+            if -_BAR_LABEL_BEFORE_EMS * s <= gap <= _BAR_LABEL_AFTER_EMS * s:
                 side.append((c, t))
         if len(side) < 2:
             continue
@@ -164,6 +176,11 @@ def colour_bars(strips, texts):
                      "title": _bar_title(box, texts, [t for _, t in side]), "labels": {id(t) for _, t in side},
                      "label_values": [t["value"] for _, t in side]})
     return bars
+
+
+_TITLE_REACH_PT = 40     # a turned bar title within 40 pt right of the bar
+_TITLE_COLUMN_EMS = 0.5  # title pieces in one column within half a font size
+_TITLE_GAP_EMS = 1.2     # the title starts within 1.2 font sizes past the labels
 
 
 def _bar_title(box, texts, labels=()):
@@ -179,7 +196,7 @@ def _bar_title(box, texts, labels=()):
             continue
         s = t["size"] or 1.0
         gap = t["bbox"][1] - box[3]
-        if -0.2 * s <= gap <= 3 * s and t["bbox"][0] <= box[2] + s and t["bbox"][2] >= box[0] - s:
+        if -_BAR_LABEL_BEFORE_EMS * s <= gap <= _BAR_LABEL_AFTER_EMS * s and t["bbox"][0] <= box[2] + s and t["bbox"][2] >= box[0] - s:
             if best is None or gap < best[0]:
                 best = (gap, t["text"].strip())
     if best:
@@ -189,13 +206,13 @@ def _bar_title(box, texts, labels=()):
     # difference", three words read top to bottom)
     bx0, by0, bx1, by1 = box
     col = [t for t in texts if t.get("rotated") and t["text"].strip() and
-           bx1 < t["center"][0] <= bx1 + 40 and by0 - 2 <= t["center"][1] <= by1 + 2]
+           bx1 < t["center"][0] <= bx1 + _TITLE_REACH_PT and by0 - 2 <= t["center"][1] <= by1 + 2]
     if not col:
         return ""
     x = min(col, key=lambda t: t["center"][0])["center"][0]
-    col = [t for t in col if abs(t["center"][0] - x) <= 0.5 * (t["size"] or 1.0)]
+    col = [t for t in col if abs(t["center"][0] - x) <= _TITLE_COLUMN_EMS * (t["size"] or 1.0)]
     edge = max([t["bbox"][2] for t in labels if t["center"][0] > bx1] or [bx1])
-    if min(t["bbox"][0] for t in col) - edge > 1.2 * (col[0]["size"] or 1.0):
+    if min(t["bbox"][0] for t in col) - edge > _TITLE_GAP_EMS * (col[0]["size"] or 1.0):
         return ""
     down = (col[0].get("angle") or 0) < 0
     col.sort(key=lambda t: -t["center"][1] if down else t["center"][1])
@@ -223,6 +240,9 @@ def _luma(c):
     return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
 
 
+_LUMA_DROP = 0.01  # a bar's brightness rises steadily (drops of 0.01 allowed)
+
+
 def bar_value_luma(bar, rgb):
     """The value colour `rgb` stands for on colour bar `bar` by brightness
     alone, when the bar's brightness rises (or falls) all along it (no step
@@ -240,7 +260,7 @@ def bar_value_luma(bar, rgb):
         y = -_luma(rgb)
     else:
         y = _luma(rgb)
-    if any(b < a - 0.01 for (_, a), (_, b) in zip(st, st[1:])):
+    if any(b < a - _LUMA_DROP for (_, a), (_, b) in zip(st, st[1:])):
         return None
     mono, m = [], -math.inf
     for p, v in st:
@@ -255,10 +275,21 @@ def bar_value_luma(bar, rgb):
     return map_value(bar["map"], mono[-1][1])
 
 
+_ON_TILE = 0.25  # a mark on a tile: within a quarter of the tile
+
+
 def _on_tile(s, grid):
     """Does mark s lie on a tile's place (within a quarter of its size)?"""
-    return any(abs(t["cx"] - s["cx"]) <= 0.25 * t["w"] and abs(t["cy"] - s["cy"]) <= 0.25 * t["h"]
+    return any(abs(t["cx"] - s["cx"]) <= _ON_TILE * t["w"] and abs(t["cy"] - s["cy"]) <= _ON_TILE * t["h"]
                for t in grid.near(s["cx"], s["cy"]))
+
+
+_TILES_MIN = 50        # a heat map has 50 tiles or more
+_TILE_COLOURS_MIN = 3  # of 3 colours or more
+_TILE_MAX_FRAC = 0.2   # a tile is at most a fifth of the plot
+_TILE_SAME = 0.05      # tiles of one size within 5%
+_TILE_GRID = 0.25      # tile places to a quarter of a tile
+_TILES_TOUCH = 0.5     # half the tiles touch a neighbour
 
 
 def heat_tiles(g, paths):
@@ -282,29 +313,32 @@ def heat_tiles(g, paths):
             cx, cy = (xs[0] + xs[1]) / 2, (ys[0] + ys[1]) / 2
             if x0 < cx < x1 and y0 < cy < y1:
                 cands.append((xs[1] - xs[0], ys[1] - ys[0], cx, cy, p))
-    if len(cands) < 50:
+    if len(cands) < _TILES_MIN:
         return []
     tw = median(c[0] for c in cands)
     th = median(c[1] for c in cands)
-    if tw <= 0 or th <= 0 or tw > 0.2 * (x1 - x0) or th > 0.2 * (y1 - y0):
+    if tw <= 0 or th <= 0 or tw > _TILE_MAX_FRAC * (x1 - x0) or th > _TILE_MAX_FRAC * (y1 - y0):
         return []
-    tiles = [c for c in cands if abs(c[0] - tw) <= 0.05 * tw and abs(c[1] - th) <= 0.05 * th]
-    if len(tiles) < 50 or len({c[4]["fill_rgb"] for c in tiles}) < 3:
+    tiles = [c for c in cands if abs(c[0] - tw) <= _TILE_SAME * tw and abs(c[1] - th) <= _TILE_SAME * th]
+    if len(tiles) < _TILES_MIN or len({c[4]["fill_rgb"] for c in tiles}) < _TILE_COLOURS_MIN:
         return []
     # tiles abut: half of them or more have a neighbour one tile across or
     # up (the dots of dotted grid lines, 2355585.2355594-006, stand apart)
-    at = {(round(c[2] / (0.25 * tw)), round(c[3] / (0.25 * th))) for c in tiles}
+    at = {(round(c[2] / (_TILE_GRID * tw)), round(c[3] / (_TILE_GRID * th))) for c in tiles}
     def touching(c):
-        kx, ky = round(c[2] / (0.25 * tw)), round(c[3] / (0.25 * th))
+        kx, ky = round(c[2] / (_TILE_GRID * tw)), round(c[3] / (_TILE_GRID * th))
         return any((kx + dx, ky + dy) in at for dx, dy in
                    ((4, 0), (-4, 0), (0, 4), (0, -4), (3, 0), (5, 0), (-3, 0), (-5, 0),
                     (0, 3), (0, 5), (0, -3), (0, -5)))
-    if sum(1 for c in tiles if touching(c)) < 0.5 * len(tiles):
+    if sum(1 for c in tiles if touching(c)) < _TILES_TOUCH * len(tiles):
         return []
     return [{"shape": "tile", "cx": cx, "cy": cy, "size": w, "w": w, "h": h, "filled": True,
              "rgb": p["fill_rgb"], "idx": p["idx"], "res": p.get("res"), "tool": p.get("tool"),
              "clip": p.get("clip")}
             for w, h, cx, cy, p in tiles]
+
+
+_BAR_OVERLAP = 0.5  # a bar beside a graph overlaps it by half
 
 
 def _bar_gap(rect, b):
@@ -317,11 +351,14 @@ def _bar_gap(rect, b):
     if bx0 < x1 and bx1 > x0 and by0 < y1 and by1 > y0:
         return None                        # inside the plot: not its bar
     if b["orient"] == "y":
-        if min(by1, y1) - max(by0, y0) < 0.5 * min(by1 - by0, y1 - y0):
+        if min(by1, y1) - max(by0, y0) < _BAR_OVERLAP * min(by1 - by0, y1 - y0):
             return None
-    elif min(bx1, x1) - max(bx0, x0) < 0.5 * min(bx1 - bx0, x1 - x0):
+    elif min(bx1, x1) - max(bx0, x0) < _BAR_OVERLAP * min(bx1 - bx0, x1 - x0):
         return None
     return math.hypot(max(bx0 - x1, x0 - bx1, 0.0), max(by0 - y1, y0 - by1, 0.0))
+
+
+_BAR_REACH_FRAC = 0.5  # within half the graph's width
 
 
 def graph_bar(g, bars, graphs=()):
@@ -332,7 +369,7 @@ def graph_bar(g, bars, graphs=()):
     near = None
     for b in bars:
         d = _bar_gap(g["rect"], b)
-        if d is None or d > 0.5 * (g["rect"][2] - g["rect"][0]):
+        if d is None or d > _BAR_REACH_FRAC * (g["rect"][2] - g["rect"][0]):
             continue
         if any(h is not g and (_bar_gap(h["rect"], b) or math.inf) < d for h in graphs):
             continue
@@ -355,6 +392,10 @@ _MAP_OF = re.compile(r"\bheat\s*-?\s*maps?\s+(?:of|for|showing)\s+(?:the\s+)?"
                      r"([A-Za-z][\w\-]*(?:\s+[a-z][\w\-]*)?)", re.I)
 _STOP = {"and", "with", "in", "on", "for", "from", "of", "to", "at", "as", "the", "a", "an",
          "while", "where", "which", "that", "versus", "vs"}
+
+
+_YEAR_MIN = 1800  # colour values 1800 to 2100 are years
+_YEAR_MAX = 2100  # (the latest year)
 
 
 def value_name(bar, caption, title=""):
@@ -380,7 +421,7 @@ def value_name(bar, caption, title=""):
                 name = " ".join(words)
                 return name.lower() if lower else name
     vals = bar.get("label_values") or []
-    if vals and all(float(v).is_integer() and 1800 <= v <= 2100 for v in vals):
+    if vals and all(float(v).is_integer() and _YEAR_MIN <= v <= _YEAR_MAX for v in vals):
         return "year"
     return ""
 
@@ -418,6 +459,9 @@ def heatmap_values(graphs, symbols, strips, texts, graph_of):
             s["value"] = bar_value(bar, s["rgb"])
 
 
+_CELLS_EVEN = 0.05  # picture cells: a whole number of pixels within 5%
+
+
 def _cells(m, lo, hi, npx):
     """Cell centres (page positions) along one side of a heat map picture
     spanning lo..hi: a category axis's ticks within it; on a linear axis
@@ -429,10 +473,14 @@ def _cells(m, lo, hi, npx):
         return []
     span = abs(map_value(m, hi) - map_value(m, lo))
     n = round(span)
-    if not 2 <= n <= npx or abs(span - n) > 0.05 * n:
+    if not 2 <= n <= npx or abs(span - n) > _CELLS_EVEN * n:
         return []
     step = (hi - lo) / n
     return [lo + (i + 0.5) * step for i in range(n)]
+
+
+_PICTURE_COVER = 0.9        # a heat-map picture fills 90% of its graph
+_PICTURE_MAX_CELLS = 50000  # and has at most 50 000 cells
 
 
 def image_tiles(g, pictures):
@@ -450,7 +498,7 @@ def image_tiles(g, pictures):
         if abs(b) > 1e-6 or abs(c) > 1e-6 or a <= 0 or d <= 0:
             continue
         if bx0 < x0 - 2 or by0 < y0 - 2 or bx1 > x1 + 2 or by1 > y1 + 2 or \
-                (bx1 - bx0) * (by1 - by0) < 0.9 * area:
+                (bx1 - bx0) * (by1 - by0) < _PICTURE_COVER * area:
             continue
         img = read_image(pic["xobj"])
         if not img:
@@ -458,7 +506,7 @@ def image_tiles(g, pictures):
         w, h, rgb, _ = img
         xs = _cells(g["x"]["map"], bx0, bx1, w)
         ys = _cells(g["y"]["map"], by0, by1, h)
-        if len(xs) < 2 or len(ys) < 2 or len(xs) * len(ys) > 50000:
+        if len(xs) < 2 or len(ys) < 2 or len(xs) * len(ys) > _PICTURE_MAX_CELLS:
             continue
         cw = (bx1 - bx0) / len(xs) if g["x"]["map"]["kind"] != "nominal" else \
             min(q - p for p, q in zip(xs, xs[1:]))
@@ -476,6 +524,11 @@ def image_tiles(g, pictures):
     return []
 
 
+_LEVEL_OVERLAP = 0.5  # a level bar overlaps the picture's rows by half
+_LUMA_SHARE = 0.25    # cells valued by brightness: 25% must match
+_COLOUR_SHARE = 0.8   # by colour: 80%
+
+
 def _level_bar(g, bars, tiles):
     """A colour bar level with graph g (over half of the shorter of the two
     heights shared) anywhere to its right, on which 80% or more of the
@@ -485,17 +538,20 @@ def _level_bar(g, bars, tiles):
     best = None
     for b in bars:
         bx0, by0, bx1, by1 = b["box"]
-        if bx0 < x1 or min(by1, y1) - max(by0, y0) < 0.5 * min(by1 - by0, y1 - y0):
+        if bx0 < x1 or min(by1, y1) - max(by0, y0) < _LEVEL_OVERLAP * min(by1 - by0, y1 - y0):
             continue
         sample = tiles[::max(1, len(tiles) // 200)]
         on = sum(1 for t in sample if bar_value(b, t["rgb"]) is not None)
         # (a picture's cells: a quarter of them, if the bar's brightness
         # reads the rest - bar_value_luma)
-        need = 0.25 if sample[0].get("picture") and bar_value_luma(b, sample[0]["rgb"]) is not None \
-            else 0.8
+        need = _LUMA_SHARE if sample[0].get("picture") and bar_value_luma(b, sample[0]["rgb"]) is not None \
+            else _COLOUR_SHARE
         if on >= need * len(sample) and (best is None or bx0 < best[0]):
             best = (bx0, b)
     return best[1] if best else None
+
+
+_CELL_BAR_WIDTH = 1.05  # a cell's bar is at most 1.05 tile widths wide
 
 
 def add_heat_tiles(graphs, symbols, paths, strips, texts, pictures=(), heatmap=False):
@@ -538,7 +594,7 @@ def add_heat_tiles(graphs, symbols, paths, strips, texts, pictures=(), heatmap=F
         ay1 = max(t["cy"] + t["h"] / 2 for t in tiles) + tw
 
         def cell(s):
-            return s["shape"] == "bar" and s["size"] <= 1.05 * tw and \
+            return s["shape"] == "bar" and s["size"] <= _CELL_BAR_WIDTH * tw and \
                 ax0 <= s["cx"] <= ax1 and ay0 <= s["cy"] <= ay1
         symbols[:] = [s for s in symbols if not _on_tile(s, grid) and not cell(s)]
         symbols += tiles

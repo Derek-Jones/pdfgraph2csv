@@ -15,8 +15,9 @@ is used only when it names a plotting program: a LaTeX or Word document
 containing a chart does not tell which program drew the chart.
 """
 
-import bisect
 import re
+
+from .spatial import SortedIndex
 
 # programs that convert, print or merely write PDF
 _CONVERTER = re.compile(
@@ -104,16 +105,14 @@ class PathsByX:
     hundreds of graphs and tens of thousands of paths)."""
 
     def __init__(self, paths):
-        order = sorted(range(len(paths)), key=lambda k: paths[k]["subpaths"][0]["start"][0])
-        self.paths = paths
-        self.order = order
-        self.xs = [paths[k]["subpaths"][0]["start"][0] for k in order]
+        self.index = SortedIndex(list(enumerate(paths)), key=lambda kp: kp[1]["subpaths"][0]["start"][0])
 
     def between(self, lo, hi):
         """The paths whose first point has lo <= x <= hi, in drawing order."""
-        a = bisect.bisect_left(self.xs, lo)
-        b = bisect.bisect_right(self.xs, hi)
-        return [self.paths[k] for k in sorted(self.order[a:b])]
+        return [p for _, p in sorted(self.index.between(lo, hi), key=lambda kp: kp[0])]
+
+
+_GRAPH_MARGIN = 0.05  # a graph's paths: inside its box plus 5%
 
 
 def graph_tool(g, paths, glyph_symbols):
@@ -123,7 +122,7 @@ def graph_tool(g, paths, glyph_symbols):
     several programs, and a graph's box may overlap the document's own
     rules and text).  "" if none is recorded."""
     x0, y0, x1, y1 = g["rect"]
-    mx, my = 0.05 * (x1 - x0), 0.05 * (y1 - y0)
+    mx, my = _GRAPH_MARGIN * (x1 - x0), _GRAPH_MARGIN * (y1 - y0)
     count = {}
     for p in paths:
         t = p.get("tool")
@@ -155,6 +154,9 @@ _TOOL_ACCURACY = (
     (re.compile(r"^R(?: \d|$)"), 0.01),
     (re.compile(r"(?i)^matplotlib\b"), 1e-6),
 )
+_UNIT_FRAC = 0.5  # a tool's accuracy is refused when the PDF's unit is under half of it
+
+
 def tool_accuracy(g, unit=None):
     """The rounding (user space units) of the coordinates written by the
     program that drew graph g, as recorded for the graphic its paths were
@@ -169,5 +171,5 @@ def tool_accuracy(g, unit=None):
     tool = (g.get("tool") or "").strip()
     for pat, acc in _TOOL_ACCURACY:
         if pat.match(tool):
-            return None if unit is not None and unit < 0.5 * acc else acc
+            return None if unit is not None and unit < _UNIT_FRAC * acc else acc
     return None

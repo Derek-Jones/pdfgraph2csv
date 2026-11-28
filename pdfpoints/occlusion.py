@@ -7,8 +7,10 @@ two labels at one tick, or labels the reader never sees.
 
 import math
 
-from .context import PAGE
 from .geometry import path_bbox, rect_of
+
+
+_COVER_MIN_PT = 0.5  # a cover is over 0.5 pt each way
 
 
 def cover_rects(paths, images):
@@ -28,9 +30,12 @@ def cover_rects(paths, images):
                 for clip in (p.get("clip"), p.get("form_box")):
                     if b and clip:
                         b = (max(b[0], clip[0]), max(b[1], clip[1]), min(b[2], clip[2]), min(b[3], clip[3]))
-                if b and b[2] - b[0] > 0.5 and b[3] - b[1] > 0.5:
+                if b and b[2] - b[0] > _COVER_MIN_PT and b[3] - b[1] > _COVER_MIN_PT:
                     covers.append((b, p["idx"]))
     return covers
+
+
+_COVER_CELL_PT = 20.0  # covers filed in cells of 20 pt
 
 
 class CoverIndex:
@@ -38,7 +43,7 @@ class CoverIndex:
     of 20 pt cells, since a page may hold thousands of glyphs and boxes."""
     MAX_CELLS = 10000                 # bigger covers are checked one by one
 
-    def __init__(self, covers, cell=20.0):
+    def __init__(self, covers, cell=_COVER_CELL_PT):
         self.cell, self.grid, self.big = cell, {}, []
         for b, i in covers:
             nx = int(b[2] // cell) - int(b[0] // cell) + 1
@@ -56,9 +61,12 @@ class CoverIndex:
                 if i > idx and b[0] <= x <= b[2] and b[1] <= y <= b[3]]
 
 
-def drop_hidden_glyphs(texts, covers):
+_GLYPH_GAP_EMS = 0.15  # glyphs of one run within 0.15 em
+
+
+def drop_hidden_glyphs(texts, covers, *, page):
     """Remove glyphs painted over by a later cover (see cover_rects).  The
-    covers that hide text are noted in PAGE.hiding_paths: they are boxes,
+    covers that hide text are noted in page.hiding_paths: they are boxes,
     not square markers.  A text partly hidden keeps its visible runs of
     glyphs, split into words."""
     if not covers:
@@ -76,7 +84,7 @@ def drop_hidden_glyphs(texts, covers):
             cx = (a[0] + e[0]) / 2 + 0.5 * ux
             cy = (a[1] + e[1]) / 2 + 0.5 * uy
             hid = ix.over(cx, cy, t["idx"])
-            PAGE.hiding_paths.update(hid)
+            page.hiding_paths.update(hid)
             keep.append(not hid)
         if all(keep):
             out.append(t)
@@ -96,7 +104,7 @@ def drop_hidden_glyphs(texts, covers):
             # split at word gaps too: the remains of a list of labels
             words, w = [], [run[0]]
             for g0, g1 in zip(run, run[1:]):
-                if math.hypot(g1[1][0] - g0[2][0], g1[1][1] - g0[2][1]) > 0.15 * em:
+                if math.hypot(g1[1][0] - g0[2][0], g1[1][1] - g0[2][1]) > _GLYPH_GAP_EMS * em:
                     words.append(w)
                     w = []
                 w.append(g1)
@@ -106,6 +114,9 @@ def drop_hidden_glyphs(texts, covers):
                 if txt:
                     out.append(dict(t, text=txt, p0=w[0][1], p1=w[-1][2], glyphs=w))
     return out
+
+
+_WINDOW_SLACK_PT = 0.5  # a path outside its form window by 0.5 pt is not seen
 
 
 def drop_hidden_paths(paths):
@@ -130,7 +141,25 @@ def drop_hidden_paths(paths):
         f = p.get("form_box")
         if p.get("form_key") in windowed and f and p["subpaths"]:
             b = path_bbox(p)
-            if b[0] > f[2] + 0.5 or b[2] < f[0] - 0.5 or b[1] > f[3] + 0.5 or b[3] < f[1] - 0.5:
+            if b[0] > f[2] + _WINDOW_SLACK_PT or b[2] < f[0] - _WINDOW_SLACK_PT or b[1] > f[3] + _WINDOW_SLACK_PT or b[3] < f[1] - _WINDOW_SLACK_PT:
                 continue
         out.append(p)
+    return out
+
+
+_CLIP_SLACK_PT = 0.5  # text inside its clip within 0.5 pt
+
+
+def drop_clipped_texts(texts):
+    """Text whose middle lies outside its clipping box or the /BBox of the
+    form drawing it (by more than 0.5 pt) is not seen: a figure included
+    with its edges trimmed off keeps them in the file (Sovinsky-paper-017: the Stata figure, printed to PDF
+    with its first caption "Figure 4: ...", clipped to the graph in the
+    paper, whose caption reads "Figure 5: ...")."""
+    out = []
+    for t in texts:
+        x, y = t["center"] if "center" in t else t["p0"]
+        if all(c is None or c[0] - _CLIP_SLACK_PT <= x <= c[2] + _CLIP_SLACK_PT and c[1] - _CLIP_SLACK_PT <= y <= c[3] + _CLIP_SLACK_PT
+               for c in (t.get("clip"), t.get("form_box"))):
+            out.append(t)
     return out

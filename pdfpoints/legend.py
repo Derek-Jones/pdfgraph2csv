@@ -7,16 +7,18 @@ has its label just to its right, stands apart on its line, and lines up
 with the other keys of its legend.
 """
 
-import bisect
-import math
 import re
 
 from .colours import color_name
-from .context import PAGE
 from .geometry import bbox_of, median, rect_distance, rect_of, thin_rect_line, vertices
 from .graphs import frame_symbols, frame_texts
+from .spatial import BoxGrid, SortedIndex
 from .symbols import symbol_signature
 from .text import is_number
+
+
+_SAMPLE_LEVEL_PT = 0.05  # a line sample is level within 0.05 pt
+_SAMPLE_MAX_PT = 60      # and under 60 pt long
 
 
 def legend_line_samples(paths):
@@ -29,19 +31,19 @@ def legend_line_samples(paths):
                 ln = thin_rect_line(p["subpaths"][0])
                 if ln is not None:
                     (ax, ay), (bx, by) = ln
-                    if abs(ay - by) < 0.05 and 2 < abs(ax - bx) < 60:
+                    if abs(ay - by) < _SAMPLE_LEVEL_PT and 2 < abs(ax - bx) < _SAMPLE_MAX_PT:
                         out.append((min(ax, bx), max(ax, bx), (ay + by) / 2))
             continue
         for sp in p["subpaths"]:
             if sp["closed"] or len(sp["segs"]) != 1 or sp["segs"][0][0] != "l":
                 continue
             a, b = sp["start"], sp["segs"][0][1]
-            if abs(a[1] - b[1]) < 0.05 and 2 < abs(a[0] - b[0]) < 60:
+            if abs(a[1] - b[1]) < _SAMPLE_LEVEL_PT and 2 < abs(a[0] - b[0]) < _SAMPLE_MAX_PT:
                 out.append((min(a[0], b[0]), max(a[0], b[0]), (a[1] + b[1]) / 2))
     return out
 
 
-def find_legend(symbols, texts, hlines=()):
+def find_legend(symbols, texts, hlines=(), *, page):
     """Legend keys: a marker with a (non-numeric) label just to its right on
     the same line - measured from the end of the line sample the marker sits
     on, if any.  Returns {symbol index: label}.
@@ -59,10 +61,14 @@ def find_legend(symbols, texts, hlines=()):
         else:
             copies[spots[k]].append(i)
     if len(copies) == len(symbols):
-        return _find_legend(symbols, texts, set(hlines), [1] * len(symbols))
+        return _find_legend(symbols, texts, set(hlines), [1] * len(symbols), page=page)
     reps = [symbols[c[0]] for c in copies]
-    keys = _find_legend(reps, texts, set(hlines), [len(c) for c in copies])
+    keys = _find_legend(reps, texts, set(hlines), [len(c) for c in copies], page=page)
     return {i: label for r, label in keys.items() for i in copies[r]}
+
+
+_LEAD_LEVEL_EMS = 0.5  # a value read out after a lead-in: level within half a font size
+_LEAD_GAP_EMS = 1.5    # within 1.5 font sizes after it
 
 
 def _reads_out_value(t, texts):
@@ -70,36 +76,51 @@ def _reads_out_value(t, texts):
     if not t["text"].strip().endswith(":"):
         return False
     size = t["size"] or 1.0
-    return any(is_number(o) and abs(o["center"][1] - t["center"][1]) < 0.5 * size and
-               0 <= o["bbox"][0] - t["bbox"][2] <= 1.5 * size for o in texts)
+    return any(is_number(o) and abs(o["center"][1] - t["center"][1]) < _LEAD_LEVEL_EMS * size and
+               0 <= o["bbox"][0] - t["bbox"][2] <= _LEAD_GAP_EMS * size for o in texts)
 
 
-def _find_legend(symbols, texts, hlines, weight):
+_LABEL_MAX_CHARS = 60       # a legend label is at most 60 characters
+_LABEL_LEVEL_EMS = 0.6      # a label level with its key: within 0.6 of a font size
+_SAMPLE_CELL_PT = 8.0       # line samples filed in cells of 8 pt
+_SAMPLE_REACH_PT = 0.5      # a key on a sample: within 0.5 pt of its ends
+_SAMPLE_LEVEL_SIZES = 0.3   # and 0.3 of the key's size across
+_LABEL_BEFORE_EMS = 0.2     # a label starts from 0.2 of a font size before the key's right
+_LABEL_AFTER_EMS = 3        # to 3 font sizes after it
+_NEAR_KEYS_EMS = 20         # keys beside a label: within 20 font sizes to its right
+_HELPER_GLYPH = 0.3         # glyphs under 0.3 of the label's size are invisible helpers
+_SUBSCRIPT_MAX = 0.9        # a subscript is under 0.9 of the label's size
+_SUBSCRIPT_BACK_EMS = 0.1   # it starts from 0.1 of a font size before the label's end
+_SUBSCRIPT_GAP_EMS = 0.3    # to 0.3 after
+_SUBSCRIPT_LEVEL_EMS = 0.7  # level within 0.7 of a font size
+_NEXT_WORD_SIZE = 0.05      # the next word of a label: its size within 5%
+_NEXT_WORD_GAP_EMS = 0.4    # within 0.4 of a font size after
+_NEXT_WORD_LEVEL_EMS = 0.1  # on the label's baseline within 0.1 of a font size
+_CURVE_NEIGHBOUR = 0.5      # a marker on a dense curve has neighbours within half its size across
+_CURVE_MIN_GAP = 0.25       # from a quarter of its size
+_STACKED_PT = 1.5           # stacked legend entries line up within 1.5 pt
+_STACKED_ROWS_EMS = 4       # rows within 4 font sizes per entry
+
+
+def _find_legend(symbols, texts, hlines, weight, *, page):
     """find_legend on distinct markers; weight[i]: copies of marker i."""
     entries = {}
     # possible labels (a long line of a paragraph is none), by height on
     # the page, so each marker only looks at the texts on its own line
-    labels = sorted(((t["center"][1], t) for t in texts
-                     if not (is_number(t) or t["rotated"] or not t["text"].strip()
-                             or len(t["text"].strip()) > 60)), key=lambda ct: ct[0])
-    label_y = [cy for cy, _ in labels]
-    # a lead-in to a value ("RMSE: 2.14", in a fit annotation beside a
-    # stray data point, ThomasBockPhD-073) names no series
-    labels = [(cy, t) for cy, t in labels if not _reads_out_value(t, texts)]
-    label_y = [cy for cy, _ in labels]
-    reach = 0.6 * max((t["size"] or 1.0 for _, t in labels), default=1.0)
-    # line samples (horizontal) filed in a grid by height and by every x cell
-    # they span, so a marker looks only at the samples around itself
-    hl_cell = 8.0
-    hl_grid = {}
+    # (a lead-in to a value - "RMSE: 2.14", in a fit annotation beside a
+    # stray data point, ThomasBockPhD-073 - names no series)
+    labels = SortedIndex([t for t in texts
+                          if not (is_number(t) or t["rotated"] or not t["text"].strip()
+                                  or len(t["text"].strip()) > _LABEL_MAX_CHARS) and not _reads_out_value(t, texts)],
+                         key=lambda t: t["center"][1])
+    reach = _LABEL_LEVEL_EMS * max((t["size"] or 1.0 for t in labels.items), default=1.0)
+    # line samples (horizontal), so a marker looks only at the samples
+    # around itself
+    hl_grid = BoxGrid(_SAMPLE_CELL_PT)
     for x0, x1, y in hlines:
-        gy = math.floor(y / hl_cell)
-        for gx in range(math.floor((x0 - 0.5) / hl_cell),
-                        math.floor((x1 + 0.5) / hl_cell) + 1):
-            hl_grid.setdefault((gx, gy), []).append((x0, x1, y))
+        hl_grid.add((x0, x1, y), (x0 - _SAMPLE_REACH_PT, y, x1 + _SAMPLE_REACH_PT, y))
     by_left = sorted(texts, key=lambda o: o["bbox"][0])     # (for label continuations)
-    by_y = sorted(symbols, key=lambda u: u["cy"])
-    sym_y = [u["cy"] for u in by_y]
+    by_y = SortedIndex(symbols, key=lambda u: u["cy"])
     keys_by_label = {}
     for i, s in enumerate(symbols):
         # (a bar stands on the baseline: never a key - the tallest bars of
@@ -109,29 +130,23 @@ def _find_legend(symbols, texts, hlines, weight):
         if s["shape"] in ("bar", "stem", "tile", "errorbar", "area"):
             continue
         right = s["cx"] + s["size"] / 2
-        tol = 0.3 * max(s["size"], 1.0)
-        if hl_grid:
-            gx = math.floor(s["cx"] / hl_cell)
-            for gy in range(math.floor((s["cy"] - tol) / hl_cell),
-                            math.floor((s["cy"] + tol) / hl_cell) + 1):
-                for x0, x1, y in hl_grid.get((gx, gy), ()):
-                    if x0 - 0.5 <= s["cx"] <= x1 + 0.5 and abs(y - s["cy"]) < tol:
-                        right = max(right, x1)
+        tol = _SAMPLE_LEVEL_SIZES * max(s["size"], 1.0)
+        for x0, x1, y in hl_grid.near((s["cx"], s["cy"] - tol, s["cx"], s["cy"] + tol)):
+            if x0 - _SAMPLE_REACH_PT <= s["cx"] <= x1 + _SAMPLE_REACH_PT and abs(y - s["cy"]) < tol:
+                right = max(right, x1)
         best = None
-        lo = bisect.bisect_left(label_y, s["cy"] - reach)
-        hi = bisect.bisect_right(label_y, s["cy"] + reach)
-        for _, t in labels[lo:hi]:
+        for t in labels.between(s["cy"] - reach, s["cy"] + reach):
             size = t["size"] or 1.0
             gap = t["bbox"][0] - right
-            if not (-0.2 * size <= gap <= 3 * size):
+            if not (-_LABEL_BEFORE_EMS * size <= gap <= _LABEL_AFTER_EMS * size):
                 continue
-            if abs(t["center"][1] - s["cy"]) > 0.6 * size:
+            if abs(t["center"][1] - s["cy"]) > _LABEL_LEVEL_EMS * size:
                 continue
             # text outside the graph that holds the marker (a data point at
             # the edge of the plot next to the body text) is no legend label
             if any(r[0] < s["cx"] < r[2] and r[1] < s["cy"] < r[3] and
                    not (r[0] <= t["center"][0] <= r[2] and r[1] <= t["center"][1] <= r[3])
-                   for r in PAGE.graph_rects):
+                   for r in page.graph_rects):
                 continue
             if best is None or gap < best[0]:
                 best = (gap, t)
@@ -145,24 +160,36 @@ def _find_legend(symbols, texts, hlines, weight):
             if near_keys is None:
                 ty, reach_y = t["center"][1], 2 * t["size"]
                 near_keys = keys_by_label[id(t)] = [
-                    u for u in by_y[bisect.bisect_left(sym_y, ty - reach_y):bisect.bisect_right(sym_y, ty + reach_y)]
+                    u for u in by_y.between(ty - reach_y, ty + reach_y)
                     if u["size"] < 2 * t["size"] and abs(u["cy"] - ty) < reach_y
-                    and t["bbox"][2] < u["cx"] < t["bbox"][2] + 20 * t["size"]]
+                    and t["bbox"][2] < u["cx"] < t["bbox"][2] + _NEAR_KEYS_EMS * t["size"]]
             # subscripts / superscripts that continue the label: f + 16
             end = t["bbox"][2]
             whole = label       # (the label up to its last word that is no number)
+            joined = set()
+
+            def script(o, at):
+                return o is not t and id(o) not in joined and o["size"] < _SUBSCRIPT_MAX * t["size"] and \
+                    o["size"] >= _HELPER_GLYPH * t["size"] and \
+                    -_SUBSCRIPT_BACK_EMS * t["size"] <= o["bbox"][0] - at < _SUBSCRIPT_GAP_EMS * t["size"] and \
+                    abs(o["center"][1] - t["center"][1]) < _SUBSCRIPT_LEVEL_EMS * t["size"]
             for o in by_left:
-                if o["size"] < 0.3 * t["size"]:
+                if o["size"] < _HELPER_GLYPH * t["size"] or id(o) in joined:
                     continue                 # invisible helper glyphs
-                if o is not t and o["size"] < 0.9 * t["size"] and \
-                        -0.1 * t["size"] <= o["bbox"][0] - end < 0.3 * t["size"] and \
-                        abs(o["center"][1] - t["center"][1]) < 0.7 * t["size"]:
-                    label += o["text"].strip()
-                    end = o["bbox"][2]
+                if script(o, end):
+                    # (a subscript and a superscript set one over the other,
+                    # the lower first: 2411.16433v1-066's legend names, N
+                    # with 2 below and PO above -> "N2PO")
+                    stack = sorted((u for u in by_left if u is o or script(u, o["bbox"][0])),
+                                   key=lambda u: u["center"][1])
+                    for u in stack:
+                        label += u["text"].strip()
+                        joined.add(id(u))
+                    end = max(u["bbox"][2] for u in stack)
                     whole = label
-                elif o is not t and abs(o["size"] - t["size"]) <= 0.05 * t["size"] and \
-                        0 < o["bbox"][0] - end <= 0.4 * t["size"] and \
-                        abs(o["p0"][1] - t["p0"][1]) < 0.1 * t["size"] and \
+                elif o is not t and abs(o["size"] - t["size"]) <= _NEXT_WORD_SIZE * t["size"] and \
+                        0 < o["bbox"][0] - end <= _NEXT_WORD_GAP_EMS * t["size"] and \
+                        abs(o["p0"][1] - t["p0"][1]) < _NEXT_WORD_LEVEL_EMS * t["size"] and \
                         not o["rotated"] and \
                         not any(end < u["cx"] < o["bbox"][0] and
                                 abs(u["cy"] - t["center"][1]) < t["size"] for u in near_keys):
@@ -194,8 +221,8 @@ def _find_legend(symbols, texts, hlines, weight):
                     for j in grid.get((gx + dx, gy + dy), ()):
                         o = symbols[j]
                         ddx = abs(o["cx"] - s["cx"])
-                        if j != i and abs(o["cy"] - s["cy"]) < 0.5 * s["size"] and \
-                                0.25 * s["size"] < ddx < reach:
+                        if j != i and abs(o["cy"] - s["cy"]) < _CURVE_NEIGHBOUR * s["size"] and \
+                                _CURVE_MIN_GAP * s["size"] < ddx < reach:
                             keys.pop(i, None)
     # legend entries line up with each other (stacked or side by side); an
     # annotation next to a data point does not.  When a page has an aligned
@@ -209,8 +236,8 @@ def _find_legend(symbols, texts, hlines, weight):
                 continue
             sa, sb = symbols[a], symbols[b]
             ta, tb = entries[a][1], entries[b][1]
-            stacked = abs(sa["cx"] - sb["cx"]) <= 1.5 and abs(ta["bbox"][0] - tb["bbox"][0]) <= 1.5 \
-                and abs(sa["cy"] - sb["cy"]) < 4 * max(ta["size"], 1.0) * max(1, n_ids)
+            stacked = abs(sa["cx"] - sb["cx"]) <= _STACKED_PT and abs(ta["bbox"][0] - tb["bbox"][0]) <= _STACKED_PT \
+                and abs(sa["cy"] - sb["cy"]) < _STACKED_ROWS_EMS * max(ta["size"], 1.0) * max(1, n_ids)
             side = abs(sa["cy"] - sb["cy"]) <= 1.0 and abs(ta["center"][1] - tb["center"][1]) <= 1.0
             if stacked or side:
                 grouped.update((a, b))
@@ -219,6 +246,10 @@ def _find_legend(symbols, texts, hlines, weight):
             j in grouped and entries[j][1] is entries[i][1] for j in ids)}
         keys = {i: v for i, v in keys.items() if i in grouped or i in same_spot}
     return keys
+
+
+_NUMBERED_RUN = 3  # a numbered legend: runs of 3 or more
+_COLUMN_EMS = 1.5  # its labels in one column within 1.5 font sizes
 
 
 def numbered_legend(symbols, texts):
@@ -237,7 +268,7 @@ def numbered_legend(symbols, texts):
                 continue
             size = t["size"] or 1.0
             gap = t["bbox"][0] - right
-            if -0.2 * size <= gap <= 3 * size and abs(t["center"][1] - s["cy"]) <= 0.6 * size:
+            if -_LABEL_BEFORE_EMS * size <= gap <= _LABEL_AFTER_EMS * size and abs(t["center"][1] - s["cy"]) <= _LABEL_LEVEL_EMS * size:
                 if best is None or gap < best[0]:
                     best = (gap, t)
         if best:
@@ -249,7 +280,7 @@ def numbered_legend(symbols, texts):
             continue
         col = [(j, u) for j, u in cands
                if abs(symbols[j]["cx"] - symbols[i]["cx"]) <= 1.0 and
-               abs(u["bbox"][0] - t["bbox"][0]) <= 1.5 * (t["size"] or 1.0)]
+               abs(u["bbox"][0] - t["bbox"][0]) <= _COLUMN_EMS * (t["size"] or 1.0)]
         col.sort(key=lambda ju: -symbols[ju[0]]["cy"])          # top down
         # runs of consecutive numbers (one legend per panel)
         runs, run = [], []
@@ -260,14 +291,29 @@ def numbered_legend(symbols, texts):
             run.append((j, u))
         runs.append(run)
         for run in runs:
-            if len(run) >= 3:
+            if len(run) >= _NUMBERED_RUN:
                 for j, u in run:
                     keys[j] = u["text"].strip()
         used.update(j for j, _ in col)
     return keys
 
 
-def legend_for_lines(series, paths, texts, rect=None):
+_GRAPH_REACH_FRAC = 0.25     # samples within a quarter of the graph's size of it
+_DASH_FILL_PT = 1.5          # a filled dash is under 1.5 pt thick
+_DASH_MAX_PT = 10            # and 1 to 10 pt long
+_BAND_MAX_PT = 3             # a band sample is under 3 pt thick
+_BAND_MIN_PT = 10            # and 10 to 60 pt long
+_BAND_ASPECT = 5             # at least 5 times as long as thick
+_ROW_GAP_PT = 6              # dashes of a row under 6 pt apart
+_ROW_LEVEL_PT = 0.5          # level within 0.5 pt
+_STROKED_GAP_PT = 0.3        # stroked dashes at least 0.3 pt apart
+_STROKED_DASH_PT = 10        # and under 10 pt long
+_SOLID_MIN_PT = 3            # a solid sample is over 3 pt long
+_LINE_LABEL_AFTER_EMS = 0.2  # a line's label from 0.2 of a font size before its sample's end
+_LINE_LABEL_LEVEL_EMS = 0.6  # level within 0.6 of a font size
+
+
+def legend_for_lines(series, paths, texts, rect=None, *, page):
     """Legend entries of line series: a short horizontal line sample (or a
     row of dashes) in the series' style with a label just to its right.
     With the graph's box `rect`, only samples within it or beside it (a
@@ -278,7 +324,7 @@ def legend_for_lines(series, paths, texts, rect=None):
     names = {}
     samples = []
     if rect is not None:
-        mx, my = 0.25 * (rect[2] - rect[0]), 0.25 * (rect[3] - rect[1])
+        mx, my = _GRAPH_REACH_FRAC * (rect[2] - rect[0]), _GRAPH_REACH_FRAC * (rect[3] - rect[1])
         area = (rect[0] - mx, rect[1] - my, rect[2] + mx, rect[3] + my)
         far = (rect[0] - 2 * mx, rect[1] - 2 * my, rect[2] + 2 * mx, rect[3] + 2 * my)
 
@@ -292,7 +338,7 @@ def legend_for_lines(series, paths, texts, rect=None):
         if not (far[0] <= cx <= far[2] and far[1] <= cy <= far[3]):
             return False
         d = rect_distance(rect, cx, cy)
-        return all(rect_distance(r, cx, cy) > d for r in PAGE.graph_rects if tuple(r) != tuple(rect))
+        return all(rect_distance(r, cx, cy) > d for r in page.graph_rects if tuple(r) != tuple(rect))
     for p in paths:
         for sp in p["subpaths"]:
             pts = vertices(sp)
@@ -300,14 +346,14 @@ def legend_for_lines(series, paths, texts, rect=None):
             if rect is not None and not near_graph((b[0] + b[2]) / 2, (b[1] + b[3]) / 2):
                 continue
             if p["stroke"] and not sp["closed"] and len(sp["segs"]) == 1 and \
-                    abs(b[3] - b[1]) < 0.05 and 1 < b[2] - b[0] < 60:
+                    abs(b[3] - b[1]) < _SAMPLE_LEVEL_PT and 1 < b[2] - b[0] < _SAMPLE_MAX_PT:
                 # (strokes of 1 to 3 pt only as dashes of a row: a dash
                 # pattern may end on a short one)
                 samples.append((("solid",), p["stroke_rgb"], b))
-            elif p["fill"] and len(sp["segs"]) in (3, 4) and abs(b[3] - b[1]) < 1.5 and 1 < b[2] - b[0] < 10:
+            elif p["fill"] and len(sp["segs"]) in (3, 4) and abs(b[3] - b[1]) < _DASH_FILL_PT and 1 < b[2] - b[0] < _DASH_MAX_PT:
                 samples.append((("dashed",), p["fill_rgb"], b))
             elif p["fill"] and not p["stroke"] and len(sp["segs"]) in (3, 4) and \
-                    0 < b[3] - b[1] < 3 and 10 <= b[2] - b[0] < 60 and b[2] - b[0] >= 5 * (b[3] - b[1]) and \
+                    0 < b[3] - b[1] < _BAND_MAX_PT and _BAND_MIN_PT <= b[2] - b[0] < _SAMPLE_MAX_PT and b[2] - b[0] >= _BAND_ASPECT * (b[3] - b[1]) and \
                     rect_of(sp):
                 # a line sample filled as a thin band, its height the line's
                 # width (2020.01.30.927558.full-012's "True value" and
@@ -322,10 +368,10 @@ def legend_for_lines(series, paths, texts, rect=None):
     # took minutes on ESEUR-slowpages' thousands of short strokes)
     rows, open_rows = [], {}
     for st, rgb, b in sorted(samples, key=lambda s: s[2][0]):
-        live = open_rows[rgb] = [r for r in open_rows.get(rgb, ()) if b[0] - r[2][2] < 6]
+        live = open_rows[rgb] = [r for r in open_rows.get(rgb, ()) if b[0] - r[2][2] < _ROW_GAP_PT]
         if st == ("dashed",):
             for r in live:
-                if r[0] == st and r[1] == rgb and abs(r[2][1] - b[1]) < 0.5 and 0 <= b[0] - r[2][2] < 6:
+                if r[0] == st and r[1] == rgb and abs(r[2][1] - b[1]) < _ROW_LEVEL_PT and 0 <= b[0] - r[2][2] < _ROW_GAP_PT:
                     r[2] = (r[2][0], min(r[2][1], b[1]), b[2], max(r[2][3], b[3]))
                     r[3] += 1
                     break
@@ -334,8 +380,8 @@ def legend_for_lines(series, paths, texts, rect=None):
                 live.append(rows[-1])
         else:
             for r in live:
-                if r[1] == rgb and r[0] != ("dashed",) and abs(r[2][1] - b[1]) < 0.5 and \
-                        0.3 <= b[0] - r[2][2] < 6 and b[2] - b[0] < 10 and r[4] < 10:
+                if r[1] == rgb and r[0] != ("dashed",) and abs(r[2][1] - b[1]) < _ROW_LEVEL_PT and \
+                        _STROKED_GAP_PT <= b[0] - r[2][2] < _ROW_GAP_PT and b[2] - b[0] < _STROKED_DASH_PT and r[4] < _STROKED_DASH_PT:
                     r[0] = ("stroked-dashes",)
                     r[2] = (r[2][0], min(r[2][1], b[1]), b[2], max(r[2][3], b[3]))
                     r[4] = b[2] - b[0]
@@ -346,7 +392,7 @@ def legend_for_lines(series, paths, texts, rect=None):
     for r in rows:
         if r[0] == ("stroked-dashes",):
             r[0] = ("dashed",)
-    rows = [r[:4] for r in rows if r[0] == ("dashed",) or r[2][2] - r[2][0] > 3]
+    rows = [r[:4] for r in rows if r[0] == ("dashed",) or r[2][2] - r[2][0] > _SOLID_MIN_PT]
     for st, rgb, b, n in rows:
         if n < 2:
             continue
@@ -356,7 +402,7 @@ def legend_for_lines(series, paths, texts, rect=None):
             if t["rotated"] or not t["text"].strip() or is_number(t):
                 continue
             gap = t["bbox"][0] - b[2]
-            if -0.2 * t["size"] <= gap <= 2 * t["size"] and abs(t["center"][1] - cy) < 0.6 * t["size"]:
+            if -_LINE_LABEL_AFTER_EMS * t["size"] <= gap <= 2 * t["size"] and abs(t["center"][1] - cy) < _LINE_LABEL_LEVEL_EMS * t["size"]:
                 if best is None or gap < best[0]:
                     best = (gap, t["text"].strip())
         if not best:
@@ -373,7 +419,7 @@ def _clean_label(label):
     return re.sub(r"(?<=\d)\ufffd(?=\d)", "\u2013", label) if label else label
 
 
-def find_page_legend(symbols, texts, blobs, graphs, paths):
+def find_page_legend(symbols, texts, blobs, graphs, paths, *, page):
     """Legend keys of the page: {symbol index: series name}.  Combines
     keys with text labels (also in turned graphs), colour swatches labelled
     1, 2, 3 ... and keys whose label is drawn as unreadable outlines (their
@@ -382,9 +428,9 @@ def find_page_legend(symbols, texts, blobs, graphs, paths):
     is no legend key."""
     shown = [i for i, s in enumerate(symbols) if not clipped_out(s)]
     if len(shown) < len(symbols):
-        keys = _page_legend([symbols[i] for i in shown], texts, blobs, graphs, paths)
+        keys = _page_legend([symbols[i] for i in shown], texts, blobs, graphs, paths, page=page)
         return {shown[i]: _clean_label(name) for i, name in keys.items()}
-    return {i: _clean_label(name) for i, name in _page_legend(symbols, texts, blobs, graphs, paths).items()}
+    return {i: _clean_label(name) for i, name in _page_legend(symbols, texts, blobs, graphs, paths, page=page).items()}
 
 
 _CAPTION_START = re.compile(r"(?i)(fig(ure|\.)|table)\s*(?:[a-z]\.?)?[0-9]")
@@ -401,6 +447,15 @@ def _caption_between(s, rect, caps):
         if (s["cy"] < by0 and by1 < y0) or (s["cy"] > by1 and by0 > y1):
             return True
     return False
+
+
+_SWATCH_MIN_W = 4        # a bar swatch is 4 to 15 pt wide
+_SWATCH_MAX_W = 15       # (the widest)
+_SWATCH_MIN_H = 1.5      # 1.5 to 5 pt tall
+_SWATCH_MAX_H = 5        # (the tallest)
+_SWATCH_ASPECT = 1.8     # and 1.8 times as wide as tall
+_SWATCH_LABEL_EMS = 1.5  # its label within 1.5 font sizes
+_SWATCH_LEVEL = 0.5      # level within half its size
 
 
 def patch_swatches(paths, texts, graphs):
@@ -425,13 +480,13 @@ def patch_swatches(paths, texts, graphs):
         if len(xs) != 2 or len(ys) != 2:
             continue
         w, h = xs[1] - xs[0], ys[1] - ys[0]
-        if not (4 <= w <= 15 and 1.5 <= h <= 5 and w >= 1.8 * h):
+        if not (_SWATCH_MIN_W <= w <= _SWATCH_MAX_W and _SWATCH_MIN_H <= h <= _SWATCH_MAX_H and w >= _SWATCH_ASPECT * h):
             continue
         cx, cy = (xs[0] + xs[1]) / 2, (ys[0] + ys[1]) / 2
         if not any(r[0] < cx < r[2] and r[1] < cy < r[3] for r in rects):
             continue
-        label = any(0 <= t["bbox"][0] - xs[1] <= 1.5 * (t["size"] or 1.0) and
-                    abs(t["center"][1] - cy) <= 0.5 * max(t["size"] or 1.0, h)
+        label = any(0 <= t["bbox"][0] - xs[1] <= _SWATCH_LABEL_EMS * (t["size"] or 1.0) and
+                    abs(t["center"][1] - cy) <= _SWATCH_LEVEL * max(t["size"] or 1.0, h)
                     and t["text"].strip() and not t["rotated"] for t in texts)
         if label:
             cands.append((round(xs[0], 1), cx, cy, w, h, p))
@@ -449,6 +504,18 @@ def patch_swatches(paths, texts, graphs):
     return out
 
 
+_NUMERIC_LEVEL_EMS = 0.4   # a numeric key's label level within 0.4 of a font size
+_NUMERIC_MAX_PT = 8        # numeric legend keys are at most 8 pt
+_NUMERIC_GAP_EMS = 1.5     # the label within 1.5 font sizes
+_NUMERIC_ROW_EMS = 3       # keys of a column within 3 font sizes
+_NUMERIC_MIN = 3           # 3 keys or more
+_NUMERIC_EVEN = 0.15       # evenly spaced within 15%
+_NUMERIC_COLS_LEVEL = 0.3  # columns' rows level within 0.3 of a step
+_NUMERIC_COLS_REACH = 12   # columns within 12 steps
+_HEADING_BELOW = 0.5       # a heading from half a step below the top
+_HEADING_ABOVE = 1.6       # to 1.6 steps above
+
+
 def numeric_legend(symbols, texts):
     """Legend keys named by numbers (10.5445IR1000121285-038: V_DS 0.01,
     0.1, 0.2 | 0.4, 0.6, 0.8, 1 in two columns): three or more markers, each
@@ -461,20 +528,18 @@ def numeric_legend(symbols, texts):
     # (the numbers sorted by height, so a marker looks only at those level
     # with it - every marker against every text cost seconds on big pages;
     # each one's candidates are taken in the texts' order, as before)
-    nums = sorted((t["center"][1], k, t) for k, t in enumerate(texts)
-                  if is_number(t) and not t["rotated"])
-    heights = [n[0] for n in nums]
-    reach = 0.4 * max((t["size"] or 1.0 for _, _, t in nums), default=1.0)
+    nums = SortedIndex([(k, t) for k, t in enumerate(texts) if is_number(t) and not t["rotated"]],
+                       key=lambda kt: kt[1]["center"][1])
+    reach = _NUMERIC_LEVEL_EMS * max((t["size"] or 1.0 for _, t in nums.items), default=1.0)
     for i, s in enumerate(symbols):
-        if s["shape"] in ("bar", "stem", "tile", "line") or s["size"] > 8 or not s.get("rgb"):
+        if s["shape"] in ("bar", "stem", "tile", "line") or s["size"] > _NUMERIC_MAX_PT or not s.get("rgb"):
             continue
         right = s["cx"] + s["size"] / 2
         best = None
-        lo, hi = bisect.bisect_left(heights, s["cy"] - reach), bisect.bisect_right(heights, s["cy"] + reach)
-        for _k, t in sorted((n[1], n[2]) for n in nums[lo:hi]):
+        for _k, t in sorted(nums.between(s["cy"] - reach, s["cy"] + reach), key=lambda kt: kt[0]):
             ts = t["size"] or 1.0
             gap = t["bbox"][0] - right
-            if 0 <= gap <= 1.5 * ts and abs(t["center"][1] - s["cy"]) <= 0.4 * ts:
+            if 0 <= gap <= _NUMERIC_GAP_EMS * ts and abs(t["center"][1] - s["cy"]) <= _NUMERIC_LEVEL_EMS * ts:
                 if best is None or gap < best[0]:
                     best = (gap, t)
         if best:
@@ -489,7 +554,7 @@ def numeric_legend(symbols, texts):
         ids = sorted(ids, key=lambda i: symbols[i]["cy"])
         cur = [ids[0]]
         for i in ids[1:]:
-            if symbols[i]["cy"] - symbols[cur[-1]]["cy"] > 3 * (found[i]["size"] or 1.0):
+            if symbols[i]["cy"] - symbols[cur[-1]]["cy"] > _NUMERIC_ROW_EMS * (found[i]["size"] or 1.0):
                 runs.append((x, cur))
                 cur = [i]
             else:
@@ -502,7 +567,7 @@ def numeric_legend(symbols, texts):
         ys = sorted(symbols[i]["cy"] for i in ids)
         gaps = [b - a for a, b in zip(ys, ys[1:])]
         g = median(gaps)
-        if g <= 0 or any(abs(d - g) > 0.15 * g for d in gaps):
+        if g <= 0 or any(abs(d - g) > _NUMERIC_EVEN * g for d in gaps):
             continue
         good.append((x, g, ys, ids))
     keys, heads = {}, set()
@@ -513,14 +578,14 @@ def numeric_legend(symbols, texts):
         block = [(x, g, ys, ids)]
         for x2, g2, ys2, ids2 in good:
             short, long_ = (ys, ys2) if len(ys) <= len(ys2) else (ys2, ys)
-            level = all(any(abs(a - b) <= 0.3 * g for b in long_) for a in short)
-            if x2 != x and id(ids2) not in used and abs(g2 - g) <= 0.15 * g and level and \
-                    abs(x2 - x) <= 12 * g:
+            level = all(any(abs(a - b) <= _NUMERIC_COLS_LEVEL * g for b in long_) for a in short)
+            if x2 != x and id(ids2) not in used and abs(g2 - g) <= _NUMERIC_EVEN * g and level and \
+                    abs(x2 - x) <= _NUMERIC_COLS_REACH * g:
                 block.append((x2, g2, ys2, ids2))
         members = [i for _, _, _, b in block for i in b]
         colours = {symbols[i]["rgb"] for i in members}
         values = {found[i]["text"].strip() for i in members}
-        if len(members) < 3 or len(colours) != len(members) or len(values) != len(members):
+        if len(members) < _NUMERIC_MIN or len(colours) != len(members) or len(values) != len(members):
             continue
         for _, _, _, b in block:
             used.add(id(b))
@@ -536,7 +601,7 @@ def numeric_legend(symbols, texts):
         labels = {id(found[i]) for i in members}
         head = sorted((t for t in texts
                        if t["text"].strip() and not t["rotated"] and id(t) not in labels
-                       and bottom - 0.5 * g <= t["center"][1] <= top + 1.6 * g
+                       and bottom - _HEADING_BELOW * g <= t["center"][1] <= top + _HEADING_ABOVE * g
                        and x0 <= t["center"][0] <= x1 and not is_number(t)), key=lambda t: t["bbox"][0])
         for t in head:
             heads.add(t["text"].strip())
@@ -558,7 +623,10 @@ def clipped_out(s):
             s["cy"] + r < c[1] or s["cy"] - r > c[3])
 
 
-def _page_legend(symbols, texts, blobs, graphs, paths):
+_PAGE_LINE_EMS = 0.3  # texts of one line within 0.3 of a font size
+
+
+def _page_legend(symbols, texts, blobs, graphs, paths, *, page):
     # a text of marker characters only is a marker, not a label
     # (Seongmin-PhD-044's outliers are "\u25cf" in the plot's own font: one
     # beside another was a legend key named "\u25cf")
@@ -566,7 +634,7 @@ def _page_legend(symbols, texts, blobs, graphs, paths):
     texts = [t for t in texts if not (t["text"].strip() and
                                       set(t["text"].strip()) <= set(DINGBAT_BY_UNICODE))]
     hlines = legend_line_samples(paths)
-    legend = find_legend(symbols, texts, hlines)
+    legend = find_legend(symbols, texts, hlines, page=page)
     for i, label in numbered_legend(symbols, texts).items():
         legend.setdefault(i, label)
     keys, heads = numeric_legend(symbols, texts)
@@ -582,7 +650,7 @@ def _page_legend(symbols, texts, blobs, graphs, paths):
         if not t["rotated"] and _CAPTION_START.match(t["text"].strip()):
             # (the caption's whole first line)
             s = t["size"] or 1.0
-            line = [o for o in texts if not o["rotated"] and abs(o["p0"][1] - t["p0"][1]) < 0.3 * s]
+            line = [o for o in texts if not o["rotated"] and abs(o["p0"][1] - t["p0"][1]) < _PAGE_LINE_EMS * s]
             caps.append({"bbox": (min(o["bbox"][0] for o in line), min(o["bbox"][1] for o in line),
                                   max(o["bbox"][2] for o in line), max(o["bbox"][3] for o in line))})
     if caps and graphs:
@@ -590,15 +658,21 @@ def _page_legend(symbols, texts, blobs, graphs, paths):
             s = symbols[i]
             if all(_caption_between(s, g["rect"], caps) for g in graphs):
                 del legend[i]
-    for i in _unreadable_legend_keys(symbols, texts, blobs, graphs, hlines, legend):
+    for i in _unreadable_legend_keys(symbols, texts, blobs, graphs, hlines, legend, page=page):
         legend[i] = ""
     for rot in sorted({g["rot"] for g in graphs} - {0}):
-        for i, label in find_legend(frame_symbols(symbols, rot), frame_texts(texts, rot)).items():
+        for i, label in find_legend(frame_symbols(symbols, rot), frame_texts(texts, rot), page=page).items():
             legend.setdefault(i, label)
     return legend
 
 
-def _unreadable_legend_keys(symbols, texts, blobs, graphs, hlines, legend):
+_UNREAD_REACH_FRAC = 0.75  # unread keys within 0.75 of the graph's height
+_UNREAD_COLUMN_SIZES = 3   # keys of a column within 3 sizes
+_UNREAD_LEVEL = 0.3        # a key on a sample level within 0.3 of its size
+_UNREAD_SPACING = 0.8      # keys spaced 0.8 of the biggest or more
+
+
+def _unreadable_legend_keys(symbols, texts, blobs, graphs, hlines, legend, *, page):
     """Markers each followed by a word drawn as outlines that could not be
     read: legend keys, when they line up with each other just outside a
     graph, or (inside a graph) when at least three of them, all different
@@ -612,14 +686,14 @@ def _unreadable_legend_keys(symbols, texts, blobs, graphs, hlines, legend):
     if not unread:
         return []
     cands, inner = {}, {}
-    for i, label in find_legend(symbols, texts + unread, hlines).items():
+    for i, label in find_legend(symbols, texts + unread, hlines, page=page).items():
         s = symbols[i]
         if label != "\x00" or i in legend or s["shape"] in ("line", "bar", "stem") or s["shape"].startswith("box-"):
             continue
         d, g = min(((rect_distance(g["rect"], s["cx"], s["cy"]), k)
                     for k, g in enumerate(graphs)))
         rect = graphs[g]["rect"]
-        if 0 < d <= 0.75 * (rect[3] - rect[1]):
+        if 0 < d <= _UNREAD_REACH_FRAC * (rect[3] - rect[1]):
             cands[i] = s
         elif d == 0:
             inner[i] = s
@@ -628,7 +702,7 @@ def _unreadable_legend_keys(symbols, texts, blobs, graphs, hlines, legend):
     # or below the key of a fitted line, left edges aligned)
     def beside_line_sample(s):
         left = s["cx"] - s["size"] / 2
-        return any(abs(x0 - left) <= s["size"] and 0 < abs(y - s["cy"]) <= 3 * s["size"]
+        return any(abs(x0 - left) <= s["size"] and 0 < abs(y - s["cy"]) <= _UNREAD_COLUMN_SIZES * s["size"]
                    for x0, x1, y in hlines)
     keys = [i for i, s in cands.items()
             if any(j != i and (abs(o["cy"] - s["cy"]) < 1.0 or abs(o["cx"] - s["cx"]) < 1.0)
@@ -638,12 +712,12 @@ def _unreadable_legend_keys(symbols, texts, blobs, graphs, hlines, legend):
                         key=lambda o: o["cy"])
         sizes = [o["size"] for o in column]
         def on_sample(o):
-            return any(x0 < o["cx"] < x1 and abs(y - o["cy"]) <= 0.3 * o["size"]
+            return any(x0 < o["cx"] < x1 and abs(y - o["cy"]) <= _UNREAD_LEVEL * o["size"]
                        for x0, x1, y in hlines)
         least = 2 if all(on_sample(o) for o in column) else 3
         if (len(column) >= least and len({symbol_signature(o) for o in column}) == len(column)
                 and max(sizes) <= 2.0 * min(sizes)   # (shapes of one nominal size differ)
-                and all(b["cy"] - a["cy"] >= 0.8 * max(sizes) for a, b in zip(column, column[1:]))):
+                and all(b["cy"] - a["cy"] >= _UNREAD_SPACING * max(sizes) for a, b in zip(column, column[1:]))):
             keys.append(i)                  # rows of similar keys, one under another
     return keys
 
@@ -664,6 +738,14 @@ def _nearest_graph(graphs, s):
         from .graphs import nearest_to_frame
         return nearest_to_frame(graphs, s["frame"])
     return min(graphs, key=lambda g: rect_distance(g["rect"], s["cx"], s["cy"]))
+
+
+_OUTSIDE_SIZES = 0.5     # a key outside every graph by half its size
+_KEY_SIZE_SAME = 0.1     # keys of one size within 10%
+_WHITE = 0.97            # channels over 0.97: white
+_BARS_NAMED_MIN = 3      # bar colours named: 3 bars or more
+_BARS_NAMED_FRAC = 0.75  # with names for 75% of them
+_SWATCH_COLOUR = 0.03    # a colour matching a swatch within 0.03
 
 
 class SeriesNamer:
@@ -715,7 +797,7 @@ class SeriesNamer:
                     self.swatches.setdefault(g["no"], []).append((tuple(s["rgb"]), label))
             # (wholly outside: the top key of Memory_systems_cacheDRAMdisk-051's
             # legend, inside a plot, reaches 0.01 pt past its top edge)
-            if s["rgb"] and all(rect_distance(g["rect"], s["cx"], s["cy"]) > 0.5 * s["size"]
+            if s["rgb"] and all(rect_distance(g["rect"], s["cx"], s["cy"]) > _OUTSIDE_SIZES * s["size"]
                                 for g in graphs):
                 self.figure.append((s["rgb"], symbol_signature(s), label))
         # a swatch drawn as an outline only, among filled swatches of its
@@ -732,7 +814,7 @@ class SeriesNamer:
             sizes = [symbols[j]["size"] for j, lb in legend.items()
                      if lb in filled_labels and symbols[j]["filled"] and
                      _nearest_graph(graphs, symbols[j]) is g]
-            if not sizes or not any(abs(z - s["size"]) <= 0.1 * s["size"] for z in sizes):
+            if not sizes or not any(abs(z - s["size"]) <= _KEY_SIZE_SAME * s["size"] for z in sizes):
                 continue
             white = (1.0, 1.0, 1.0)
             _claim(self.by_colour, (g["no"], color_name(white)[1]), label)
@@ -759,7 +841,7 @@ class SeriesNamer:
         for i, label in legend.items():
             s = symbols[i]
             out = s.get("outline_rgb")
-            if not (s["filled"] and out and s["rgb"] and min(s["rgb"]) > 0.97 and min(out) <= 0.97):
+            if not (s["filled"] and out and s["rgb"] and min(s["rgb"]) > _WHITE and min(out) <= _WHITE):
                 continue
             g = _nearest_graph(graphs, s)
             for filled in (False, True):
@@ -814,12 +896,12 @@ class SeriesNamer:
                         x0 - 1 <= o["cx"] <= x1 + 1 and y0 - 1 <= o["cy"] <= y1 + 1]
                 at = [round(o["cx"] if orient == "x" else o["cy"], 0) for o in bars]
                 cols = [color_name(o["rgb"])[1] for o in bars if o.get("rgb")]
-                if len(bars) >= 3 and len(set(at)) == len(bars) and len(set(cols)) == len(bars):
+                if len(bars) >= _BARS_NAMED_MIN and len(set(at)) == len(bars) and len(set(cols)) == len(bars):
                     # (unless keys outside the graph name three quarters of
                     # the bars or more, each its own: 3485513-020's chart of
                     # benchmarks, its legend naming 6 of its 7 bars)
                     names = [nm for nm in (self._figure_series(o) for o in bars) if nm]
-                    ans = not (len(names) >= 0.75 * len(bars) and len(set(names)) == len(names))
+                    ans = not (len(names) >= _BARS_NAMED_FRAC * len(bars) and len(set(names)) == len(names))
         self._shared[key] = ans
         return ans
 
@@ -907,9 +989,9 @@ class SeriesNamer:
             return same.pop()
         near = [(max(abs(a - b) for a, b in zip(rgb, k)), label) for k, _, label in self.figure]
         d, label = min(near)
-        if d > 0.03:
+        if d > _SWATCH_COLOUR:
             return ""
         # keys of that colour with other markers: only one may match
-        if len({lb for dd, lb in near if dd <= 0.03}) > 1 and s["shape"] not in ("line", "bar", "stem") and not s["shape"].startswith("box-"):
+        if len({lb for dd, lb in near if dd <= _SWATCH_COLOUR}) > 1 and s["shape"] not in ("line", "bar", "stem") and not s["shape"].startswith("box-"):
             return ""
         return label

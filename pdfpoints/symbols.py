@@ -22,7 +22,15 @@ from .colours import color_name
 from .geometry import (
     axis_aligned, bbox_of, encloses, flatten_subpath, median, memoized, rect_area, subpath_bbox,
     vertices)
-from .grouping import BoxGrid, DisjointSets, PointGrid
+from .spatial import BoxGrid, DisjointSets, PointGrid
+
+
+_HIDDEN_CELL_PT = 5.0          # line segments filed in cells of 5 pt
+_HIDDEN_MIN_LINE_PT = 0.5      # only lines 0.5 pt wide or more hide dots
+_HIDDEN_DOT_WIDTHS = 1.3       # a hidden dot is at most 1.3 line widths across
+_HIDDEN_DOT_PT = 0.05          # plus 0.05 pt
+_HIDDEN_ON_LINE_WIDTHS = 0.25  # its centre within a quarter of a width of the line
+_HIDDEN_KIND_FRAC = 0.5        # dropped when half the dots of their kind are so hidden
 
 
 def drop_hidden_dots(symbols, paths):
@@ -34,11 +42,11 @@ def drop_hidden_dots(symbols, paths):
     vertices.  A few of a scatter's dots that happen to lie under the
     smooth drawn through it are data (monotonicity-025: 194 of 9 928 Stata
     dots under the lowess curves, 17 of graph 1's 1 638)."""
-    cell = 5.0
+    cell = _HIDDEN_CELL_PT
     segs = {}                            # (colour, cell) -> [(p, q, half width)]
     for p in paths:
         lw = (p.get("style") or (None,))[0]
-        if not p["stroke"] or not lw or lw < 0.5 or p["stroke_rgb"] is None:
+        if not p["stroke"] or not lw or lw < _HIDDEN_MIN_LINE_PT or p["stroke_rgb"] is None:
             continue
         for sp in p["subpaths"]:
             pts = flatten_subpath(sp)
@@ -53,12 +61,12 @@ def drop_hidden_dots(symbols, paths):
         if not s["filled"] or s["shape"] != "circle":
             return False
         for a, b, lw in segs.get((s["rgb"], int(s["cx"] // cell), int(s["cy"] // cell)), ()):
-            if s["size"] > 1.3 * lw + 0.05:
+            if s["size"] > _HIDDEN_DOT_WIDTHS * lw + _HIDDEN_DOT_PT:
                 continue
             dx, dy = b[0] - a[0], b[1] - a[1]
             L2 = dx * dx + dy * dy
             t = 0.0 if L2 == 0 else max(0.0, min(1.0, ((s["cx"] - a[0]) * dx + (s["cy"] - a[1]) * dy) / L2))
-            if math.hypot(a[0] + t * dx - s["cx"], a[1] + t * dy - s["cy"]) <= 0.25 * lw:
+            if math.hypot(a[0] + t * dx - s["cx"], a[1] + t * dy - s["cy"]) <= _HIDDEN_ON_LINE_WIDTHS * lw:
                 return True
         return False
     gone = [s for s in symbols if hidden(s)]
@@ -67,8 +75,14 @@ def drop_hidden_dots(symbols, paths):
     kind = lambda s: (s["rgb"], round(s["size"], 2))
     total = collections.Counter(kind(s) for s in symbols if s["filled"] and s["shape"] == "circle")
     under = collections.Counter(kind(s) for s in gone)
-    drop = {id(s) for s in gone if under[kind(s)] >= 0.5 * total[kind(s)]}
+    drop = {id(s) for s in gone if under[kind(s)] >= _HIDDEN_KIND_FRAC * total[kind(s)]}
     return [s for s in symbols if id(s) not in drop]
+
+
+_COVER_MAX_PT = 20        # an opaque marker that covers bits is at most 20 pt
+_BIT_MAX_FRAC = 0.4       # a covered bit is at most 0.4 times the biggest (and its cover's) size
+_COVER_CELL_MIN_PT = 0.5  # covers filed in cells of their median size, at least 0.5 pt
+_SQUARE_INSCRIBED = 0.95  # a square cover's inner radius: 0.95 of its half side
 
 
 def drop_covered_bits(symbols, paths):
@@ -78,11 +92,11 @@ def drop_covered_bits(symbols, paths):
     most 0.4 times the covering marker's size count: a duplicate point
     under an equal marker is still reported."""
     opaque = {p["idx"] for p in paths if p.get("opaque", True)}
-    covers = [s for s in symbols if s["filled"] and s.get("idx") in opaque and 0 < s["size"] <= 20]
+    covers = [s for s in symbols if s["filled"] and s.get("idx") in opaque and 0 < s["size"] <= _COVER_MAX_PT]
     if not covers:
         return symbols
     biggest = max(c["size"] for c in covers)
-    if not any(s["size"] <= 0.4 * biggest for s in symbols):
+    if not any(s["size"] <= _BIT_MAX_FRAC * biggest for s in symbols):
         return symbols
     # of a stack of identical covers only the last painted one matters
     last = {}
@@ -91,25 +105,32 @@ def drop_covered_bits(symbols, paths):
         if k not in last or c["idx"] > last[k]["idx"]:
             last[k] = c
     covers = list(last.values())
-    grid = BoxGrid(max(median(c["size"] for c in covers), 0.5))
+    grid = BoxGrid(max(median(c["size"] for c in covers), _COVER_CELL_MIN_PT))
     for c in covers:
         r = c["size"] / 2
         grid.add(id(c), (c["cx"] - r, c["cy"] - r, c["cx"] + r, c["cy"] + r))
     by_id = {id(c): c for c in covers}
 
     def covered(s):
-        if s["size"] > 0.4 * biggest:
+        if s["size"] > _BIT_MAX_FRAC * biggest:
             return False
         r = s["size"] / 2
         for k in grid.near((s["cx"] - r, s["cy"] - r, s["cx"] + r, s["cy"] + r)):
             c = by_id[k]
-            if c is s or c["idx"] <= s.get("idx", -1) or s["size"] > 0.4 * c["size"]:
+            if c is s or c["idx"] <= s.get("idx", -1) or s["size"] > _BIT_MAX_FRAC * c["size"]:
                 continue
-            R = c["size"] / 2 if c["shape"] == "circle" else c["size"] / 2 * 0.95
+            R = c["size"] / 2 if c["shape"] == "circle" else c["size"] / 2 * _SQUARE_INSCRIBED
             if math.hypot(s["cx"] - c["cx"], s["cy"] - c["cy"]) + r <= R:
                 return True
         return False
     return [s for s in symbols if not covered(s)]
+
+
+_SPECK_PAGE_MIN = 100     # only on pages of 100 markers or more
+_SPECK_MAX_FRAC = 0.35    # a speck is under 0.35 of the median size
+_SPECK_RARE_MIN = 2       # of a look seen at most twice
+_SPECK_RARE_FRAC = 0.005  # or on 0.5% of the markers
+_SPECKS_MAX_FRAC = 0.02   # more than 2% such shapes are a series, not specks
 
 
 def drop_specks(symbols):
@@ -118,18 +139,26 @@ def drop_specks(symbols):
     times on the page (at most twice, or 0.5% of the markers: specks of a
     figure traced from a bitmap) - are no data points.  A
     series of small dots repeats its look and is kept."""
-    if len(symbols) < 100:
+    if len(symbols) < _SPECK_PAGE_MIN:
         return symbols
     typical = median(s["size"] for s in symbols)
-    small = [s for s in symbols if s["size"] < 0.35 * typical]
+    small = [s for s in symbols if s["size"] < _SPECK_MAX_FRAC * typical]
     if not small:
         return symbols
     looks = collections.Counter((s["shape"], s["filled"], s["rgb"]) for s in symbols)
-    rare = max(2, 0.005 * len(symbols))
+    rare = max(_SPECK_RARE_MIN, _SPECK_RARE_FRAC * len(symbols))
     specks = {id(s) for s in small if looks[(s["shape"], s["filled"], s["rgb"])] <= rare}
-    if len(specks) > 0.02 * len(symbols):
+    if len(specks) > _SPECKS_MAX_FRAC * len(symbols):
         return symbols
     return [s for s in symbols if id(s) not in specks]
+
+
+_RING_CENTRE_SIZES = 0.15    # a ring and its body share a centre within 0.15 of the ring's size
+_BODY_MIN_SIZES = 0.5        # the body is 0.5 to 1.2 times the ring's size
+_BODY_MAX_SIZES = 1.2        # (the biggest body, in ring sizes)
+_RING_BODY_MIN_SIZES = 0.75  # (a ring right after its body: 0.75 of its size or more)
+_RING_INNER_MIN_SIZES = 0.8  # an inner disc of the ring's colour is 0.8 of its size or more
+_HIGHLIGHT_BIGGER = 1.02     # a highlight over a marker: 2% bigger or more
 
 
 def drop_outline_rings(symbols):
@@ -143,7 +172,9 @@ def drop_outline_rings(symbols):
     same shape but another look painted directly over a filled marker,
     a little bigger (up to 1.25 times) and on the same centre: it
     highlights that point (a blue dot under a white circle with a blue
-    outline), which keeps its own series."""
+    outline), which keeps its own series.  (A marker as big as the one
+    under it - within 2% - is a point of its own, close to the other:
+    2411.16433v1-066's triangles of two series, 0.3 pt apart.)"""
     filled, filled_any, rings = {}, {}, {}
     for s in symbols:
         if not s["filled"] and s["shape"] == "circle" and s.get("idx") is not None:
@@ -162,25 +193,31 @@ def drop_outline_rings(symbols):
             # 0.9 and 1.1 times the disc; an open circle three steps after a
             # filled one with no ring between is a point of its own,
             # horowitz2014-004)
-            chain = any(math.hypot(o["cx"] - s["cx"], o["cy"] - s["cy"]) < 0.15 * s["size"]
+            chain = any(math.hypot(o["cx"] - s["cx"], o["cy"] - s["cy"]) < _RING_CENTRE_SIZES * s["size"]
                         for o in rings.get(s["idx"] - 1, ()))
             body = [f for d in ((1, 2, 3) if chain else (1, 2)) for f in filled.get(s["idx"] - d, ())
-                    if ((f["rgb"] == s["rgb"] and 0.5 * s["size"] <= f["size"] <= 1.2 * s["size"]) or
-                        (d == 1 and s.get("ring") and 0.75 * s["size"] <= f["size"] <= s["size"]))
-                    and math.hypot(f["cx"] - s["cx"], f["cy"] - s["cy"]) < 0.15 * s["size"]]
+                    if ((f["rgb"] == s["rgb"] and _BODY_MIN_SIZES * s["size"] <= f["size"] <= _BODY_MAX_SIZES * s["size"]) or
+                        (d == 1 and s.get("ring") and _RING_BODY_MIN_SIZES * s["size"] <= f["size"] <= s["size"]))
+                    and math.hypot(f["cx"] - s["cx"], f["cy"] - s["cy"]) < _RING_CENTRE_SIZES * s["size"]]
             if body:
                 continue
         if s["filled"] and s.get("idx") is not None and any(
                 f["shape"] == s["shape"] and (f["rgb"], f.get("outline_rgb")) != (s["rgb"], s.get("outline_rgb"))
-                and 0.8 * s["size"] <= f["size"] < s["size"]
-                and math.hypot(f["cx"] - s["cx"], f["cy"] - s["cy"]) < 0.15 * s["size"]
+                and _RING_INNER_MIN_SIZES * s["size"] <= f["size"] <= s["size"] / _HIGHLIGHT_BIGGER
+                and math.hypot(f["cx"] - s["cx"], f["cy"] - s["cy"]) < _RING_CENTRE_SIZES * s["size"]
                 for f in filled_any.get(s["idx"] - 1, ())):
             continue
         out.append(s)
     return out
 
 
-def _tint_of(light, base, tol=0.08):
+_TINT_MIX_TOL = 0.08   # a pale tint: its whiteness-mix ratios agree within 0.08
+_TINT_DARKER = 0.02    # a tint no darker than its base, by 0.02 in any channel
+_TINT_COLOURED = 0.05  # a base colour at least 0.05 from white
+_TINT_MIN_MIX = 0.3    # a tint mixes in 30% white or more
+
+
+def _tint_of(light, base, tol=_TINT_MIX_TOL):
     """Is colour `light` the colour `base` mixed with white (each channel
     the same fraction of the way to white, at least 0.3 of it: a face is
     plainly lighter - small dots of one colour beside bigger ones are a
@@ -189,11 +226,23 @@ def _tint_of(light, base, tol=0.08):
         return False
     ts = []
     for a, b in zip(light, base):
-        if a < b - 0.02:
+        if a < b - _TINT_DARKER:
             return False
-        if 1.0 - b > 0.05:
+        if 1.0 - b > _TINT_COLOURED:
             ts.append((a - b) / (1.0 - b))
-    return bool(ts) and min(ts) >= 0.3 and max(ts) - min(ts) <= tol
+    return bool(ts) and min(ts) >= _TINT_MIN_MIX and max(ts) - min(ts) <= tol
+
+
+_FACE_CELL_PT = 4.0       # marker centres filed in cells of 4 pt
+_FACE_MAX_SIZES = 0.8     # a face is at most 0.8 times its marker's size
+_FACE_CENTRE_SIZES = 0.2  # centred on it within 0.2 of its size
+_SLIVER_MAX_SIZES = 0.3   # a sliver of a face is at most 0.3 times the size
+_FACES_MIN = 3            # faces of one colour and size on whole rings: 3 or more stand for markers
+_WHITE_LEVEL = 0.97       # a face this light in every channel is white (an open marker)
+_LENS_MAX_SIZES = 0.45    # pieces within a ring: lenses at most 0.45 of its size
+_LENS_REACH_SIZES = 0.75  # within 0.75 of its size of the face
+_UNDER_MAX_SIZES = 1.1    # pieces painted before a face: at most 1.1 times its size
+_UNDER_REACH_SIZES = 0.5  # within half its size of it
 
 
 def drop_marker_faces(symbols, paths=()):
@@ -220,7 +269,7 @@ def drop_marker_faces(symbols, paths=()):
     and the circles painted before a face, centred within its ring and no
     bigger (pieces of the disc and ring under it), are no points.  A marker
     with a white face is an open marker."""
-    cell = 4.0
+    cell = _FACE_CELL_PT
     grid = {}
     for s in symbols:
         # (the base may be a ring too: an open marker whose inside is
@@ -242,11 +291,11 @@ def drop_marker_faces(symbols, paths=()):
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
                 for b in grid.get((gx + dx, gy + dy), ()):
-                    if s["size"] > 0.8 * b["size"]:
+                    if s["size"] > _FACE_MAX_SIZES * b["size"]:
                         break
                     d = math.hypot(b["cx"] - s["cx"], b["cy"] - s["cy"])
                     if b is not s and b["idx"] < s["idx"] and \
-                            (d <= 0.2 * b["size"] or (s["size"] <= 0.3 * b["size"] and d <= b["size"])) and \
+                            (d <= _FACE_CENTRE_SIZES * b["size"] or (s["size"] <= _SLIVER_MAX_SIZES * b["size"] and d <= b["size"])) and \
                             _tint_of(_paint(s), b["rgb"]):
                         if b["filled"]:
                             return b
@@ -262,25 +311,25 @@ def drop_marker_faces(symbols, paths=()):
     kinds = {}
     for s in symbols:
         b = faces.get(id(s))
-        if b is not None and s["size"] > 0.3 * b["size"]:
+        if b is not None and s["size"] > _SLIVER_MAX_SIZES * b["size"]:
             kinds.setdefault((_paint(s), round(s["size"], 1)), []).append(b)
     made = []
     for s in symbols:
         if id(s) in faces or s["shape"] != "circle" or s.get("idx") is None:
             continue
         bases = kinds.get((_paint(s), round(s["size"], 1)))
-        if not bases or len(bases) < 3:
+        if not bases or len(bases) < _FACES_MIN:
             continue
         # (a face of two parts - a disc and an annulus round it, painted
         # one after the other - stands for one marker)
         twin = next((m for m in made if abs(m["idx"] - s["idx"]) <= 2 and
-                     math.hypot(m["cx"] - s["cx"], m["cy"] - s["cy"]) <= 0.2 * m["size"]), None)
+                     math.hypot(m["cx"] - s["cx"], m["cy"] - s["cy"]) <= _FACE_CENTRE_SIZES * m["size"]), None)
         if twin is not None:
             faces[id(s)] = {"size": twin["size"]}
             continue
         size = median(b["size"] for b in bases)
         filled = sum(1 for b in bases if b["filled"]) * 2 > len(bases) and \
-            not (_paint(s) and min(_paint(s)) >= 0.97)       # (white face: open)
+            not (_paint(s) and min(_paint(s)) >= _WHITE_LEVEL)       # (white face: open)
         rgb = _ring_colour(s, size, paths)
         if rgb is None:
             continue
@@ -293,17 +342,17 @@ def drop_marker_faces(symbols, paths=()):
     for s in symbols:
         b = faces.get(id(s))
         # (whole faces only: a sliver of a face lies off its marker's centre)
-        if b is not None and s["size"] > 0.3 * b["size"]:
+        if b is not None and s["size"] > _SLIVER_MAX_SIZES * b["size"]:
             centres.add((s, b["size"]), s["cx"], s["cy"])
 
     # (the bases of whole faces: a sliver of white may lie on any piece)
     base_ids = {id(faces[id(s)]) for s in symbols
-                if id(s) in faces and s["size"] > 0.3 * faces[id(s)]["size"]}
+                if id(s) in faces and s["size"] > _SLIVER_MAX_SIZES * faces[id(s)]["size"]}
     # a marker whose face is white is an open marker (panel (b)'s rings
     # with white insides), whether its base is the ring or a disc under it
     white_faced = {id(faces[id(s)]) for s in symbols
-                   if id(s) in faces and _paint(s) and min(_paint(s)) >= 0.97 and
-                   s["size"] > 0.3 * faces[id(s)]["size"]}
+                   if id(s) in faces and _paint(s) and min(_paint(s)) >= _WHITE_LEVEL and
+                   s["size"] > _SLIVER_MAX_SIZES * faces[id(s)]["size"]}
 
     def piece(s):
         # a small piece near a face, or (painted before the face, on its
@@ -312,8 +361,8 @@ def drop_marker_faces(symbols, paths=()):
             if f is s:
                 continue
             d = math.hypot(f["cx"] - s["cx"], f["cy"] - s["cy"])
-            if (s["size"] <= 0.45 * z and d <= 0.75 * z) or \
-                    (s["idx"] < f["idx"] and s["size"] <= 1.1 * z and d <= 0.5 * z):
+            if (s["size"] <= _LENS_MAX_SIZES * z and d <= _LENS_REACH_SIZES * z) or \
+                    (s["idx"] < f["idx"] and s["size"] <= _UNDER_MAX_SIZES * z and d <= _UNDER_REACH_SIZES * z):
                 return True
         return False
     out = []
@@ -338,6 +387,11 @@ def _paint(s):
     return s.get("paint_rgb") or s["rgb"]
 
 
+_RING_PIECE_MAX_SIZES = 1.2  # pieces of a ring lie within 1.2 of its size
+_TINT_TOL = 0.005            # a colour no lighter than another, channel by channel, within 0.005
+_GREY_SPREAD = 0.05          # a colour whose channels differ by more than 0.05 is no grey
+
+
 def _ring_colour(face, size, paths):
     """The fill covering most of the pieces painted before `face` within a
     ring of `size` around it (by the area of their boxes); None if none.
@@ -353,21 +407,26 @@ def _ring_colour(face, size, paths):
             if not sp["segs"]:
                 continue
             x0, y0, x1, y1 = subpath_bbox(sp)
-            if x1 - x0 > 1.2 * size or y1 - y0 > 1.2 * size:
+            if x1 - x0 > _RING_PIECE_MAX_SIZES * size or y1 - y0 > _RING_PIECE_MAX_SIZES * size:
                 continue
             if math.hypot((x0 + x1) / 2 - face["cx"], (y0 + y1) / 2 - face["cy"]) > r:
                 continue
             if p["fill_rgb"] != _paint(face):
                 area[p["fill_rgb"]] = area.get(p["fill_rgb"], 0.0) + (x1 - x0) * (y1 - y0)
     pure = [c for c in area
-            if not any(d != c and all(a <= b + 0.005 for a, b in zip(c, d)) for d in area)]
+            if not any(d != c and all(a <= b + _TINT_TOL for a, b in zip(c, d)) for d in area)]
     # (the grey lines joining the points cross the rings: a grey is the
     # ring's colour only when nothing coloured is there)
-    coloured = [c for c in pure if max(c) - min(c) > 0.05]
+    coloured = [c for c in pure if max(c) - min(c) > _GREY_SPREAD]
     pure = coloured or pure
     if not pure:
         return None
     return max(pure, key=area.get)
+
+
+_HIGHLIGHT_CELL_PT = 4            # markers filed in cells of 4 pt
+_HIGHLIGHT_INNER_MAX_SIZES = 0.8  # the highlighted marker is under 0.8 of the box's size
+_HIGHLIGHT_CENTRE_SIZES = 0.25    # centred within a quarter of its size
 
 
 def drop_highlight_boxes(symbols):
@@ -378,12 +437,12 @@ def drop_highlight_boxes(symbols):
     grid = {}
     for t in symbols:
         if t["size"] > 0:
-            cell = grid.setdefault((int(t["cx"] // 4), int(t["cy"] // 4)), {})
+            cell = grid.setdefault((int(t["cx"] // _HIGHLIGHT_CELL_PT), int(t["cy"] // _HIGHLIGHT_CELL_PT)), {})
             cell.setdefault(t["rgb"], []).append(t)
     def highlights(s):
-        gx, gy = int(s["cx"] // 4), int(s["cy"] // 4)
-        r = int(0.25 * s["size"] // 4) + 1
-        own, lim, cut = s["rgb"], 0.8 * s["size"], 0.25 * s["size"]
+        gx, gy = int(s["cx"] // _HIGHLIGHT_CELL_PT), int(s["cy"] // _HIGHLIGHT_CELL_PT)
+        r = int(_HIGHLIGHT_CENTRE_SIZES * s["size"] // _HIGHLIGHT_CELL_PT) + 1
+        own, lim, cut = s["rgb"], _HIGHLIGHT_INNER_MAX_SIZES * s["size"], _HIGHLIGHT_CENTRE_SIZES * s["size"]
         for dx in range(-r, r + 1):
             for dy in range(-r, r + 1):
                 cell = grid.get((gx + dx, gy + dy))
@@ -416,13 +475,19 @@ def drop_highlight_boxes(symbols):
             if not (id(s) in hl and hits[style(s)] == total[style(s)])]
 
 
+_TURNED_EQUAL = 0.92  # a turned square: sides and diagonals equal within 8%
+
+
 def _turned_square(v):
     """Are the four corners v those of a square at any angle: four equal
     sides and equal diagonals (within 8%)?"""
     sides = [math.hypot(v[k][0] - v[k - 1][0], v[k][1] - v[k - 1][1]) for k in range(4)]
     d1 = math.hypot(v[2][0] - v[0][0], v[2][1] - v[0][1])
     d2 = math.hypot(v[3][0] - v[1][0], v[3][1] - v[1][1])
-    return min(sides) > 0.92 * max(sides) and min(d1, d2) > 0.92 * max(d1, d2)
+    return min(sides) > _TURNED_EQUAL * max(sides) and min(d1, d2) > _TURNED_EQUAL * max(d1, d2)
+
+
+_SYMMETRY_TOL = 0.08  # rotational symmetry: corners within 0.08 of the size
 
 
 def _rotationally_symmetric(verts, size):
@@ -431,7 +496,7 @@ def _rotationally_symmetric(verts, size):
     drawn as outlines ('v', 'A', 'k', ...) do not."""
     cx = sum(v[0] for v in verts) / len(verts)
     cy = sum(v[1] for v in verts) / len(verts)
-    tol = 0.08 * size
+    tol = _SYMMETRY_TOL * size
     for k in (2, 3, 4, 5, 6, 8):
         a = 2 * math.pi / k
         ca, sa = math.cos(a), math.sin(a)
@@ -497,6 +562,30 @@ def as_closed(sp):
     return out
 
 
+_CLOSED_FRAC = 0.02       # a subpath ending within 2% of its size of its start is closed
+_FLAT_STEPS = 12          # Bezier curves flattened in 12 steps
+_SQUARE_ASPECT = 0.85     # square (or round) shapes: aspect over 0.85
+_CIRCLE_ARCS = 3          # a circle: 3 Bezier arcs or more, at most 1 line
+_SQUASHED_ASPECT = 0.7    # a circle squashed up to 0.7 (unequal x and y scales)
+_ROUND_RECT_ARCS = 6      # a rounded shape: 6 arcs or more
+_ROUND_RECT_LINES = 3     # and at most 3 lines
+_CIRCLE_FIT = 0.06        # points on a circle within 6% of its radius
+_RING_INNER_FRAC = 0.9    # a ring's inner radii are under 0.9 of the outer
+_RING_EVEN = 0.1          # inner radii alike within 10% of the outer
+_RING_OUTER = 0.95        # outer radii over 95% of the largest
+_RING_MIN_INNER = 0.3     # the inner over 30% of it
+_VERTEX_SAME_FRAC = 0.01  # vertices within 1% of the size are one
+_EQUILATERAL_LO = 0.8     # an equilateral triangle: box aspect 0.8 to 0.93
+_EQUILATERAL_HI = 0.93    # (sqrt(3)/2 is 0.866)
+_RECT_ASPECT = 0.5        # a rectangle (or diamond) has aspect 0.5 or more
+_DIAMOND_TIP_FRAC = 0.12  # a diamond's tips within 12% of the box's middle lines
+_ROUND_POLYGON = 13       # a polygon of 13 corners or more, about round, is a circle
+_SYMMETRIC_MIN = 5        # a symmetric polygon (star, hexagon): 5 to 12 corners
+_SYMMETRIC_MAX = 12       # (the most corners)
+_ELONGATED = 1.8          # polygons more elongated than 1.8 are no markers
+_THIN_ELONGATED = 2.2     # thin diamonds than 2.2
+
+
 def _classify_subpath(sp):
     pts = [sp["start"]]
     curves = lines = 0
@@ -512,7 +601,7 @@ def _classify_subpath(sp):
     size = max(w, h)
     if size <= 1e-9:
         return None
-    closed = sp["closed"] or math.hypot(end[0] - pts[0][0], end[1] - pts[0][1]) < 0.02 * size
+    closed = sp["closed"] or math.hypot(end[0] - pts[0][0], end[1] - pts[0][1]) < _CLOSED_FRAC * size
     if not closed or min(w, h) <= 1e-9:
         return None
     aspect = min(w, h) / max(w, h)
@@ -524,36 +613,36 @@ def _classify_subpath(sp):
         # a circle of two half-circle arcs (GraphPad Prism): their control
         # points stand 4/3 of the radius off the diameter, so the box and
         # the roundness are measured on the curve itself
-        flat = flatten_subpath(sp, steps=12)
+        flat = flatten_subpath(sp, steps=_FLAT_STEPS)
         fx0, fy0, fx1, fy1 = bbox_of(flat)
         fw, fh = fx1 - fx0, fy1 - fy0
-        if min(fw, fh) > 0.85 * max(fw, fh) > 1e-9:
+        if min(fw, fh) > _SQUARE_ASPECT * max(fw, fh) > 1e-9:
             cx0, cy0, r = (fx0 + fx1) / 2, (fy0 + fy1) / 2, max(fw, fh) / 2
-            if all(abs(math.hypot(q[0] - cx0, q[1] - cy0) - r) < 0.06 * r for q in flat):
+            if all(abs(math.hypot(q[0] - cx0, q[1] - cy0) - r) < _CIRCLE_FIT * r for q in flat):
                 shape, centre, size = "circle", (cx0, cy0), max(fw, fh)
-    elif curves >= 3 and lines <= 1:        # a circle: 4, 8, ... Bezier arcs
+    elif curves >= _CIRCLE_ARCS and lines <= 1:        # a circle: 4, 8, ... Bezier arcs
         # (squashed up to 0.7: a figure placed with unequal x and y scales
         # turns its circles into ellipses)
-        shape = "circle" if aspect > 0.7 else None
-    elif curves >= 6 and lines <= 3 and aspect > 0.85:
+        shape = "circle" if aspect > _SQUASHED_ASPECT else None
+    elif curves >= _ROUND_RECT_ARCS and lines <= _ROUND_RECT_LINES and aspect > _SQUARE_ASPECT:
         # an outline ring drawn as one contour: outer circle, a short line
         # inwards, inner circle back (an open circle with its stroke
         # converted to a filled shape)
         cx0, cy0 = (x0 + x1) / 2, (y0 + y1) / 2
         r_out = size / 2
         rs = [math.hypot(q[0] - cx0, q[1] - cy0) for s in sp["segs"] if s[0] == "c" for q in (s[3],)]
-        inner = [r for r in rs if r < 0.9 * r_out]
-        outer = [r for r in rs if r >= 0.9 * r_out]
-        if inner and outer and max(inner) - min(inner) < 0.1 * r_out and \
-                min(outer) > 0.95 * r_out and min(inner) > 0.3 * r_out:
+        inner = [r for r in rs if r < _RING_INNER_FRAC * r_out]
+        outer = [r for r in rs if r >= _RING_INNER_FRAC * r_out]
+        if inner and outer and max(inner) - min(inner) < _RING_EVEN * r_out and \
+                min(outer) > _RING_OUTER * r_out and min(inner) > _RING_MIN_INNER * r_out:
             shape, ring = "circle", True
     elif curves == 0:                       # a polygon: count its corners
         verts = vertices(sp)
         uniq = []
         for v in verts:
-            if not uniq or math.hypot(v[0] - uniq[-1][0], v[1] - uniq[-1][1]) > 0.01 * size:
+            if not uniq or math.hypot(v[0] - uniq[-1][0], v[1] - uniq[-1][1]) > _VERTEX_SAME_FRAC * size:
                 uniq.append(v)
-        if len(uniq) > 1 and math.hypot(uniq[-1][0] - uniq[0][0], uniq[-1][1] - uniq[0][1]) <= 0.01 * size:
+        if len(uniq) > 1 and math.hypot(uniq[-1][0] - uniq[0][0], uniq[-1][1] - uniq[0][1]) <= _VERTEX_SAME_FRAC * size:
             uniq.pop()
         n = len(uniq)
         if n == 3:
@@ -562,14 +651,14 @@ def _classify_subpath(sp):
             # centroid, as R draws it (pch 2, 6, 17, 24, 25: apex r above
             # the point, base r/2 below); a triangle filling a square box,
             # as matplotlib draws it, on the middle of the box
-            if 0.8 < aspect < 0.93:
+            if _EQUILATERAL_LO < aspect < _EQUILATERAL_HI:
                 centre = (sum(v[0] for v in uniq) / 3, sum(v[1] for v in uniq) / 3)
         elif n == 4:
             edges = [axis_aligned(uniq[k], uniq[(k + 1) % 4]) for k in range(4)]
             if all(edges):
                 # oblong boxes are only ever used as legend keys (colour swatches)
-                shape = "square" if aspect > 0.85 else ("rectangle" if aspect >= 0.5 else None)
-            elif aspect >= 0.5:
+                shape = "square" if aspect > _SQUARE_ASPECT else ("rectangle" if aspect >= _RECT_ASPECT else None)
+            elif aspect >= _RECT_ASPECT:
                 # a diamond has one corner at the middle of each side of its
                 # bounding box: left, right (at mid height), top, bottom (mid
                 # width); one in a box of aspect 0.5-0.85 is a thin diamond
@@ -578,7 +667,7 @@ def _classify_subpath(sp):
                 # Distiller) put them on a grid of about a fifth of the
                 # marker's size
                 xm, ym = (x0 + x1) / 2, (y0 + y1) / 2
-                tx, ty = 0.12 * (x1 - x0), 0.12 * (y1 - y0)
+                tx, ty = _DIAMOND_TIP_FRAC * (x1 - x0), _DIAMOND_TIP_FRAC * (y1 - y0)
                 sides = set()
                 for v in uniq:
                     if abs(v[1] - ym) < ty and abs(v[0] - x0) < tx:
@@ -590,7 +679,7 @@ def _classify_subpath(sp):
                     elif abs(v[0] - xm) < tx and abs(v[1] - y1) < ty:
                         sides.add("t")
                 if sides == {"l", "r", "t", "b"}:
-                    shape = "diamond" if aspect > 0.85 else "thin-diamond"
+                    shape = "diamond" if aspect > _SQUARE_ASPECT else "thin-diamond"
                 elif _turned_square(uniq):
                     # a square turned by some other angle (the nodes of
                     # 2204.07073-010's network drawings, each network
@@ -599,14 +688,14 @@ def _classify_subpath(sp):
                     side = sum(math.hypot(uniq[k][0] - uniq[k - 1][0], uniq[k][1] - uniq[k - 1][1])
                                for k in range(4)) / 4
                     turned = side
-        elif n >= 13 and aspect > 0.85:
+        elif n >= _ROUND_POLYGON and aspect > _SQUARE_ASPECT:
             # a circle drawn as a polygon of many short sides (a 20-gon)
             cx0, cy0 = (x0 + x1) / 2, (y0 + y1) / 2
             rs = [math.hypot(v[0] - cx0, v[1] - cy0) for v in uniq]
             r = sum(rs) / n
-            if r > 0 and all(abs(q - r) <= 0.12 * r for q in rs):
+            if r > 0 and all(abs(q - r) <= _DIAMOND_TIP_FRAC * r for q in rs):
                 shape = "circle"
-        elif 5 <= n <= 12 and aspect > 0.7 and _rotationally_symmetric(uniq, size):
+        elif _SYMMETRIC_MIN <= n <= _SYMMETRIC_MAX and aspect > _SQUASHED_ASPECT and _rotationally_symmetric(uniq, size):
             shape = "polygon"
             # the centre of symmetry (for a pentagon or a star it is not the
             # middle of the box)
@@ -616,8 +705,8 @@ def _classify_subpath(sp):
     # markers are compact; a short diagonal stroke (e.g. the dash of a dashed
     # line converted to an outline) has a square-ish bounding box but is long
     # and thin
-    if (shape in ("polygon", "triangle", "diamond") and elongation(flatten_subpath(sp)) > 1.8) or \
-            (shape == "thin-diamond" and elongation(flatten_subpath(sp)) > 2.2):
+    if (shape in ("polygon", "triangle", "diamond") and elongation(flatten_subpath(sp)) > _ELONGATED) or \
+            (shape == "thin-diamond" and elongation(flatten_subpath(sp)) > _THIN_ELONGATED):
         return None
     out = {"shape": shape, "cx": centre[0], "cy": centre[1], "size": size, "w": w, "h": h}
     if turned is not None:
@@ -630,61 +719,7 @@ def _classify_subpath(sp):
     return out
 
 
-def doubled_outlines(paths, text_parts=frozenset(), cls_of=None):
-    """Some converters (seen with Acrobat Distiller) write every marker
-    outline twice in a row.  Identical marker outlines that follow each
-    other directly form runs; when the runs on a page are (almost) all of
-    even length, the page is doubled and a run of L outlines is L/2 markers
-    (a run of 4 is two data points at the same place).  Runs are followed
-    across painting operations, since a doubled pair can be split between
-    two of them.  Returns the (path idx, subpath no) entries to skip.
-    `cls_of` holds the classify_subpath results of each path's subpaths
-    (path idx -> list), where already known."""
-    def geom(p, sp):
-        return (p["fill"], p["stroke"], p["fill_rgb"], p["stroke_rgb"],
-                tuple(round(v, 3) for v in sp["start"]),
-                tuple(tuple(round(v, 3) for q in s[1:] for v in q) for s in sp["segs"]))
-
-    seq = []
-    for p in paths:
-        cls = cls_of.get(p["idx"]) if cls_of else None
-        for k, sp in enumerate(p["subpaths"]):
-            if (p["idx"], k) in text_parts:
-                continue
-            c = cls[k] if cls is not None and (sp["closed"] or not p["fill"]) else classify_subpath(sp)
-            if c is None:
-                continue
-            seq.append(((p["idx"], k), p, sp))
-    runs = []                       # [geometry, keys, (path, subpath) of the run]
-    for key, p, sp in seq:
-        here = None
-        if runs:
-            q, sq = runs[-1][2]
-            # outlines whose start points differ cannot be equal: skip the
-            # full comparison (the common case)
-            if abs(sq["start"][0] - sp["start"][0]) < 0.001 and \
-                    abs(sq["start"][1] - sp["start"][1]) < 0.001:
-                if sp["start"] == sq["start"] and sp["segs"] == sq["segs"] and \
-                        (p["fill"], p["stroke"], p["fill_rgb"], p["stroke_rgb"]) == \
-                        (q["fill"], q["stroke"], q["fill_rgb"], q["stroke_rgb"]):
-                    runs[-1][1].append(key)     # the very same numbers: equal
-                    continue
-                if runs[-1][0] is None:
-                    runs[-1][0] = geom(q, sq)
-                here = geom(p, sp)
-                if runs[-1][0] == here:
-                    runs[-1][1].append(key)
-                    continue
-        runs.append([here, [key], (p, sp)])     # (its geometry, if worked out)
-    if len(seq) < 4:
-        return set()
-    in_even = sum(len(r[1]) for r in runs if len(r[1]) % 2 == 0)
-    if in_even < 0.9 * len(seq):
-        return set()                        # not a doubled page
-    skip = set()
-    for r in runs:
-        skip.update(r[1][1::2])             # keep every other outline
-    return skip
+_BIG_CELLS = 400  # boxes spanning over 400 cells are tested directly
 
 
 def _containers(boxes):
@@ -696,7 +731,7 @@ def _containers(boxes):
     grid, big = {}, []
     for m, o in enumerate(boxes):
         gx0, gy0, gx1, gy1 = int(o[0] // cell), int(o[1] // cell), int(o[2] // cell), int(o[3] // cell)
-        if (gx1 - gx0 + 1) * (gy1 - gy0 + 1) > 400:
+        if (gx1 - gx0 + 1) * (gy1 - gy0 + 1) > _BIG_CELLS:
             big.append(m)
             continue
         for gx in range(gx0, gx1 + 1):
@@ -714,6 +749,12 @@ def _containers(boxes):
     return out
 
 
+_WORD_OUTLINES = 3   # a path of 3 outlines or more
+_WORD_FRAC = 0.5     # fewer than half of them marker shapes: a word of outlined letters
+_HOLE_CENTRE = 0.15  # a marker's hole is centred within 0.15 of its size
+_RING_HOLE = 0.1     # a ring's hole within 0.1 of its size
+
+
 def find_symbols(paths, glyph_symbols=(), text_parts=frozenset(), blob_parts=frozenset()):
     """All marker symbols of the page: vector shapes (filled, outlined or
     both), crossing strokes (+, x) and ZapfDingbats glyphs.  Outline parts
@@ -726,7 +767,6 @@ def find_symbols(paths, glyph_symbols=(), text_parts=frozenset(), blob_parts=fro
     # filling closes every outline implicitly
     cls_of = {p["idx"]: [classify_subpath(as_closed(sp) if p["fill"] else sp)
                          for sp in p["subpaths"]] for p in paths}
-    doubled = doubled_outlines(paths, text_parts, cls_of)
     for p in paths:
         holes = set()
         hole_of = {}        # outer contour -> its holes
@@ -739,10 +779,10 @@ def find_symbols(paths, glyph_symbols=(), text_parts=frozenset(), blob_parts=fro
         cls = cls_of[p["idx"]]
         if p["fill"]:
             outer = [k for k in range(len(cls)) if k not in holes]
-            if len(outer) >= 3 and sum(1 for k in outer if cls[k]) < 0.5 * len(outer):
+            if len(outer) >= _WORD_OUTLINES and sum(1 for k in outer if cls[k]) < _WORD_FRAC * len(outer):
                 continue            # a word of outlined letters, not markers
         for k, sp in enumerate(p["subpaths"]):
-            if (p["idx"], k) in text_parts or k in holes or (p["idx"], k) in doubled:
+            if (p["idx"], k) in text_parts or k in holes:
                 if (p["idx"], k) in blob_parts and p["fill"] and not p["stroke"] and \
                         len(p["subpaths"]) == 1:
                     ln = _outlined_stroke(sp)
@@ -757,13 +797,13 @@ def find_symbols(paths, glyph_symbols=(), text_parts=frozenset(), blob_parts=fro
                 for h in hole_of[k]:
                     ch = cls[h]
                     if not ch or ch["shape"] != c["shape"] or \
-                            math.hypot(ch["cx"] - c["cx"], ch["cy"] - c["cy"]) > 0.15 * c["size"]:
+                            math.hypot(ch["cx"] - c["cx"], ch["cy"] - c["cy"]) > _HOLE_CENTRE * c["size"]:
                         c = None
                         break
             if c:
                 filled = p["fill"]
                 if filled and c["shape"] == "circle" and any(
-                        h != k and abs(classify_subpath(p["subpaths"][h])["cx"] - c["cx"]) < 0.1 * c["size"]
+                        h != k and abs(classify_subpath(p["subpaths"][h])["cx"] - c["cx"]) < _RING_HOLE * c["size"]
                         for h in holes if classify_subpath(p["subpaths"][h])):
                     filled = False      # a ring: an open circle drawn as outline
                     # (the colour it is painted in, for telling a marker's
@@ -800,6 +840,14 @@ def find_symbols(paths, glyph_symbols=(), text_parts=frozenset(), blob_parts=fro
     return merge_fill_outline(syms)
 
 
+_ARROW_CELL_PT = 5.0      # symbols filed in cells of 5 pt
+_SHAFT_REACH_SIZES = 0.7  # a shaft starts within 0.7 of the triangle's size of its centre
+_SHAFT_ANGLE_DEG = 25     # and points through its farthest corner within 25 degrees
+_SHAFT_END_MIN_PT = 1.0   # no symbol at the shaft's other end: within 1 pt
+_SHAFT_END_SIZES = 0.7    # or 0.7 of that symbol's size
+_SHAFT_END_PT = 5         # (symbols looked for within 5 pt of the end)
+
+
 def drop_arrowheads(symbols, paths, arrows=None):
     """Triangles that are the heads of arrows pointing at points
     (1356058.1356080-007: arrows from the labels "-O1" ... "-Os" to the '+'
@@ -815,7 +863,7 @@ def drop_arrowheads(symbols, paths, arrows=None):
     tri = [s for s in symbols if s["shape"] == "triangle"]
     if not tri:
         return symbols
-    near = BoxGrid(5.0)
+    near = BoxGrid(_ARROW_CELL_PT)
     for i, s in enumerate(symbols):
         near.add(i, (s["cx"], s["cy"], s["cx"], s["cy"]))
     gone = set()
@@ -833,7 +881,7 @@ def drop_arrowheads(symbols, paths, arrows=None):
                 continue
             if math.dist(b, (s["cx"], s["cy"])) < math.dist(a, (s["cx"], s["cy"])):
                 a, b = b, a                          # a: the end at the head
-            if math.dist(a, (s["cx"], s["cy"])) > 0.7 * size:
+            if math.dist(a, (s["cx"], s["cy"])) > _SHAFT_REACH_SIZES * size:
                 continue
             p_head = by_idx.get(s["idx"])
             corners = vertices(p_head["subpaths"][0]) if p_head else []
@@ -844,11 +892,11 @@ def drop_arrowheads(symbols, paths, arrows=None):
                 v2 = (tip[0] - b[0], tip[1] - b[1])
                 n1, n2 = math.hypot(*v1), math.hypot(*v2)
                 if n1 == 0 or n2 == 0 or \
-                        (v1[0] * v2[0] + v1[1] * v2[1]) / (n1 * n2) < math.cos(math.radians(25)):
+                        (v1[0] * v2[0] + v1[1] * v2[1]) / (n1 * n2) < math.cos(math.radians(_SHAFT_ANGLE_DEG)):
                     continue
             if any(symbols[i] is not s and
-                   math.dist((symbols[i]["cx"], symbols[i]["cy"]), b) <= max(1.0, 0.7 * symbols[i]["size"])
-                   for i in near.near((b[0] - 5, b[1] - 5, b[0] + 5, b[1] + 5))):
+                   math.dist((symbols[i]["cx"], symbols[i]["cy"]), b) <= max(_SHAFT_END_MIN_PT, _SHAFT_END_SIZES * symbols[i]["size"])
+                   for i in near.near((b[0] - _SHAFT_END_PT, b[1] - _SHAFT_END_PT, b[0] + _SHAFT_END_PT, b[1] + _SHAFT_END_PT))):
                 continue
             gone.add(id(s))
             if arrows is not None:
@@ -856,6 +904,12 @@ def drop_arrowheads(symbols, paths, arrows=None):
                 arrows.append((tip, ((tip[0] - b[0]) / L, (tip[1] - b[1]) / L), b, size))
             break
     return [s for s in symbols if id(s) not in gone]
+
+
+_OUTLINED_MIN_CORNERS = 4  # a stroke drawn as its outline: 4 to 8 corners
+_OUTLINED_MAX_CORNERS = 8  # (the most corners)
+_OUTLINED_MAX_PT = 30      # at most 30 pt long
+_OUTLINED_MIN_WIDTHS = 3   # and 3 widths or more
 
 
 def _outlined_stroke(sp):
@@ -869,12 +923,12 @@ def _outlined_stroke(sp):
     pts = vertices(sp)
     if len(pts) > 2 and math.dist(pts[0], pts[-1]) < 1e-6:
         pts = pts[:-1]
-    if not 4 <= len(pts) <= 8:
+    if not _OUTLINED_MIN_CORNERS <= len(pts) <= _OUTLINED_MAX_CORNERS:
         return None
     a, b = max(((p, q) for i, p in enumerate(pts) for q in pts[i + 1:]),
                key=lambda pq: math.dist(*pq))
     L = math.dist(a, b)
-    if L <= 1e-6 or L > 30:
+    if L <= 1e-6 or L > _OUTLINED_MAX_PT:
         return None
     ux, uy = (b[0] - a[0]) / L, (b[1] - a[1]) / L
     cx = sum(p[0] for p in pts) / len(pts)
@@ -883,7 +937,7 @@ def _outlined_stroke(sp):
     across = [(p[0] - cx) * -uy + (p[1] - cy) * ux for p in pts]
     width = max(across) - min(across)
     length = max(along) - min(along)
-    if width <= 0 or length < 3 * width:
+    if width <= 0 or length < _OUTLINED_MIN_WIDTHS * width:
         return None
     # (the ends: half a width in from the farthest corners, the caps)
     lo, hi = min(along) + 0.5 * width, max(along) - 0.5 * width
@@ -898,6 +952,11 @@ def _edge_key(a, b):
     return (a, b) if a <= b else (b, a)
 
 
+_HALF_LENGTH = 0.2   # stroke halves: lengths within 20%
+_HALF_INLINE = 0.05  # in line within 0.05 (pt across, of the shorter as a gap)
+_HALF_REACH = 1.5    # together 1.5 times the longer or more
+
+
 def _join_stroke_halves(lines):
     """Consecutive collinear halves of one stroke joined (match_crossing_strokes)."""
     out = []
@@ -909,12 +968,12 @@ def _join_stroke_halves(lines):
             idx2, c, d, rgb2 = lines[k + 1]
             L1, L2 = math.dist(a, b), math.dist(c, d)
             if idx2 - idx == 1 and rgb2 == rgb and L1 > 1e-9 and L2 > 1e-9 and \
-                    abs(L1 / L2 - 1) < 0.2:
+                    abs(L1 / L2 - 1) < _HALF_LENGTH:
                 ux, uy = (b[0] - a[0]) / L1, (b[1] - a[1]) / L1
                 cross = lambda q: abs((q[0] - a[0]) * uy - (q[1] - a[1]) * ux)
                 vx, vy = (d[0] - c[0]) / L2, (d[1] - c[1]) / L2
                 if abs(ux * vy - uy * vx) < math.sin(math.radians(2)) and \
-                        cross(c) < 0.05 and cross(d) < 0.05:
+                        cross(c) < _HALF_INLINE and cross(d) < _HALF_INLINE:
                     t = sorted([0.0, L1, (c[0] - a[0]) * ux + (c[1] - a[1]) * uy,
                                 (d[0] - a[0]) * ux + (d[1] - a[1]) * uy])
                     s1 = (0.0, L1)
@@ -923,7 +982,7 @@ def _join_stroke_halves(lines):
                     gap = max(s1[0], s2[0]) - min(s1[1], s2[1])   # < 0: overlap
                     # (halves extend each other; a stroke drawn again on
                     # itself - a duplicate point - covers the same span)
-                    if gap <= 0.05 * min(L1, L2) and t[-1] - t[0] >= 1.5 * max(L1, L2):
+                    if gap <= _HALF_INLINE * min(L1, L2) and t[-1] - t[0] >= _HALF_REACH * max(L1, L2):
                         lo, hi = t[0], t[-1]
                         out.append((idx, (a[0] + lo * ux, a[1] + lo * uy),
                                     (a[0] + hi * ux, a[1] + hi * uy), rgb))
@@ -932,6 +991,14 @@ def _join_stroke_halves(lines):
         out.append(lines[k])
         k += 1
     return out
+
+
+_CROSS_CLASS = 1.2       # strokes filed in length classes 1.2 times apart
+_CROSS_MID = 0.15        # crossing strokes' middles within 0.15 of the shorter
+_CROSS_CLASSES = 3       # lengths compared over neighbouring classes
+_CROSS_LENGTH = 0.2      # crossing strokes' lengths within 20%
+_DIRECTION_DEG = 10      # strokes of one direction: within 10 degrees
+_PERPENDICULAR_DEG = 25  # a plus or cross: arms within 25 degrees of square
 
 
 def match_crossing_strokes(lines):
@@ -987,20 +1054,20 @@ def match_crossing_strokes(lines):
     # classes - a few cells per stroke, whatever the mix of lengths (curves
     # drawn as thousands of 0.01 pt strokes beside 300 pt axes once made a
     # single grid scan 10^8 cells per long stroke)
-    step = math.log(1.2)
+    step = math.log(_CROSS_CLASS)
     klass = {i: math.floor(math.log(max(segs[i]["L"], 1e-9)) / step) for i in reps}
     grids = {}
     for i in reps:
         k = klass[i]
-        cell = 0.15 * 1.2 ** (k + 1)
+        cell = _CROSS_MID * _CROSS_CLASS ** (k + 1)
         m = segs[i]["mid"]
         grids.setdefault(k, (cell, {}))[1].setdefault(
             (int(m[0] // cell), int(m[1] // cell)), []).append(i)
     for i in reps:
         s = segs[i]
         mx, my = s["mid"]
-        r = 0.15 * s["L"]                       # >= the reach of any pair with s
-        for k in range(klass[i] - 2, klass[i] + 3):
+        r = _CROSS_MID * s["L"]                       # >= the reach of any pair with s
+        for k in range(klass[i] - 2, klass[i] + _CROSS_CLASSES):
             got = grids.get(k)
             if got is None:
                 continue
@@ -1011,9 +1078,9 @@ def match_crossing_strokes(lines):
                         if j <= i:
                             continue
                         t = segs[j]
-                        if (t["rgb"] == s["rgb"] and abs(t["L"] / s["L"] - 1) < 0.2 and
+                        if (t["rgb"] == s["rgb"] and abs(t["L"] / s["L"] - 1) < _CROSS_LENGTH and
                                 math.hypot(t["mid"][0] - mx, t["mid"][1] - my)
-                                < 0.15 * min(s["L"], t["L"])):
+                                < _CROSS_MID * min(s["L"], t["L"])):
                             sets.union(i, j)
     out = []
     for g in ([segs[i] for i in members] for members in sets.groups()):
@@ -1024,7 +1091,7 @@ def match_crossing_strokes(lines):
         for s in sorted(g, key=lambda s: s["idx"]):
             for bk in buckets:
                 d = abs(bk[0]["ang"] - s["ang"])
-                if min(d, 180 - d) < 10:
+                if min(d, 180 - d) < _DIRECTION_DEG:
                     bk.append(s)
                     break
             else:
@@ -1033,7 +1100,7 @@ def match_crossing_strokes(lines):
             continue
         if len(buckets) == 2:
             d = abs(buckets[0][0]["ang"] - buckets[1][0]["ang"])
-            if min(d, 180 - d) < 25:
+            if min(d, 180 - d) < _PERPENDICULAR_DEG:
                 continue
             aligned = all(axis_aligned(bk[0]["a"], bk[0]["b"]) for bk in buckets)
             shape = "plus" if aligned else "cross"
@@ -1048,6 +1115,11 @@ def match_crossing_strokes(lines):
                         "rgb": parts[0]["rgb"], "idx": min(s["idx"] for s in parts),
                         "last": max(s["idx"] for s in parts)})
     return _join_asterisks(out)
+
+
+_ASTERISK_CELL = 0.1     # asterisk parts filed by centre to 0.1 pt
+_ASTERISK_CENTRE = 0.05  # a plus and a cross centred within 5% of the smaller
+_ASTERISK_SIZES = 0.5    # of sizes within a factor 2
 
 
 def _join_asterisks(syms):
@@ -1071,7 +1143,7 @@ def _join_asterisks(syms):
             continue
         other = "cross" if s["shape"] == "plus" else "plus"
         spot = {(round(s["cx"] + dx, 1), round(s["cy"] + dy, 1))
-                for dx in (-0.1, 0.0, 0.1) for dy in (-0.1, 0.0, 0.1)}
+                for dx in (-_ASTERISK_CELL, 0.0, _ASTERISK_CELL) for dy in (-_ASTERISK_CELL, 0.0, _ASTERISK_CELL)}
         # drawn together: o.idx <= s.last + 2 and o.last >= s.idx - 2
         lo = bisect.bisect_left(order, s["idx"] - span)
         hi = bisect.bisect_right(order, s["last"] + 2)
@@ -1082,12 +1154,12 @@ def _join_asterisks(syms):
             o = syms[j]
             if j in gone or j == k or o["shape"] != other:
                 continue
-            tol = 0.05 * min(s["size"], o["size"])
+            tol = _ASTERISK_CENTRE * min(s["size"], o["size"])
             near = abs(o["cx"] - s["cx"]) <= tol and abs(o["cy"] - s["cy"]) <= tol
             # drawn one right after the other (in one path, or in
             # consecutive painting operations)
             together = o["idx"] <= s["last"] + 2 and s["idx"] <= o["last"] + 2
-            if near and together and 0.5 < o["size"] / s["size"] < 2:
+            if near and together and _ASTERISK_SIZES < o["size"] / s["size"] < 2:
                 s.update(shape="asterisk", size=max(s["size"], o["size"]),
                          idx=min(s["idx"], o["idx"]), last=max(s["last"], o["last"]))
                 gone.add(j)
@@ -1095,11 +1167,15 @@ def _join_asterisks(syms):
     return [s for k, s in enumerate(syms) if k not in gone]
 
 
+_SAME_PLACE = 0.02  # markers at one place: within 2% of the bigger
+_SAME_SIZE = 0.1    # of one size within 10%
+
+
 def _same_place(a, b):
-    tol = 0.02 * max(a["size"], b["size"], 1e-9)
+    tol = _SAME_PLACE * max(a["size"], b["size"], 1e-9)
     return (a["shape"] == b["shape"] and abs(a["idx"] - b["idx"]) <= 2 and
             abs(a["cx"] - b["cx"]) <= tol and abs(a["cy"] - b["cy"]) <= tol and
-            abs(a["size"] - b["size"]) <= 0.1 * max(a["size"], b["size"]))
+            abs(a["size"] - b["size"]) <= _SAME_SIZE * max(a["size"], b["size"]))
 
 
 def _drop_pattern_overlays(syms):
@@ -1110,6 +1186,9 @@ def _drop_pattern_overlays(syms):
                 (i + 1 < len(syms) and syms[i + 1]["rgb"] is not None and _same_place(a, syms[i + 1]))):
             gone.add(i)
     return [s for i, s in enumerate(syms) if i not in gone] if gone else syms
+
+
+_FILL_OUTLINE_SIZE = 0.15  # a fill and its outline: sizes within 15%
 
 
 def merge_fill_outline(syms):
@@ -1130,11 +1209,11 @@ def merge_fill_outline(syms):
         a = syms[i]
         if i + 1 < len(syms):
             b = syms[i + 1]
-            tol = 0.02 * max(a["size"], b["size"], 1e-9)
+            tol = _SAME_PLACE * max(a["size"], b["size"], 1e-9)
             if (a["shape"] == b["shape"] and a["filled"] != b["filled"] and
                     b["idx"] - a["idx"] <= 2 and
                     abs(a["cx"] - b["cx"]) <= tol and abs(a["cy"] - b["cy"]) <= tol and
-                    abs(a["size"] - b["size"]) <= 0.15 * max(a["size"], b["size"])):
+                    abs(a["size"] - b["size"]) <= _FILL_OUTLINE_SIZE * max(a["size"], b["size"])):
                 # (sizes within 15%: 1356058.1356080-007's 2.21 pt dots carry
                 # a 1.97 pt outline, their centre line, 11% smaller)
                 fill = a if a["filled"] else b
@@ -1157,6 +1236,9 @@ def symbol_signature(s):
     return (s["shape"], s["shape"] in LINE_SHAPES or s["filled"], color_name(s["rgb"])[1])
 
 
+_TURNED_MIN = 20  # squares turned by an odd angle are markers in groups of 20 or more
+
+
 def drop_lone_turned(symbols):
     """Squares turned by an odd angle are markers only in numbers: 20 or
     more of one colour and size (the nodes of a network drawing).  A few
@@ -1165,5 +1247,5 @@ def drop_lone_turned(symbols):
     if not turned:
         return symbols
     groups = collections.Counter((s["rgb"], round(s["w"], 2)) for s in turned)
-    lone = {id(s) for s in turned if groups[(s["rgb"], round(s["w"], 2))] < 20}
+    lone = {id(s) for s in turned if groups[(s["rgb"], round(s["w"], 2))] < _TURNED_MIN}
     return [s for s in symbols if id(s) not in lone] if lone else symbols

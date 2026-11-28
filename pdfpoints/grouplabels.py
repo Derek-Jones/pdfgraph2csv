@@ -15,6 +15,10 @@ from .geometry import median
 _UP = 0.35
 
 
+_GROUP_GAP = 1.5       # bars of one group: gaps under 1.5 median gaps
+_GROUP_EDGE_PT = 0.01  # a bar in its group within 0.01 pt
+
+
 def bar_groups(bars):
     """Bars side by side in groups: [(left edge, right edge, [bars])], left
     to right.  Bars whose centres lie closer than twice a bar's width (and
@@ -27,7 +31,7 @@ def bar_groups(bars):
     gaps = [b - a for a, b in zip(xs, xs[1:])]
     if not gaps:
         return []
-    cut = max(2.0 * w, 1.5 * median(gaps))
+    cut = max(2.0 * w, _GROUP_GAP * median(gaps))
     runs, cur = [], [xs[0]]
     for x in xs[1:]:
         if x - cur[-1] > cut:
@@ -39,7 +43,7 @@ def bar_groups(bars):
     out = []
     for r in runs:
         lo, hi = r[0] - w / 2, r[-1] + w / 2
-        out.append((lo, hi, [b for b in bars if lo - 0.01 <= b["cx"] <= hi + 0.01]))
+        out.append((lo, hi, [b for b in bars if lo - _GROUP_EDGE_PT <= b["cx"] <= hi + _GROUP_EDGE_PT]))
     return out
 
 
@@ -55,6 +59,15 @@ def _anchor(t, below):
     return end[0]
 
 
+_GROUPS_MIN = 3             # group labels need 3 groups or more
+_GROUP_LABEL_MAX = 40       # a group label is at most 40 characters
+_GROUP_LABEL_SIZE = 1.5     # and at most 1.5 times the tick labels' size
+_GROUP_LABEL_BELOW_EMS = 8  # within 8 font sizes below the axis
+_GROUP_ANGLE_DEG = 30       # labels of a row slanted alike within 30 degrees
+_GROUP_REACH = 0.5          # a label within half the spacing of its group
+_GROUP_FOUND = 0.6          # labels for 60% of the groups
+
+
 def label_bar_groups(g, bars, texts):
     """Name the groups of bars of graph g from a row of labels along its x
     axis that are not the axis's own labels: three or more texts (words,
@@ -64,7 +77,7 @@ def label_bar_groups(g, bars, texts):
     (where the tallest bars of a group may reach past its name).  Sets b["x_group"] on the bars of each named group.
     Returns the number of groups named."""
     groups = [gr for gr in bar_groups(bars) if len({round(b["cx"], 2) for b in gr[2]}) >= 2]
-    if len(groups) < 3:
+    if len(groups) < _GROUPS_MIN:
         return 0
     x0, y0, x1, y1 = g["rect"]
     own = {id(tx) for a in ("x", "y") for _, tx in g[a].get("labels", ())}
@@ -74,15 +87,15 @@ def label_bar_groups(g, bars, texts):
     cands = []
     for t in texts:
         s = (t.get("text") or "").strip()
-        if not s or id(t) in own or len(s) > 40 or t.get("value") is not None or \
+        if not s or id(t) in own or len(s) > _GROUP_LABEL_MAX or t.get("value") is not None or \
                 not any(ch.isalpha() for ch in s):
             continue
         ts = t.get("size") or 1.0
-        if ts > 1.5 * size:
+        if ts > _GROUP_LABEL_SIZE * size:
             continue                                   # titles
         cy = t["center"][1]
         below = cy < y0
-        if below and cy < y0 - 8 * size:
+        if below and cy < y0 - _GROUP_LABEL_BELOW_EMS * size:
             continue
         if not below and (cy > y1 or t["bbox"][1] < min(b["base"] for b in bars if "base" in b)):
             continue
@@ -97,15 +110,15 @@ def label_bar_groups(g, bars, texts):
             row = [c for c in cands if c[1] == side and (c[2] == 0.0) == (kind == "level")]
             if kind == "slanted" and row:
                 ma = median(c[2] for c in row)
-                row = [c for c in row if abs(c[2] - ma) <= 30]
+                row = [c for c in row if abs(c[2] - ma) <= _GROUP_ANGLE_DEG]
             if len(row) > len(best):
                 best = row
-    if len(best) < 3:
+    if len(best) < _GROUPS_MIN:
         return 0
     # each label to the nearest group (by its anchor's distance from the
     # group's span), greedily, nearest first; within half the gap between
     # groups (or a label size)
-    reach = max(0.5 * spacing, size)
+    reach = max(_GROUP_REACH * spacing, size)
     pairs = []
     for a, _below, _ang, t in best:
         for k, (lo, hi, _bs) in enumerate(groups):
@@ -120,7 +133,7 @@ def label_bar_groups(g, bars, texts):
         used_g.add(k)
         used_t.add(tid)
         got[k] = t
-    if len(got) < 3 or len(got) < 0.6 * len(best):
+    if len(got) < _GROUPS_MIN or len(got) < _GROUP_FOUND * len(best):
         return 0
     for k, t in got.items():
         name = " ".join(t["text"].split())

@@ -27,6 +27,9 @@ def graph_meta(pno, graphs, rows):
     return out
 
 
+_TICK_AGREE = 0.02  # a labelled tick agrees with its value within 2% of the range
+
+
 def tick_range(axis):
     """The values of an axis's lowest and highest labelled ticks (for a
     category axis the first and last category along it), with the axis
@@ -49,7 +52,7 @@ def tick_range(axis):
         # the labels that fit
         mapped = [map_value(m, c) for c, _ in ticks]
         rng = m.get("range") or 1.0
-        good = [abs(mv - v * scale) <= 0.02 * abs(rng) * scale for mv, v in zip(mapped, (v for _, v in ticks))]
+        good = [abs(mv - v * scale) <= _TICK_AGREE * abs(rng) * scale for mv, v in zip(mapped, (v for _, v in ticks))]
         places = max((len(repr(float(v)).split(".")[1].rstrip("0")) for (c, v), ok in zip(ticks, good)
                       if ok and "e" not in repr(float(v))), default=6)
         vals = [v if ok else round(mv, min(places, 10))

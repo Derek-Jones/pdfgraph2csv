@@ -13,7 +13,7 @@ import io
 import math
 import re
 
-from fontTools.agl import toUnicode
+from fontTools.agl import AGL2UV, toUnicode
 from pdfminer.cmapdb import CMap, CMapDB, FileCMap
 from pdfminer.fontmetrics import FONT_METRICS
 from pdfminer.pdftypes import PDFStream, resolve1
@@ -120,6 +120,9 @@ def _embedded_cmap(font, spec):
     font.vertical = new.is_vertical()
 
 
+_RENUMBERED_SAME = 0.25  # a subset is renumbered when at most a quarter of its codes map to themselves
+
+
 class FontInfo:
     """What the text reader needs of a font: character codes -> Unicode and
     glyph advance widths.  Wraps a pdfminer font and its font dictionary."""
@@ -138,7 +141,10 @@ class FontInfo:
                     name = getattr(v, "name", None) or str(v)
                     break
         self.name = name.split("+", 1)[1] if len(name) > 7 and name[6] == "+" else name
-        self.dingbats = "dingbat" in self.base.lower()
+        # (Acrobat puts Adobe Pi Std, with ZapfDingbats' metrics, in the
+        # place of ZapfDingbats: ArianeWuerbach-Phd-083's R points, black
+        # and grey circles drawn as glyphs of AdobePiStd)
+        self.dingbats = "dingbat" in self.base.lower() or "adobepistd" in self.base.lower()
         _embedded_cmap(font, spec)
         self.two_byte = font.is_multibyte()
         self.diffs = _differences(spec)
@@ -222,6 +228,12 @@ class FontInfo:
             m = re.fullmatch(r"uni([0-9A-Fa-f]{8})", self.diffs[c])
             if m and self._renumbered_glyphs() and 3 <= int(m.group(1), 16) <= 97:
                 return chr(int(m.group(1), 16) + 29)
+            if m and self._renumbered_glyphs() and _type3_bar(self._spec, self.diffs[c]):
+                # beyond the ASCII glyphs: a lone bar about the middle is
+                # the minus sign (no.ntnu_inspera_146721987_149459097-037's
+                # glyph 0xED: "-30" ... "-10" read "?30" and the y axis
+                # had no negative labels)
+                return "\u2212"
             if 0x20 <= c < 0x7F:
                 return chr(c)
             if not u:
@@ -305,7 +317,7 @@ class FontInfo:
             m = umap.cid2unichr
             same = sum(1 for k, v in m.items() if v == chr(k))
             # (a subset font, its codes given out afresh from 0x21)
-            self._renum = len(self.base) > 7 and self.base[6] == "+" and len(m) >= 8 and same <= 0.25 * len(m)
+            self._renum = len(self.base) > 7 and self.base[6] == "+" and len(m) >= 8 and same <= _RENUMBERED_SAME * len(m)
         return self._renum
 
     def _simple_glyphs(self):
@@ -459,6 +471,12 @@ def _program_unicode(data, kind):
     return out
 
 
+_DIGITS_MIN = 3             # a font's digits checked with 3 or more
+_DIGITS_SAME_HEIGHT = 1.06  # digits of one height within 6%
+_PERIOD_MAX_H = 0.3         # a full stop at most 0.3 of the digits' height
+_PERIOD_MAX_BASE = 0.1      # sitting within 0.1 of it of the baseline
+
+
 def _mac_order_cids(top, names):
     """{CID: Unicode text} of a CID-keyed CFF program converted from a
     TrueType font whose glyphs keep their TrueType numbers as CIDs, in the
@@ -488,19 +506,19 @@ def _mac_order_cids(top, names):
         cs[cids[cid]].draw(pen)
         return pen.bounds
     digits = [c for c in range(19, 29) if c in cids]
-    if len(digits) < 3:
+    if len(digits) < _DIGITS_MIN:
         return {}
     bs = [bounds(c) for c in digits]
     if any(b is None for b in bs):
         return {}
     hs = [b[3] - b[1] for b in bs]
-    if max(hs) > 1.06 * min(hs) or any(b[3] - b[1] <= b[2] - b[0] for b in bs):
+    if max(hs) > _DIGITS_SAME_HEIGHT * min(hs) or any(b[3] - b[1] <= b[2] - b[0] for b in bs):
         return {}
     if 3 in cids and bounds(3) is not None:
         return {}
     if 17 in cids:
         b = bounds(17)
-        if b is None or b[3] - b[1] > 0.3 * max(hs) or b[1] > 0.1 * max(hs):
+        if b is None or b[3] - b[1] > _PERIOD_MAX_H * max(hs) or b[1] > _PERIOD_MAX_BASE * max(hs):
             return {}
     out = {}
     for cid in cids:
@@ -611,6 +629,10 @@ _LIGATURE_SEQS = ("ff", "fi", "fl", "ffi", "ffl", "ft", "fft", "fj", "fb", "fh",
                   "tt", "ti", "tf", "tz", "st", "ct")
 
 
+_LIGATURE_TOL = 0.02      # a ligature's outline matches within 2% of the em
+_LIGATURE_ADVANCE = 0.03  # its advance the sum of its letters' within 3%
+
+
 def _ligature(c, glyphs, umap):
     """The letters of the ligature glyph of code c, from the font's other
     glyphs: a ligature starts where its first letter starts (same left
@@ -624,7 +646,7 @@ def _ligature(c, glyphs, umap):
     for k, v in umap.cid2unichr.items():
         if k != c and len(v) == 1 and k in glyphs and glyphs[k]["contours"] != 0:
             letters.setdefault(v, glyphs[k])
-    tol = 0.02 * g["upem"]
+    tol = _LIGATURE_TOL * g["upem"]
     fits = []
     for seq in _LIGATURE_SEQS:
         ms = [letters.get(ch) for ch in seq]
@@ -633,7 +655,7 @@ def _ligature(c, glyphs, umap):
         if abs(g["xmin"] - ms[0]["xmin"]) <= tol and \
                 abs(g["ymax"] - max(m["ymax"] for m in ms)) <= tol and \
                 abs(g["ymin"] - min(m["ymin"] for m in ms)) <= tol and \
-                abs(g["advance"] - sum(m["advance"] for m in ms)) <= 0.03 * g["advance"]:
+                abs(g["advance"] - sum(m["advance"] for m in ms)) <= _LIGATURE_ADVANCE * g["advance"]:
             fits.append(seq)
     return fits[0] if len(fits) == 1 else ""
 
@@ -669,6 +691,44 @@ def _simple_glyph_metrics(spec):
         return None
 
 
+_MINUS_BAR_LENGTHS = 3   # a Type 3 minus bar is 3 times as wide as tall
+_MINUS_BAR_LO_EM = 0.15  # from 0.15 em
+_MINUS_BAR_HI_EM = 0.6   # to 0.6 em above the baseline
+
+
+def _type3_bar(spec, name):
+    """Is Type 3 glyph `name` a single filled bar about the middle of the em:
+    its box (from d0/d1) at least 3 times as wide as tall, between 0.15 and
+    0.6 em above the baseline, and its outline one rectangle (one m, then
+    lines only)?  (The em: 1000 glyph units through a 0.001 matrix.)"""
+    try:
+        procs = resolve1(spec.get("CharProcs")) or {}
+        st = resolve1(procs.get(name))
+        if not isinstance(st, PDFStream):
+            return False
+        data = st.get_data()
+        d1 = re.search(rb"([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+d1", data)
+        if d1 is None:
+            return False
+        x0, y0, x1, y1 = (float(v) for v in d1.groups()[2:])
+        body = data[d1.end():]
+        if len(re.findall(rb"(?<![A-Za-z])[mcvyre](?![A-Za-z])", body)) != 1 or \
+                not re.search(rb"(?<![A-Za-z])m(?![A-Za-z])", body) or \
+                len(re.findall(rb"(?<![A-Za-z])l(?![A-Za-z])", body)) not in (3, 4):
+            return False
+        m = [float(resolve1(v)) for v in resolve1(spec.get("FontMatrix"))]
+        em = 1.0 / math.hypot(m[2], m[3]) if math.hypot(m[2], m[3]) > 0 else 1000.0
+        w, h = x1 - x0, y1 - y0
+        return h > 0 and w >= _MINUS_BAR_LENGTHS * h and _MINUS_BAR_LO_EM * em <= y0 and y1 <= _MINUS_BAR_HI_EM * em
+    except (TypeError, ValueError, IndexError, AttributeError):
+        return False
+
+
+_MATRIX_LO = 0.0009  # a matrix scaling by about 0.001 (1000 units to the em)
+_MATRIX_HI = 0.0011  # (the largest such scale)
+_BBOX_EMS = 1.3      # a font's box is taken for 1.3 em tall
+
+
 def _type3_em(spec, diffs):
     """How many text space units a Type 3 font's em is: its glyph space
     has no em, so its /FontBBox height is taken for 1.3 em (most fonts'
@@ -676,19 +736,22 @@ def _type3_em(spec, diffs):
     matplotlib Type 3 fonts, 2 048 units to the em and a matrix of
     0.004883, set 8 pt labels at /Tf 0.82: taken for 0.8 pt, they were no
     labels.  1 for other fonts, for a Type 3 font whose matrix scales by
-    0.001, and for one whose glyphs are not all named by glyph number
-    (marker glyphs - short-years's font "A" - keep their size)."""
+    0.001, and for one whose glyphs are not all named by glyph number or
+    by Adobe Glyph List names (marker glyphs - short-years's font "A",
+    glyphs a0, a1 ... - keep their size).  no.ntnu_inspera_146721987_
+    149459097-040's matplotlib labels (glyphs zero, one, A ..., a matrix of
+    0.004883) were 0.6 pt and read as no labels."""
     try:
         if getattr(resolve1(spec.get("Subtype")), "name", None) != "Type3" or not diffs or \
-                not all(re.fullmatch(r"uni[0-9A-Fa-f]{8}", v) for v in diffs.values()):
+                not all(re.fullmatch(r"uni[0-9A-Fa-f]{8}", v) or v in AGL2UV for v in diffs.values()):
             return 1.0                    # (only copies of TrueType text fonts)
         m = [float(resolve1(v)) for v in resolve1(spec.get("FontMatrix"))]
         d = math.hypot(m[2], m[3])
-        if 0.0009 <= d <= 0.0011:
+        if _MATRIX_LO <= d <= _MATRIX_HI:
             return 1.0                    # (1 000 units to the em, as in other fonts)
         bb = [float(resolve1(v)) for v in resolve1(spec.get("FontBBox"))]
         h = abs(bb[3] - bb[1]) * d
-        return h / 1.3 if h > 0 else 1.0
+        return h / _BBOX_EMS if h > 0 else 1.0
     except (TypeError, ValueError, IndexError):
         return 1.0
 

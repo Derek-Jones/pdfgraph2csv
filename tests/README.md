@@ -25,7 +25,7 @@ identical text columns, numeric columns within the case's tolerance.
 | synthetic-rotated-cw.pdf, synthetic-rotated-ccw.pdf | the synthetic plot turned both ways; must equal `synthetic-line-plus.csv` exactly |
 | ssrn-4204819-016.pdf | 1870 light-grey filled circles; graph turned 90° anticlockwise (y axis along the bottom, x axis up the right); log-log; every line and every label converted to filled outlines, so tick labels are read from glyph shapes. The points reproduce the empirical 1−F(x) steps k/N to 0.2% |
 | 2304_10304v3-005.pdf | matplotlib histogram on log-log axes; each marker drawn by the Form XObject /M0 (filled circle of 8 Béziers); labels 10^n with superscript exponents; log minor ticks. The 334 counts are integers summing to 108,745 as the caption says; the "1 month"/"1 year" lines map to 30 and 365 days |
-| Estimatingcomputerdepreciationauctiondata-001.pdf | two scatter plots (Desktops, Notebooks) via DVIPSONE + Distiller; every circle outline written twice in a row, runs of 4/6/8 for coincident points; each marker clipped separately. Desktops: 876 points = 706 used + 170 new at age 0, exactly as the paper states |
+| Estimatingcomputerdepreciationauctiondata-001.pdf | two scatter plots (Desktops, Notebooks) via DVIPSONE + Distiller; every circle outline written twice in a row, runs of 4/6/8 for coincident points; each marker clipped separately. every drawing of a marker is reported (each point twice: all points are output, those with the same x and y too) |
 | mpl-multipage-markers.pdf | two pages; open circles, diamonds, x; minus signs drawn as paths; `--pages`, `--internal` |
 | broken-axes.pdf | four Excel graphs whose x and/or y axes are broken by wiggle lines; the labels beyond each break were edited by painting white boxes over the old ones. Points on both sides of a break are mapped (piecewise axis) |
 | grid-line-axes.pdf | six graphs without tick marks (grid lines act as ticks); every label is outlined text, including '%'; x axes broken with a single label (4091, 3893) beyond the wiggle; legend names unreadable (keys flagged, series blank) |
@@ -140,7 +140,13 @@ identical text columns, numeric columns within the case's tolerance.
 | no.ntnu_inspera_146721987_149459097-031.pdf | Thesis page: two LaTeX tables drawn cell by cell, no graph |
 | ESEUR-slowpages.pdf | A page of R plots with thousands of points each, lines drawn as many separate strokes |
 | prob-book-171.pdf | two scatter plots of 1000 crowded filled circles each, every dot a strip of thin triangles, slightly oval (Microsoft Print to PDF); soft hyphens as minus signs; samples of Bivariate Normal (0, 0, 1, 1, 0) and (0, 0, 1, 1, 0.5) |
+| no.ntnu_inspera_146721987_149459097-037.pdf | matplotlib scatter plot of 11 714 markers in two clusters; minus signs as an unnamed Type 3 glyph |
+| no.ntnu_inspera_146721987_149459097-040.pdf | matplotlib scatter plot coloured by a colour bar (Library), labels in a Type 3 font of 2048 units to the em; with and without --heatmap |
+| Keynote_LuigiLavazza_EmpiricalSoftEng-003.pdf | slide with a background of fine lines (thousands of inline image tiles), no graph |
+| BehavioralNetworkScience-319.pdf | nine grids of coloured squares (spatial prisoner's dilemma), no tick labels, axis titles or legend: no graph |
 | BehavioralNetworkScience-305.pdf | Network diagram drawn as filled outlines (names and edges), no graph |
+| 2411.16433v1-066.pdf | Thesis page (Figs. 3.2, 3.3): 20 graphs - twelve small bar charts in a row sharing one y scale, six scatter plots side by side, two bar charts; category names with subscripts |
+| ArianeWuerbach-Phd-083.pdf | Thesis page (Fig. 3.1): one R plot of 19 estimates in three titled sections, True and Estimated circles drawn as Adobe Pi Std glyphs, confidence intervals as error bars |
 | damaged.pdf (beyond qpdf's repair), not-a-pdf.pdf, no-graph.pdf, many-shapes.pdf, zero-width-glyph.pdf, doubtful-axes.pdf | must fail cleanly or report that no graph was found (cases without `--expect` check only the exit status and the message) |
 
 `schumpeter-001.reference.csv` is the reference supplied with the PDF

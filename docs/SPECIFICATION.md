@@ -367,13 +367,130 @@ marks               symbols  fragments  charts
 naming              legend
 tools               tools  styles
 top                 pipeline  ->  cli  ->  pdfgraph2csv.py
-shared              geometry  grouping(union-find)  colours  context(page state)
+normalisation       normalise (between drawing and analysis)
+shared              geometry  spatial(indexes, union-find)  colours
+                    page(page model)  model(record keys)  context(settings)
 ```
 
-Records are plain dicts. Page state shared by several steps (graph boxes,
-typical label size, category-label candidates, wiggle marks, boxes that hide
-text, paths that are minus signs) lives in one object reset at the start of
-every page.
+**The page model.** Facts about the page that several steps share (graph
+boxes, typical label size, category-label candidates, wiggle marks, boxes
+that hide text, paths that are minus signs, unread outlined words, bare
+axes, the page's merged lines, chart frames, arrows, the turn of a page
+drawn sideways) live in one `page.Page`, made per page by
+`extract_page` and passed explicitly - the keyword argument `page` - to
+every step that reads or adds one; each field's comment names the step
+that sets it and the steps that read it. There is no module-level page
+state: a step's dependence on another shows in its signature. (This was
+once a global object reset per page; the hidden link that cost most was
+outlined_text's reading of specks as text deciding, through the unread
+words' parts, which shapes symbols.find_symbols kept.) Command-line
+settings that change how markers are read stay in `context.SETTINGS`.
+
+**Records** are plain dicts (fast to make by the hundred thousand; copied
+with a change by `dict(s, size=...)`). `model.py` declares, as
+TypedDicts, the keys each kind may carry - Path, Subpath, Text, Symbol,
+Axis, Graph - and what they mean. With the environment variable
+`PDFPOINTS_CHECK_MODEL` set the pipeline checks the records between its
+steps and stops on an undeclared key (a misspelt key reads as missing and
+gives a wrong answer silently); run the suite this way once whenever a
+key is added, and declare it.
+
+**Spatial indexes** (`spatial.py`): `SortedIndex` (items sorted by one
+coordinate, a range by bisection, ties in the items' order), `PointGrid`,
+`BoxGrid` and `DisjointSets`; and `PageIndex` (`page.index`), which builds
+an index of the page's content once, on first use, and gives the same one
+to every step that asks for it by name (rebuilt if asked for a different
+collection). Shared this way: the page's horizontal and vertical pieces
+(`axes.page_segments`, for find_axes and nongraphs.ruled_tables), the
+possible error-bar segments with their cap lookup (for lone_capped_bars
+and find_error_bars), the paths sorted across (tools.PathsByX). New code
+uses these indexes rather than all-pairs loops or cell dictionaries of
+its own.
+
+**The normalisation stage** (`normalise.py`). Between the interpreter
+(what is drawn) and the analysis (axes, graphs, points), the drawing is
+rewritten into one standard form, so that the analysis meets each thing
+one way, by a list of named `Normaliser`s (NORMALISERS, in order) run on a
+`Drawing` (the interpreter's record, rewritten in place, and what the
+steps produce):
+
+| normaliser | what it does |
+|---|---|
+| drop_clipped_texts | text whose middle is outside its clipping box or form is not seen |
+| drop_repeated_texts | text drawn again in the same place is one text |
+| drop_hidden_glyphs | glyphs painted over by a later opaque box are not seen |
+| drop_hidden_paths | paths of a form drawn through several windows, outside the window they are drawn in |
+| strip_discs | a fan of thin triangles filling a disc becomes one filled circle (a 24-gon carrying its classification, "rebuilt": "strip disc"); the pieces are gone for every later step (prob-book-171: 10 s to 2 s, its 36 000 triangles no longer read as glyphs) |
+| break_marks | axis-break wiggles, known before glyphs are read (they are none) |
+| outlined_text | filled glyph outlines read as text: numbers by shape, other words kept as unread blobs |
+| fill_stroke | a marker shape (at most 20 pt, not a rectangle) filled and then stroked as a separate path of the very same outline, drawn one right after the other, becomes one path painted both ways, in the first one's place (no.ntnu_inspera_146721987_149459097-037's 11 714 markers: 23 428 paths to 11 714). Bars, frames and tick rectangles are left as drawn: the axes and bars read their pairs as they are (S1383762124002030 lost two graphs when they were joined) |
+| words | glyph runs merged into words and labels |
+| billions | "2.00B" among millions is billions, not bytes |
+| vector_minus | a drawn bar just before a number is its minus sign |
+
+`--debug` reports, per normaliser, the paths, raw texts and words it
+removed and added (PDFPOINTS_RULE_STATS records them as
+"normalise:NAME"). A new way of drawing something already handled is a
+new normaliser, not a change in the analysis. Steps that need the graphs
+stay in the symbol rules (rebuilding fragmented circles of flattened
+transparency needs the plot boxes to tell round letters from markers),
+and the turning of a page drawn sideways happens as it is drawn
+(extract_page draws it again turned). All test outputs were unchanged by
+the stage.
+
+**The filter chain as named rules** (`rules.py`). The steps that decide
+which shapes are data points run as two lists of `Rule`s in
+`pipeline.py`: `FIND_RULES` (the shapes that may be markers; markers
+broken by flattened transparency rebuilt; shapes painted over, highlight boxes, marker faces and
+rings, hidden dots, covered bits, specks and arrowheads dropped; image
+markers added) and `GRAPH_RULES`, run once the graphs are known (plot
+backgrounds, letters of unread names, corner
+ticks, markers in prose, note-box dashes, rule joints, pattern dashes,
+dash markers, foreign crowds, legend frames, dots under circles, crossed
+squares). Each rule has a name, its function `(symbols, ctx) -> symbols`
+and a one-sentence reason (the first sentence of its docstring);
+`rules.describe(rules)` lists them. A `Tracer` watches a run:
+
+* `--debug`: per page, each rule that dropped, added or changed symbols
+  (changed: kept with another shape, fill, place, size, colour or legend
+  frame), with the counts;
+* `PDFPOINTS_TRACE=x,y[,r]`: every symbol within r pt (default 3) of the
+  page point (x, y) - the coordinates `--internal` writes - that a rule
+  drops, adds or changes, by rule: why a point is missing;
+* `PDFPOINTS_RULE_STATS=FILE`: a line per rule and page, "page, rule,
+  dropped, added, changed", appended to FILE. Summed over the regression
+  suite (`PDFPOINTS_RULE_STATS=/tmp/s tests/run_tests.sh`), a rule that
+  never changes anything is one no test exercises (November 2026:
+  drop_rule_joints, written for 564-010, which is not in the suite).
+
+With no tracer active a chain costs nothing extra.
+
+**Named thresholds.** The numbers of the rules are module constants,
+defined just above the function that uses them, each with a comment
+saying what it bounds. Names end in their unit:
+
+| suffix | unit |
+|---|---|
+| `_PT` | page points (1/72 inch) |
+| `_SIZES` | multiples of the marker's size |
+| `_EMS` | multiples of the font size |
+| `_R` | multiples of a circle's radius |
+| `_TICKS`, `_WIDTHS`, `_HEIGHTS`, `_SIDES`, `_LENGTHS` | multiples of a tick length, line width, box height, side, thickness |
+| `_FRAC` | a fraction (of a box, a count, an area) |
+| `_DEG` | degrees |
+| `_MIN`, `_MAX`, a count | numbers of things |
+
+One name is used wherever a number means the same thing (so a change
+moves all its uses together); two uses of one value that mean different
+things get two names. Every module's thresholds are named this way
+(about 975 constants for about 1 500 uses). What stays inline is no
+threshold: halves taken for a middle (`0.5 * (a + b)`), guards against
+dividing by zero (`1e-9`), unit conversions (255, 1000, 360, 12 months),
+counts of a shape's segments or a colour's components (3, 4), bit masks
+and character codes, and the command line's defaults (named in its help
+text). A new rule's numbers are named the same way when it is written.
+The renaming was checked byte for byte: every expected output of the
+regression suite regenerated before and after, identical.
 
 ## 6. Opening the file
 
@@ -428,8 +545,19 @@ killed). Write a **streaming tokenizer** that yields one
   dictionaries, `true/false/null`, comments; stray closing brackets are
   ignored; an operator inside an unclosed array/dict ends it.
 * Numbers: integers as `int`, reals as `float` (as pdfminer gives them).
-* Streams containing inline images (`BI ... ID ... EI`) go to qpdf's
-  tokenizer; if qpdf rejects the content, fall back to pdfminer's parser.
+* Inline images (`BI ... ID ... EI`) are read by the tokenizer too, given
+  as ("BI", (dictionary with full key and filter names, raw data)): the
+  data's end is known from its length when it has no filter (width x
+  height x components x bits per component, rows padded to bytes), or
+  where Flate data ends (zlib, fed in growing pieces), and must be
+  followed by EI; otherwise it is the first EI between white space. The
+  raw data runs up to EI, as qpdf gives it. A stream with an image whose
+  end is not found (checked first, every BI) goes to qpdf's tokenizer; if
+  qpdf rejects the content, fall back to pdfminer's parser.
+  (Keynote_LuigiLavazza_EmpiricalSoftEng-003: 18 700 inline background
+  tiles; qpdf's objects for them took most of the 6 s, now 2 s. Checked
+  against qpdf on every stream of the test corpus with inline images:
+  operators, image sizes and raw data identical.)
 * Validate the tokenizer against qpdf on every content stream of the test
   corpus: operators and operands must be identical.
 * Target: about 7–10 s for a 92 MB stream; memory independent of size.
@@ -476,6 +604,8 @@ killed). Write a **streaming tokenizer** that yields one
   U+25C6), then by its code: an embedded subset may re-encode the font
   (pdfTeX gives sarroRE15-008's ZapfDingbatsITC circle code 33, still
   decoding to U+25CF), and no outlier of its eight box plots was found.
+  Adobe Pi Std, which Acrobat puts in the place of ZapfDingbats (same
+  metrics), counts as ZapfDingbats (ArianeWuerbach-Phd-083's R circles).
 * **Fonts**: Unicode from ToUnicode, else /Differences glyph names via the
   Adobe Glyph List (fontTools), else fixes for TeX symbol fonts and dashes,
   else the base encoding; ligatures spelt out (fi, fl, ffi, ...). Standard-14
@@ -490,13 +620,21 @@ killed). Write a **streaming tokenizer** that yields one
   given out afresh from 0 (2407.03385v3's matplotlib Type 3 fonts, code 0
   "uni00000011") and every glyph number from 3 to 97 is read in the
   Macintosh standard glyph order, which TrueType fonts keep for printable
-  ASCII (glyph 3 the space, 19 "0", 36 "A": the character 29 on).
+  ASCII (glyph 3 the space, 19 "0", 36 "A": the character 29 on). A glyph
+  number beyond those whose glyph is a single filled bar (one rectangle,
+  its box at least 3 times as wide as tall, 0.15 to 0.6 em above the
+  baseline) is the minus sign (no.ntnu_inspera_146721987_149459097-037's
+  glyph 0xED: y labels "-30" ... "-10" were "?30" ... and the axis had no
+  negative labels).
 * **The em of a Type 3 font** whose glyphs are all named by glyph number
-  and whose /FontMatrix does not scale by 0.001 is its /FontBBox height
-  through the matrix, taken for 1.3 em: text sizes, word gaps and label
-  heights use it (2407.03385v3: 2 048 units to the em, a matrix of
-  0.004883, labels at /Tf 0.82 that are 8 pt). Other Type 3 fonts (marker
-  glyphs) keep the font size.
+  or by Adobe Glyph List names (zero, one, A, parenleft ...) and whose
+  /FontMatrix does not scale by 0.001 is its /FontBBox height through the
+  matrix, taken for 1.3 em: text sizes, word gaps and label heights use it
+  (2407.03385v3: 2 048 units to the em, a matrix of 0.004883, labels at
+  /Tf 0.82 that are 8 pt; no.ntnu_inspera_146721987_149459097-040, glyph
+  names zero, one ..., the same matrix: labels at /Tf 1 were 0.6 pt and
+  no label was read). Other Type 3 fonts (marker glyphs: short-years's
+  a0, a1 ...) keep the font size.
 * **Fonts without a map to Unicode**: for a two-byte (CID) font whose code
   neither ToUnicode nor pdfminer explains, read the embedded font program
   (FontFile2, FontFile3/OpenType, bare CFF; the descendant's for Type 0):
@@ -847,7 +985,10 @@ Some PDF writers convert every character into a filled path. Then:
   light colour covering ≥ 80% of their union, separated by thin gaps
   (≤ 8 pt and ≤ 15% of the blocks beside them), gives a grid line through
   the middle of each gap, across the whole union, and the union's edges as
-  axis lines.
+  axis lines - unless two or more of the blocks are boxes that drawing is
+  clipped to (within 0.5 pt): those are plots side by side, each on its own
+  background (2411.16433v1-066's six scatter plots, 5.5 pt apart, their y
+  labels in the gaps).
 * A tick may be drawn as a tiny closed rectangle that is stroked (and maybe
   also filled), as InDesign does (0.3 × 1.5 pt): a thin rectangle up to
   12 pt long counts as its centre line, and its edges are not lines (the
@@ -1140,6 +1281,29 @@ Some PDF writers convert every character into a filled path. Then:
   is tried before the plot's sides are taken for two ticks pairing the
   first and last labels as a scale, and such a scale fitted to two labels
   on a line that also has these categories is dropped.
+* A label standing between an axis line and a nearer parallel line with
+  the same ends (within 5% of the length: the side of the plot beside it)
+  is that line's, not this one's: 2411.16433v1-066's y labels in the
+  5.5 pt gaps between side-by-side scatter plots, 0.8 pt from the plot on
+  their right, 3 pt from the right side of the one before (and Figure 1f
+  of VaskeBeaman2006-Lessonslearned-003 now reads all eight of its y
+  labels, 0 ... 140).
+* Ticks that stand off a line by over 1 pt with text in the gap are no
+  ticks of that line: labels stand outside their ticks (2411.16433v1-066:
+  the left sides of the twelve small bar charts, 26 pt long, 6.5 pt above
+  the top edge of the scatter plots, their category names in the gap).
+* A category axis whose labels are all labels of a longer category axis
+  of the same direction is a part of that row on another line - the edge
+  of a shaded band over the plot - and is dropped (2411.16433v1-066's
+  chart B: the band's lower edge, nearer the names than the axis line,
+  took four of the eight).
+* Category names set close (under 0.6 em apart) are joined as pieces of
+  one word only when one of them is a single character or unread: two
+  names read as text are two names ("N2", "P1", "DT3", "N3", under 0.1 em
+  apart). Subscripts set just lowered (by 0.05 to 0.5 of the size, under
+  0.8 of it, within 0.15 em after a letter) join the name before them for
+  category labels ("N" + "2"), and are then no tick numbers; the word
+  ends with its subscript.
 * An axis placed by its labels (no ticks) is dropped when its labels'
   column stands nearer another parallel axis line with more labels of
   that column (the same page: Figure 1e's right frame side took the top
@@ -1290,6 +1454,18 @@ Some PDF writers convert every character into a filled path. Then:
   (ArianeWuerbach-Phd-219: a trace plot's own value axis, and the scale of
   the plot at the foot of its column borrowed along the shared iteration
   axis).
+* **A row of small bar charts sharing one y scale** (2411.16433v1-066:
+  twelve charts 24 pt wide, grid lines at 0 ... 3 in each, labelled left
+  of the first only; each x axis is the chart's zero line, 3.6 pt above
+  its foot, so no corner meets): an x axis left without a graph whose low
+  end meets (within 2 pt) a bare y axis (ticks or grid lines, no labels)
+  takes the scale of a graph's labelled y axis when the bare axis's ticks
+  lie where that axis's ticks lie (as many, within 0.5 pt or 0.5% of the
+  span), it spans the same stretch (within 1%), and the panels step along
+  the row from it (each at most twice the axis's length on from the one
+  before). The sides of small multiples - three or more lines as long
+  (within 2%), level (within 0.5 pt), side by side, 10 to 30 pt long -
+  may carry category axes, which are otherwise 30 pt long at least.
 * **Small multiples** (lattice/facet plots): only outer panels carry labels;
   every framed rectangle spanned by a column's x axis and a row's y axis is
   a graph sharing those scales (216 panels on one page in the corpus). So
@@ -1519,12 +1695,20 @@ files with known true values slightly worse.
   8 pt or three head sizes, and 30° of its direction), even when it is a
   word of a legend name or up to twice the axis labels' size (section 7,
   `label`).
-* **Doubled outlines**: some converters (Acrobat Distiller) write every
-  marker outline twice in a row. Form runs of identical consecutive marker
-  outlines (followed across painting operations); when ≥ 90% of outlines
-  are in runs of even length, a run of L outlines is L/2 points. (Compare
-  start points first and only build the rounded geometry when they agree —
-  rounding every coordinate of 460,000 outlines was a major cost.)
+* **Every data point is output, those with the same x and y too** (the
+  user's rule). A marker drawn again in the same place is reported again:
+  some converters (Acrobat Distiller) write every marker outline twice in
+  a row (Estimatingcomputerdepreciationauctiondata-001), and 460-201's Q-Q
+  plot draws its 37 676 squares twice over - both drawings are reported.
+  (Earlier versions halved even runs of identical outlines, and kept one
+  of a graph's markers drawn 2 to 4 times over; both rules were removed.)
+  Every vertex of a stroked data line is a point, a repeated one too; the
+  corners of lines traced from dashes or outlines repeat by the tracing
+  and are taken once. What is one marker drawn in parts stays one point:
+  a shape filled and then stroked (joined by the normalisation stage, or
+  merge_fill_outline), a ring and its body, a '+' and a 'x' making an
+  asterisk, the fill and outline of one bar, a legend key drawn by several
+  layers.
 * **Highlight boxes**: an open square or circle drawn round a smaller marker
   of another colour is not a data point. Index candidates **by colour** so
   that stacks of thousands of same-colour markers are never compared.
@@ -1785,11 +1969,7 @@ the edge of a bar of almost 0, 2020.01.30.927558.full-023):
   (460-201's histogram, R's hist() with no fill colour); they come after
   filled bars, and one within a stroke's width of a filled bar is its
   outline, no bar of its own. They never make stacked segments.
-* **A graph drawn twice**: when a graph's markers of its main kind, in
-  drawing order, are 2 to 4 equal runs (shape, fill and place to 0.01 pt,
-  50 markers a run or more), only the first run is data (460-201's Q-Q
-  plot draws its 37 676 squares twice over). Points drawn twice here and
-  there stay. A number
+* A number
   (with or without %) within 1.5 of its size of one bar only whose value,
   read on the graph's scale, it states (to its last decimal, or within
   0.2% of the axis's range) is that bar's label wherever it stands
@@ -2260,7 +2440,9 @@ range (85-90 ... 00-05).
 * A label that ends in a colon with a number just after it ("RMSE: 2.14",
   a fit annotation beside a stray data point, ThomasBockPhD-073) reads
   out a value: it names no series.
-* Subscripts/superscripts continuing the label are appended, and so are
+* Subscripts/superscripts continuing the label are appended - a
+  subscript and a superscript set one over the other both, the lower
+  first (2411.16433v1-066's "N2PO × N2DO") - and so are
   following words set as separate pieces (same size and baseline, gap ≤
   0.4 em, not a number, no marker in between - the legend's frame box is
   no marker): "FULL" + "higher", "λ" + "=0.01".
@@ -2336,6 +2518,11 @@ swatches sample a continuous colour scale (symbols-on-axes, #ff0500,
 
 ### 14.1 Title (meta file, `--debug`; not in the points CSV)
 
+* A plot divided into sections by lines from its foot to its top (95% of
+  its height or more), each section with a title inside the top set like
+  the title found (same size and baseline, one per section), is one
+  graph; its title is the section titles, left to right, joined by " | "
+  (ArianeWuerbach-Phd-083: "mod(100) | mod(500) | mod(1000)").
 * (A title's box may dip into the plot by up to 0.15 of its size, its
   descent: 2020.01.30.927558.full-023's y axis lines end 1.2 pt into
   "IIAB"; by up to 1.2 sizes when it is centred within 5% of the width
@@ -2344,7 +2531,11 @@ swatches sample a continuous colour scale (symbols-on-axes, #ff0500,
   Memory_systems_cacheDRAMdisk-051's "PERL" (now its title; ThomasBockPhD-
   073's note "Goodness of fit: ...", 6% off centre, is none). A word less
   than half a size beside a title candidate is the title's next word, not
-  a crowding legend label: -048's "Individual" and "results". Words
+  a crowding legend label: -048's "Individual" and "results". A word over
+  another graph and not over this one does not crowd it (2411.16433v1-066:
+  the end of chart A's title, 17 pt before chart B's "B."); the rest of a
+  title's line may be set up to 15% smaller ("(s-PE: 1.32)" after
+  "w-PE(DO)"). Words
   before the candidate on its line, a word space apart, open the title
   (ThomasBockPhD-073's "QEMU (message-based, file-based, 𝜉 = 5)"); a
   candidate is centred as the whole line it is a word of, within the
@@ -2604,8 +2795,10 @@ Rules that follow:
   cells of 0.12 pt, and their arcs filed in cells of the search radius;
   stacked-bar segments are looked up by their left edge; a bar's
   neighbours in drawing order by a dictionary of drawing steps.
-* Two shared indexes serve the searches: `grouping.BoxGrid` (boxes filed
-  in every cell they touch; `near(box, reach)`) and `grouping.PointGrid`
+* The shared indexes serve the searches (spatial.py, section 5):
+  `SortedIndex` (one coordinate, a range by bisection),
+  `spatial.BoxGrid` (boxes filed
+  in every cell they touch; `near(box, reach)`) and `spatial.PointGrid`
   (items at points; `near(x, y, rings)` yields the 3 x 3 block of cells,
   or more rings, column by column, each cell in filing order, so that a
   search that keeps the first or last match finds the same one as a scan
@@ -2660,6 +2853,16 @@ Rules that follow:
   edge only the sample rows it spans and marks the samples between pairs
   of crossings by bisection (the same cells as testing every sample).
   The test file ESEUR-slowpages is now its third page alone (17 s).
+* BehavioralNetworkScience-319 (nine grids of thousands of coloured
+  squares; no tick labels, axis titles or legend, so no graph) took 8
+  minutes, now 11 s (10 of them executing the page): the edges of the
+  squares make hundreds of tick groups, and each tested every tick
+  against every small filled box for a legend key's median. The boxes
+  are now filed in 21 pt cells by their low corner, so a tick looks only
+  at the boxes that may hold it, and a group is decided as soon as 60% of
+  its ticks are found in boxes, or can no longer be. (Graphs are found
+  from tick labels before any marker work, so a page with none stops
+  there; only that search needed to be quicker.)
 * Profile with a 92 MB-stream page: about 15 s to execute, about 20 s for
   all the analysis after it. Reference times of this version (one core):
   200 000 markers 32 s, 472 000 markers 35 s, 50 000 outline fragments
@@ -2855,9 +3058,10 @@ start.
 ### 19.1 Runner (`tests/run_tests.sh`, bash only)
 
 The user requires the main test script to be bash (no Python runner); it
-needs only bash ≥ 3.2 (macOS), awk, grep, sort, diff, cmp, and `timeout` if
-available (600 s per run). Options: `-v` (one line per case with its run
-time), `-k TEXT` (case-insensitive substring of the case name),
+needs only bash ≥ 3.2 (macOS), awk, grep, sort, diff, cmp, xargs, and
+`timeout` if available (600 s per run). Options: `-v` (one line per case
+with its run time), `-k TEXT` (case-insensitive substring of the case name),
+`-j N` (cases run at a time; default one per processor, `-j 1` one by one),
 `--update` (rewrite expected CSVs from the program, reporting created /
 unchanged / UPDATED; hand-made references are kept), `--generate`
 (re-create the synthetic PDFs with the Python generators, skipping the
@@ -2865,6 +3069,18 @@ matplotlib one if matplotlib is missing, then run the cases), `-h`.
 `$PYTHON` chooses the interpreter (default python3). Exit status 0 when all
 selected cases pass; "no cases selected" → 1. Summary: "N cases: P passed,
 F failed (Ts)" and the names of failures.
+
+Cases run in parallel through `xargs -P N`. The script is run first to
+list the cases whose names pass `-k` (each `t`, `t_help` and `t_progress`
+call takes the next case number); xargs then runs the script once per
+selected case, `--run-case K` (internal), which skips every case but the
+K-th, works in a temporary directory of its own and writes its report
+and its pass/fail counts to files in a shared results directory. The
+listing run prints the reports in the cases' order as each becomes
+available, so the output reads as a serial run's; only the times shrink
+(the suite about 10 minutes on one core, about half on two). With
+`--update`, an expected file is replaced in one step (copy, then rename),
+since cases sharing one may be updated at the same time.
 
 Cases are listed in the script itself, one call each:
 
@@ -3006,7 +3222,7 @@ expected files in a copy.
 | 2020.01.30.927558.full-048 | heat map pictures (JPEG) read cell by cell, valued by colour or brightness on a colour bar at the row's right end; bars valued by colour; flush-left labels on ticked y axes; frame-hanging tick axes; category rows borrowed across a gap; colour-bar scales no axes; turned colour-bar titles; titles of separate words; short-bar outlines |
 | economies-open-intelligence-005 | stacked area bands (one point per top vertex, `y_base`); legend keys to the chart whose paper they are on; areas named by keys of any shape; numbers inside legend labels |
 | 3832783.3834484-004 | a drawing placed through several form windows read once per window; category labels set below the plot for an axis on the zero line; bar values matched by the number they state; two-part running headers 4 sizes apart |
-| 460-201 | 6 min 40 s to under 2 min (outlined-text grouping near real glyphs only; indexed circle centres, arcs, stacked segments, short bars); markers drawn twice over kept once; outlined rectangles as bars |
+| 460-201 | 6 min 40 s to under 2 min (outlined-text grouping near real glyphs only; indexed circle centres, arcs, stacked segments, short bars); outlined rectangles as bars (markers drawn twice over: both reported, under the rule that every point is output) |
 | 2020.01.30.927558.full-012 | x axes borrowed down a column past a redrawn unlabelled axis line; open-axes lattice panels; band line samples; line legends shared across panels joined by axes; titles centred as whole lines; turned words crowd no title; fill, stroke and twice-outlined markers kept once |
 | 2602.03839v2-029 | outlined-line slices cut by spanning edges only, slice middles chained through a grid: 25 min to 7 s |
 | gopinath2014mutations-004 | bars sorted across for on-bar checks, stacked segments filed once: 12 min to 20 s; bars of heat-map cells dropped |
@@ -3014,7 +3230,13 @@ expected files in a copy.
 | no.ntnu_inspera_146721987_149459097-031 | category names standing inside the box: a table |
 | ESEUR-slowpages | (the test file is page 3 of the original four) 7.7 min to 1.5 min: stroked pieces join series by indexed end points; lone capped bars, caps, legend neighbours and line-sample rows looked up by sorted index |
 | prob-book-171 | strip discs split at their no-width end slivers (crowded dots drawn one after another), oval up to 0.7; soft hyphen as a minus sign |
+| no.ntnu_inspera_146721987_149459097-037 | markers filled, then stroked apart, joined into one path (normalisation stage); a renumbered Type 3 glyph that is a lone bar about the middle is a minus |
+| no.ntnu_inspera_146721987_149459097-040 | Type 3 em from the font box for glyphs with Adobe Glyph List names too (a matrix of 0.004883: labels were 0.6 pt) |
+| Keynote_LuigiLavazza_EmpiricalSoftEng-003 | inline images read by the streaming tokenizer (ends from length, Flate end or EI): 6 s to 2 s |
+| BehavioralNetworkScience-319 | grids of coloured squares, no graph: legend-key box test through a grid of the boxes, decided early: 8 min to 11 s |
 | BehavioralNetworkScience-305 | network diagram of outlines, no graph: specks under 1 pt not rasterised; glyph raster by spans: 113 s to 36 s |
+| ArianeWuerbach-Phd-083 | Adobe Pi Std glyphs as ZapfDingbats markers; one plot in titled sections: the section titles joined |
+| 2411.16433v1-066 | 20 graphs: a row of small bar charts sharing one y scale (zero-line x axes, sides under 30 pt); scatter plots on backgrounds clipped to each (no tiled grid), y labels to the nearer plot side; subscripted category names; band edge no category axis; markers as big as the one under them are points, not highlights; stacked legend scripts |
 | overflow-exponent | "10^602" in body text |
 | encrypted*, enc-* | RC4-40/128, AES-128/256, user password |
 | bad-stream, damaged, not-a-pdf, no-graph, many-shapes, zero-width-glyph, doubtful-axes | clean failures and "no graph" |

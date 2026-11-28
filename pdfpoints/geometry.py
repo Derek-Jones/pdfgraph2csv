@@ -35,7 +35,10 @@ def is_polygon(sp):
     return bool(sp["segs"]) and all(seg[0] == "l" for seg in sp["segs"])
 
 
-def box_of(sp, tol=0.5):
+_BOX_TOL_PT = 0.5  # a rectangle's corners on its box within 0.5 pt
+
+
+def box_of(sp, tol=_BOX_TOL_PT):
     """An axis-aligned box drawn as a 4- or 5-point polygon whose corners
     lie within `tol` of its bounding box's corners -> (x0, y0, x1, y1), else
     None.  Looser than rect_of: boxes round notes and table rules come from
@@ -66,7 +69,10 @@ def inside_rect(rect, x, y, slack=0.0):
     return rect[0] - slack <= x <= rect[2] + slack and rect[1] - slack <= y <= rect[3] + slack
 
 
-def encloses(outer, inner, slack=0.5):
+_ENCLOSE_SLACK_PT = 0.5  # a box inside another with 0.5 pt to spare
+
+
+def encloses(outer, inner, slack=_ENCLOSE_SLACK_PT):
     """Whether box `outer` (widened by `slack`) contains box `inner`."""
     return (outer[0] - slack <= inner[0] and inner[2] <= outer[2] + slack and
             outer[1] - slack <= inner[1] and inner[3] <= outer[3] + slack)
@@ -94,6 +100,9 @@ def fmt_rect(rect):
     return tuple(round(v, 2) for v in rect)
 
 
+_RECT_CLOSE_PT = 0.01  # a rectangle's outline closed, and its sides axis-aligned, within 0.01 pt
+
+
 def rect_of(sp):
     """Axis-aligned rectangle (x0, y0, x1, y1) traced by a subpath, or None.
     Strict (coordinates to 0.01): used where a box must be exact, such as
@@ -101,7 +110,7 @@ def rect_of(sp):
     pts = vertices(sp)
     if any(seg[0] != "l" for seg in sp["segs"]) or not 4 <= len(pts) <= 5:
         return None
-    if len(pts) == 5 and math.hypot(pts[4][0] - pts[0][0], pts[4][1] - pts[0][1]) > 0.01:
+    if len(pts) == 5 and math.hypot(pts[4][0] - pts[0][0], pts[4][1] - pts[0][1]) > _RECT_CLOSE_PT:
         return None
     pts = pts[:4]
     xs = sorted({round(p[0], 2) for p in pts})
@@ -109,7 +118,7 @@ def rect_of(sp):
     if len(xs) != 2 or len(ys) != 2:
         return None
     for p, q in zip(pts, pts[1:] + pts[:1]):
-        if abs(p[0] - q[0]) > 0.01 and abs(p[1] - q[1]) > 0.01:
+        if abs(p[0] - q[0]) > _RECT_CLOSE_PT and abs(p[1] - q[1]) > _RECT_CLOSE_PT:
             return None
     return (xs[0], ys[0], xs[1], ys[1])
 
@@ -131,13 +140,17 @@ def straight_segments(paint, open_only=False):
             yield cur, start
 
 
+_ALIGNED_FRAC = 0.02  # an axis-aligned segment: off by 2% of its length
+_ALIGNED_PT = 0.01    # plus 0.01 pt
+
+
 def axis_aligned(p, q):
     """Return ('h', lo, hi, y) / ('v', lo, hi, x) or None."""
     dx, dy = q[0] - p[0], q[1] - p[1]
     L = math.hypot(dx, dy)
     if L <= 1e-9:
         return None
-    tol = 0.02 * L + 0.01
+    tol = _ALIGNED_FRAC * L + _ALIGNED_PT
     if abs(dy) <= tol and abs(dx) > tol:
         return ("h", min(p[0], q[0]), max(p[0], q[0]), (p[1] + q[1]) / 2)
     if abs(dx) <= tol and abs(dy) > tol:
@@ -145,11 +158,14 @@ def axis_aligned(p, q):
     return None
 
 
+_COLLINEAR_PT = 0.05  # pieces of one line: position and gap within 0.05 pt
+
+
 def merge_collinear(segs):
     """segs: list of (lo, hi, pos). Merge pieces of the same line."""
     out = []
     for lo, hi, pos in sorted(segs, key=lambda s: (round(s[2], 1), s[0])):
-        if out and abs(out[-1][2] - pos) <= 0.05 and lo <= out[-1][1] + 0.05:
+        if out and abs(out[-1][2] - pos) <= _COLLINEAR_PT and lo <= out[-1][1] + _COLLINEAR_PT:
             o = out[-1]
             out[-1] = (o[0], max(o[1], hi), o[2])
         else:
@@ -226,16 +242,19 @@ def memoized(kind, sp, compute):
     return value
 
 
-def flatten_subpath(sp, steps=6):
+_FLATTEN_STEPS = 6  # Bezier curves flattened in 6 steps by default
+
+
+def flatten_subpath(sp, steps=_FLATTEN_STEPS):
     """Subpath -> polygon (list of points), Beziers flattened (a new list
     each time; the work is done once per subpath)."""
-    if steps == 6:
+    if steps == _FLATTEN_STEPS:
         return list(memoized("flat", sp, _flatten6))
     return _flatten(sp, steps)
 
 
 def _flatten6(sp):
-    return _flatten(sp, 6)
+    return _flatten(sp, _FLATTEN_STEPS)
 
 
 def _flatten(sp, steps):
@@ -260,13 +279,18 @@ def thin_rect_line(sp):
     return memoized("thin", sp, _thin_rect_line)
 
 
+_THIN_MAX_PT = 2.0  # a stroke drawn as a thin rectangle is at most 2 pt thick
+_THIN_FRAC = 0.4    # and 0.4 of its length
+_THIN_FILL = 0.8    # filling 80% of its box
+
+
 def _thin_rect_line(sp):
     if not sp["segs"]:
         return None
     x0, y0, x1, y1 = subpath_bbox(sp)
     w, h = x1 - x0, y1 - y0
     t, L = min(w, h), max(w, h)
-    if L <= 0 or t > 2.0 or t > 0.4 * L:
+    if L <= 0 or t > _THIN_MAX_PT or t > _THIN_FRAC * L:
         return None
     # the long sides must be straight, and the shape must fill its bounding
     # box like a stroke does (a capsule fills > 85 %; a digit '1' ~40 %)
@@ -275,7 +299,7 @@ def _thin_rect_line(sp):
         return None
     poly = flatten_subpath(sp)
     area = abs(sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(poly, poly[1:] + poly[:1]))) / 2
-    if area < 0.8 * w * h:
+    if area < _THIN_FILL * w * h:
         return None
     if w >= h:
         ym = (y0 + y1) / 2

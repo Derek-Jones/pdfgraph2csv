@@ -72,13 +72,24 @@ def _matches(h, rgbs, tol=2):
     return any(all(abs(a - b) <= tol for a, b in zip(c, r)) for r in rgbs)
 
 
+_MARGIN_X = 0.1       # a graph's paths: within 10% of its width
+_MARGIN_Y = 0.15      # and 15% of its height
+_SPECIAL_SHARE = 0.2  # special colours on 20% of the paths
+_STRONG = 3.0         # the weight of strong evidence
+_MATLAB_WEIGHT = 1.5  # the weight of MATLAB's light grey
+_DIAMONDS_MIN = 3     # 3 diamonds or more
+_SHARE = 0.8          # 80% of strokes or graphics states
+_WEAK = 0.5           # the weight of weak evidence
+_LEAST_SCORE = 2.5    # a guess needs a score of 2.5
+
+
 def guess_tool(rect, paths, texts, glyph_symbols):
     """The likely program ("R", "R (ggplot2)", "R (lattice)", "matplotlib",
     "MATLAB", "Excel", "gnuplot", "Mathematica", "Stata") that drew the
     graph with box `rect`, judged from the paths, texts and Dingbats markers
     in and around it; "" when no program stands out."""
     x0, y0, x1, y1 = rect
-    mx, my = 0.1 * (x1 - x0), 0.15 * (y1 - y0)
+    mx, my = _MARGIN_X * (x1 - x0), _MARGIN_Y * (y1 - y0)
 
     def near(x, y):
         return x0 - mx <= x <= x1 + mx and y0 - my <= y <= y1 + my
@@ -118,25 +129,25 @@ def guess_tool(rect, paths, texts, glyph_symbols):
         owners[c] = exact or [t for t, rgbs in _PALETTE_RGB.items() if _matches(c, rgbs)]
     for tool in _PALETTES:
         hits = [c for c in special if tool in owners[c]]
-        if hits and sum(special[c] for c in hits) >= 0.2 * total:
-            add(tool, min(3.0, 1.0 + len(hits)))
+        if hits and sum(special[c] for c in hits) >= _SPECIAL_SHARE * total:
+            add(tool, min(_STRONG, 1.0 + len(hits)))
     # MATLAB draws axes, ticks and labels in #262626
     if any(_matches(c, [(38, 38, 38)], 1) for c in colours):
-        add("MATLAB", 1.5)
+        add("MATLAB", _MATLAB_WEIGHT)
 
     # R: ZapfDingbats circles; round caps and joins with 2-3 decimals
     if dingbats:
-        add("R", 3.0)
+        add("R", _STRONG)
     if strokes:
         rounded = sum(1 for st in strokes if st[1] == 1 and st[2] == 1 and
                       st[3] is not None and st[3] <= 3)
-        if rounded >= 0.8 * len(strokes):
+        if rounded >= _SHARE * len(strokes):
             add("R", 2.0)
 
     # matplotlib: graphics states A1, A2, ...; marker drawings M0, M1, ...
     gs = [st[5] for st in styles if st[5]]
-    if gs and sum(1 for g in gs if re.fullmatch(r"A\d+", g)) >= 0.8 * len(gs):
-        add("matplotlib", 3.0)
+    if gs and sum(1 for g in gs if re.fullmatch(r"A\d+", g)) >= _SHARE * len(gs):
+        add("matplotlib", _STRONG)
     if any(st[4] and re.fullmatch(r"M\d+", st[4]) for st in styles):
         add("matplotlib", 2.0)
 
@@ -150,14 +161,14 @@ def guess_tool(rect, paths, texts, glyph_symbols):
     if any(f.startswith("helvetica") for f in fonts):
         for tool in ("R", "MATLAB"):
             if score.get(tool):
-                add(tool, 0.5)
+                add(tool, _WEAK)
 
     # filled diamonds: the first default marker of Excel's charts
     if score.get("Excel") and any(p["fill"] for p in mine):
         diamonds = sum(1 for p in mine[:400] if p["fill"] and
                        (classify_subpath(as_closed(p["subpaths"][0])) or {}).get("shape")
                        == "diamond")
-        if diamonds >= 3:
+        if diamonds >= _DIAMONDS_MIN:
             add("Excel", 1.0)
 
     if not score:
@@ -172,6 +183,6 @@ def guess_tool(rect, paths, texts, glyph_symbols):
     second = ranked[1][1] if len(ranked) > 1 else 0.0
     if best.startswith("R (") and len(ranked) > 1 and ranked[1][0] == "R":
         second = max((v for _, v in ranked[2:]), default=0.0)
-    if s < 2.5 or s - second < 1.0:
+    if s < _LEAST_SCORE or s - second < 1.0:
         return ""
     return best

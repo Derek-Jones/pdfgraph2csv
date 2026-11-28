@@ -30,8 +30,13 @@ import bisect
 import math
 
 from .geometry import thin_rect_line
+from .spatial import SortedIndex
 
 _BUCKET = 0.5                     # pt: bucket size of the segment index
+
+
+_ALIGNED_PT = 0.3    # a nearly axis-aligned stroke: off by 0.3 pt
+_ALIGNED_FRAC = 0.1  # or a tenth of its length
 
 
 def _nearly_aligned(a, b):
@@ -39,9 +44,9 @@ def _nearly_aligned(a, b):
     length) of horizontal or vertical, else None.  Excel rounds coordinates
     to a grid, so its bars lean slightly: (433.14, 303.6) - (433.38, 306.96)."""
     dx, dy = b[0] - a[0], b[1] - a[1]
-    if abs(dx) <= max(0.3, 0.1 * abs(dy)) and abs(dy) > abs(dx):
+    if abs(dx) <= max(_ALIGNED_PT, _ALIGNED_FRAC * abs(dy)) and abs(dy) > abs(dx):
         return "v", min(a[1], b[1]), max(a[1], b[1]), (a[0] + b[0]) / 2
-    if abs(dy) <= max(0.3, 0.1 * abs(dx)) and abs(dx) > abs(dy):
+    if abs(dy) <= max(_ALIGNED_PT, _ALIGNED_FRAC * abs(dx)) and abs(dx) > abs(dy):
         return "h", min(a[0], b[0]), max(a[0], b[0]), (a[1] + b[1]) / 2
     return None
 
@@ -71,6 +76,14 @@ def _segments(paths):
                 if aa:
                     out[aa[0]].append(aa[1:])
     return out
+
+
+def _bar_index(paths, page):
+    """The page's possible error-bar segments filed by position across
+    ({"h": _index, "v": _index}), made once for lone_capped_bars and
+    find_error_bars (page.index)."""
+    return page.index.get("errbar segments", paths,
+                          lambda: {k: _index(v) for k, v in _segments(paths).items()})
 
 
 def _index(segs):
@@ -109,7 +122,15 @@ def _chains(pieces, join):
 _LONE_CAP_FRAC = 0.3
 
 
-def lone_capped_bars(graphs, symbols, paths, graph_of):
+_ON_BAR_PT = 0.3        # a marker on a bar: within 0.3 pt
+_ON_BAR_SIZES = 0.15    # or 0.15 of its size
+_BAR_MIN_PT = 0.5       # an error bar is 0.5 pt long or more
+_BAR_MAX_FRAC = 0.9     # and under 90% of the plot
+_ON_BAR_ALONG = 0.5     # a marker along a bar within half its size
+_OWNER_CAP_FRAC = 0.25  # a marker owning a bar is a quarter of its caps or bigger
+
+
+def lone_capped_bars(graphs, symbols, paths, graph_of, *, page):
     """Capped error bars standing alone, with no marker on them: a group's
     mean and its error bar drawn as a capped vertical bar - an "H" on its
     side - among the jittered points of an R strip chart
@@ -125,17 +146,13 @@ def lone_capped_bars(graphs, symbols, paths, graph_of):
     graph has no box plot (a whisker meeting a box's edge looks alike).
     Each is a point at its middle, symbol "errorbar", in the stroke's
     colour, its ends kept for --errbars.  Returns the new symbols."""
-    segs = _segments(paths)
-    index = _index(segs["h"])
-    hidx = {"h": index}
+    hidx = _bar_index(paths, page)
     boxed = {id(graph_of(s)) for s in symbols if s["shape"].startswith("box-")}
     # (the symbols sorted across, so that a stroke looks only at those that
     # may stand on it: every stroke against every symbol took minutes on
     # ESEUR-slowpages' plots of thousands of points)
-    marks = sorted(((s["cx"], k, s) for k, s in enumerate(symbols) if not s["shape"].startswith("box-")),
-                   key=lambda m: (m[0], m[1]))
-    xs = [m[0] for m in marks]
-    reach = max([0.3] + [0.15 * m[2]["size"] for m in marks])
+    marks = SortedIndex([s for s in symbols if not s["shape"].startswith("box-")], key=lambda s: s["cx"])
+    reach = max([_ON_BAR_PT] + [_ON_BAR_SIZES * s["size"] for s in marks.items])
     out, seen = [], set()
     for p in paths:
         if not p["stroke"] or p["fill"]:
@@ -156,7 +173,7 @@ def lone_capped_bars(graphs, symbols, paths, graph_of):
             if g is None or id(g) in boxed:
                 continue
             gx0, gy0, gx1, gy1 = g["rect"]
-            if not (gx0 <= x <= gx1) or hi - lo < 0.5 or hi - lo >= 0.9 * (gy1 - gy0):
+            if not (gx0 <= x <= gx1) or hi - lo < _BAR_MIN_PT or hi - lo >= _BAR_MAX_FRAC * (gy1 - gy0):
                 continue
             c_lo, c_hi = (_cap(hidx, x, e, gx1 - gx0, _LONE_CAP_FRAC) for e in (lo, hi))
             if c_lo is None or c_hi is None or max(c_lo, c_hi) > 2 * min(c_lo, c_hi):
@@ -166,11 +183,10 @@ def lone_capped_bars(graphs, symbols, paths, graph_of):
             # jittered dots, a seventh of the caps' length, fall on it by
             # chance and off its middle)
             cap, mid = max(c_lo, c_hi), (lo + hi) / 2
-            near = marks[bisect.bisect_left(xs, x - reach):bisect.bisect_right(xs, x + reach)]
-            on = [s for _, _, s in near if abs(s["cx"] - x) <= max(0.3, 0.15 * s["size"]) and
-                  lo - 0.5 * s["size"] <= s["cy"] <= hi + 0.5 * s["size"]]
-            if any(s["size"] >= 0.25 * cap or s["shape"] in ("line", "bar", "stem") or
-                   (len(on) == 1 and abs(s["cy"] - mid) <= max(0.3, 0.15 * s["size"]))
+            on = [s for s in marks.between(x - reach, x + reach) if abs(s["cx"] - x) <= max(_ON_BAR_PT, _ON_BAR_SIZES * s["size"]) and
+                  lo - _ON_BAR_ALONG * s["size"] <= s["cy"] <= hi + _ON_BAR_ALONG * s["size"]]
+            if any(s["size"] >= _OWNER_CAP_FRAC * cap or s["shape"] in ("line", "bar", "stem") or
+                   (len(on) == 1 and abs(s["cy"] - mid) <= max(_ON_BAR_PT, _ON_BAR_SIZES * s["size"]))
                    for s in on):
                 continue                          # a marker's (or vertex's, bar's) error bar
             out.append({"shape": "errorbar", "cx": x, "cy": (lo + hi) / 2,
@@ -180,13 +196,21 @@ def lone_capped_bars(graphs, symbols, paths, graph_of):
     return out
 
 
-def find_error_bars(symbols, paths, graph_of):
+_MARK_MIN_PT = 0.5      # markers counted 0.5 pt at least
+_BAR_TOL_SIZES = 0.15   # a bar through a marker: within 0.15 of its size
+_BAR_TOL_PT = 0.3       # or 0.3 pt
+_IN_GRAPH_PT = 0.5      # a bar inside its graph within 0.5 pt
+_JOIN_SIZES = 0.1       # pieces of a bar join within 0.1 of the marker's size
+_BAR_REACH_SIZES = 0.6  # a bar reaches within 0.6 of the marker's size of it
+_BAR_BOTH_SIZES = 0.55  # a bar on both sides: 0.55 of its size each way
+
+
+def find_error_bars(symbols, paths, graph_of, *, page):
     """{symbol index: {"v": (low, high) | None, "h": (low, high) | None}} in
     page coordinates, for the markers that have error bars.  `graph_of(s)`
     gives a symbol's graph.  A side without a bar ends at the marker's
     centre."""
-    segs = _segments(paths)
-    index = {k: _index(v) for k, v in segs.items()}
+    index = _bar_index(paths, page)
     claims = {}                    # (direction, chain) -> [(score, symbol index, ends)]
     out = {}
     for si, s in enumerate(symbols):
@@ -203,8 +227,8 @@ def find_error_bars(symbols, paths, graph_of):
         # 2020.01.30.927558.full-023's bars hanging from 0, -026's
         # horizontal bars; measured as a marker of 1 pt there)
         is_bar = s["shape"] == "bar"
-        size = 1.0 if is_bar else max(s["size"], 0.5)
-        tol = max(0.15 * size, 0.3)
+        size = 1.0 if is_bar else max(s["size"], _MARK_MIN_PT)
+        tol = max(_BAR_TOL_SIZES * size, _BAR_TOL_PT)
         dirs = (("v", s["cx"], s["cy"], y1 - y0), ("h", s["cy"], s["cx"], x1 - x0))
         if is_bar:
             dirs = dirs[1:] if s.get("horizontal") else dirs[:1]
@@ -218,19 +242,19 @@ def find_error_bars(symbols, paths, graph_of):
                     if abs(pos - centre) > tol:
                         continue
                     # wholly outside the plot box: a tick mark, not a bar
-                    if k == "v" and (hi < y0 - 0.5 or lo > y1 + 0.5):
+                    if k == "v" and (hi < y0 - _IN_GRAPH_PT or lo > y1 + _IN_GRAPH_PT):
                         continue
-                    if k == "h" and (hi < x0 - 0.5 or lo > x1 + 0.5):
+                    if k == "h" and (hi < x0 - _IN_GRAPH_PT or lo > x1 + _IN_GRAPH_PT):
                         continue
                     pieces.append((lo, hi))
             if not pieces:
                 continue
-            for lo, hi, knots in _chains(pieces, join=max(0.3, 0.1 * size)):
-                if hi - lo >= 0.9 * span:
+            for lo, hi, knots in _chains(pieces, join=max(_BAR_TOL_PT, _JOIN_SIZES * size)):
+                if hi - lo >= _BAR_MAX_FRAC * span:
                     continue                      # grid line, axis, frame
-                if lo > along + 0.6 * size or hi < along - 0.6 * size:
+                if lo > along + _BAR_REACH_SIZES * size or hi < along - _BAR_REACH_SIZES * size:
                     continue                      # does not touch the marker
-                reach = 0.55 * size
+                reach = _BAR_BOTH_SIZES * size
                 low = lo if lo < along - reach else None
                 high = hi if hi > along + reach else None
                 if low is None and high is None:
@@ -259,6 +283,10 @@ _CAP_FRAC = 0.06
 _TOL = 0.3                         # pt
 
 
+_CAP_CENTRE_FRAC = 0.1  # a cap centred within a tenth of its length
+_CAP_MIN_PT = 0.5       # a cap is 0.5 pt long or more
+
+
 def _cap(index, x, y, width, frac=_CAP_FRAC):
     """Length of the short horizontal stroke centred on (x, y) - an error
     bar's cap, at most `frac` of the plot's `width` - or None."""
@@ -271,14 +299,14 @@ def _cap(index, x, y, width, frac=_CAP_FRAC):
         for b, segs in index["h"].items():
             segs = sorted(segs, key=lambda q: (q[0] + q[1]) / 2)
             mids[b] = ([(lo + hi) / 2 for lo, hi, _ in segs], segs)
-    reach = max(_TOL, 0.1 * frac * width)
+    reach = max(_TOL, _CAP_CENTRE_FRAC * frac * width)
     best = None
     for b in range(math.floor((y - _TOL) / _BUCKET), math.floor((y + _TOL) / _BUCKET) + 1):
         ms, segs = mids.get(b, ((), ()))
         for lo, hi, pos in segs[bisect.bisect_left(ms, x - reach - 1e-9):bisect.bisect_right(ms, x + reach + 1e-9)]:
             n = hi - lo
-            if (abs(pos - y) <= _TOL and abs((lo + hi) / 2 - x) <= max(_TOL, 0.1 * n)
-                    and 0.5 <= n <= frac * width):
+            if (abs(pos - y) <= _TOL and abs((lo + hi) / 2 - x) <= max(_TOL, _CAP_CENTRE_FRAC * n)
+                    and _CAP_MIN_PT <= n <= frac * width):
                 best = n if best is None else max(best, n)
     return best
 
@@ -305,7 +333,7 @@ def _capped_runs(pieces, cx, cy, index, width, height):
         runs = sorted(((c[i][0], c[j][1]) for i in range(len(c)) for j in range(i, len(c))),
                       key=lambda r: r[0] - r[1])
         for lo, hi in runs:
-            if not (lo - _TOL <= cy <= hi + _TOL) or hi - lo < 0.5 or hi - lo >= 0.9 * height:
+            if not (lo - _TOL <= cy <= hi + _TOL) or hi - lo < _BAR_MIN_PT or hi - lo >= _BAR_MAX_FRAC * height:
                 continue
             c_lo, c_hi = _cap(index, cx, lo, width), _cap(index, cx, hi, width)
             if c_lo is None or c_hi is None or max(c_lo, c_hi) > 2 * min(c_lo, c_hi):
@@ -313,6 +341,9 @@ def _capped_runs(pieces, cx, cy, index, width, height):
             out.append((lo, hi))
             break
     return out
+
+
+_VERTEX_PT = 0.5  # a bar on a line vertex: within 0.5 pt
 
 
 def _vertex_bars(symbols, graph_of, index, taken):
@@ -342,7 +373,7 @@ def _vertex_bars(symbols, graph_of, index, taken):
         pieces = []
         for b in range(math.floor((cx - _TOL) / _BUCKET), math.floor((cx + _TOL) / _BUCKET) + 1):
             for lo, hi, pos in index["v"].get(b, ()):
-                if abs(pos - cx) <= _TOL and hi >= y0 - 0.5 and lo <= y1 + 0.5:
+                if abs(pos - cx) <= _TOL and hi >= y0 - _VERTEX_PT and lo <= y1 + _VERTEX_PT:
                     pieces.append((lo, hi))
         for lo, hi in _capped_runs(pieces, cx, cy, index, x1 - x0, y1 - y0):
             if any(abs(tx - cx) <= _TOL and abs((tl if tl is not None else cy) - lo) <= _TOL

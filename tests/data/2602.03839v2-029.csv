@@ -104,13 +104,19 @@ page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
 1,1,line,,0,388.999999,0.000126418,teal,#047857
 1,1,line,Qwen2.5 7B,0,397.988062,0.071160078,orange,#f59e0b
 1,1,line,,0,398,0.000496822,firebrick,#b91c1c
+1,1,line,,0,398,0.000496822,firebrick,#b91c1c
+1,1,line,,0,398,4.2409e-05,darkslateblue,#1e40af
 1,1,line,,0,398,4.2409e-05,darkslateblue,#1e40af
 1,1,line,,0,398,2.4223e-05,darkslategray,#065f46
+1,1,line,,0,398,2.4223e-05,darkslategray,#065f46
 1,1,line,,0,398,5.3097e-05,teal,#047857
+1,1,line,,0,398,5.3097e-05,teal,#047857
+1,1,line,Qwen2.5 7B,0,398,0.071160059,orange,#f59e0b
 1,1,line,Qwen2.5 7B,0,398,0.071160059,orange,#f59e0b
 1,2,line,,0,0,5.3394e-05,maroon,#7f1d1d
 1,2,line,,0,0,0.000190063,firebrick,#b91c1c
 1,2,line,,0,0,7.2715e-05,crimson,#dc2626
+1,2,line,,0,0,7.5079e-05,salmon,#f87171
 1,2,line,,0,14.999999,4.7677e-05,firebrick,#b91c1c
 1,2,line,,0,47,2.0579e-05,maroon,#7f1d1d
 1,2,line,,0,57,0.000148568,maroon,#7f1d1d
@@ -138,8 +144,13 @@ page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
 1,2,line,,0,382,4.4854e-05,maroon,#7f1d1d
 1,2,line,,0,389.000001,0.000126418,maroon,#7f1d1d
 1,2,line,,0,398,5.3097e-05,maroon,#7f1d1d
+1,2,line,,0,398,5.3097e-05,maroon,#7f1d1d
+1,2,line,,0,398,8.3851e-05,firebrick,#b91c1c
 1,2,line,,0,398,8.3851e-05,firebrick,#b91c1c
 1,2,line,,0,398,0.000115514,crimson,#dc2626
+1,2,line,,0,398,0.000115514,crimson,#dc2626
+1,2,line,,0,398,0.000102602,salmon,#f87171
+1,2,line,,0,398,0.000102602,salmon,#f87171
 1,3,line,,0,0,6.2702e-05,darkslateblue,#1e40af
 1,3,line,,0,0,5.032e-05,royalblue,#3b82f6
 1,3,line,,0,0,4.3748e-05,cornflowerblue,#60a5fa
@@ -195,7 +206,10 @@ page,graph,symbol,series,legend_key,x_coord,y_coord,color,color_hex
 1,3,line,,0,393.999999,9.3189e-05,royalblue,#3b82f6
 1,3,line,,0,395.999999,7.7046e-05,cornflowerblue,#60a5fa
 1,3,line,,0,397.999999,0.000100157,darkslateblue,#1e40af
+1,3,line,,0,397.999999,0.000100157,darkslateblue,#1e40af
 1,3,line,,0,397.999999,0.000136727,royalblue,#3b82f6
+1,3,line,,0,397.999999,0.000136727,royalblue,#3b82f6
+1,3,line,,0,397.999999,5.549e-05,cornflowerblue,#60a5fa
 1,3,line,,0,397.999999,5.549e-05,cornflowerblue,#60a5fa
 1,4,line,,0,0,0.0809,firebrick,#b91c1c
 1,4,line,,0,0,0,darkslateblue,#1e40af

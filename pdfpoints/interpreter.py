@@ -40,14 +40,15 @@ from pdfminer.pdfinterp import PDFContentParser, PDFPageInterpreter
 from pdfminer.pdftypes import PDFStream, resolve1, stream_value
 from pdfminer.psparser import LIT, PSEOF, PSKeyword, PSLiteral, keyword_name, literal_name
 
-from .context import PAGE, SETTINGS
+from .context import SETTINGS
 from .fonts import DINGBAT_ANCHOR, DINGBAT_SYMBOLS, FontInfo, dingbat_code, register_fonts
 from pdfminer.utils import apply_matrix_pt, mult_matrix
 
 from .colourbar import colour_strip, strip_pixels
 from .geometry import bbox_of, control_points
 from .image_marks import read_image, rows_uneven
-from .tokenizer import Floats, coordinate_decimals, has_inline_image, operators
+from .tokenizer import (Floats, InlineImageError, coordinate_decimals, has_inline_image,
+                        inline_images_found, operators)
 from .tools import tool_name, xmp_creator_tool
 
 IDENTITY = (1, 0, 0, 1, 0, 0)
@@ -60,8 +61,9 @@ class Interpreter:
     images, which may hide what is under them) and `image_marks` (images
     small enough to be markers)."""
 
-    def __init__(self, doc):
+    def __init__(self, doc, number=0):
         self.doc = doc
+        self.number = number     # the page's number (for messages)
         self.paths = []
         self.texts = []
         self.glyph_symbols = []
@@ -116,6 +118,18 @@ class ExtraState:
         c = ExtraState.__new__(ExtraState)
         c.__dict__.update(self.__dict__)
         return c
+
+
+_BIG_STREAM = 15000000     # a stream over 15 MB gets a note that it may take a while
+_OPAQUE_ALPHA = 0.99       # fill alpha 0.99 or more is opaque
+_NUMBER_GAP_EMS = 0.6      # a gap over 0.6 em splits numbers set in one string
+_SPACE_EMS = 0.15          # a gap over 0.15 em is a space
+_CAP_HEIGHT = 0.7          # a glyph's top: 0.7 em above the baseline
+_STRIP_MIN_PT = 20         # a colour strip is 20 pt long or more
+_STRIP_ASPECT = 5          # and 5 times as long as wide
+_PICTURE_MIN_PT = 30.0     # a heat-map picture is 30 pt or more each way
+_PICTURE_MIN_PX = 4        # and 4 pixels or more
+_IMAGE_MARK_MAX_PT = 30.0  # an image marker is 1 to 30 pt
 
 
 class ContentInterpreter(PDFPageInterpreter):
@@ -185,20 +199,28 @@ class ContentInterpreter(PDFPageInterpreter):
         # coordinates are known to half a unit of their last decimal
         self.decimals = coordinate_decimals(data)
         self.unit = 10.0 ** -self.decimals
-        if len(data) > 15000000:          # say why the program is busy
+        if len(data) > _BIG_STREAM:          # say why the program is busy
             print("note: page %d has %d MB of drawing instructions; this may take a minute or two"
-                  % (PAGE.number, len(data) // 1000000), file=sys.stderr, flush=True)
-        if not has_inline_image(data):
+                  % (self.page.number, len(data) // 1000000), file=sys.stderr, flush=True)
+        # (inline images are read here too when every image's end is found:
+        # qpdf's objects for Keynote_LuigiLavazza_EmpiricalSoftEng-003's
+        # 18 700 inline background tiles took half the page's time)
+        if not has_inline_image(data) or inline_images_found(data):
             run = self._run_operator
-            for name, operands in operators(data):
-                # path construction, by far the most common: when the
-                # tokenizer gives floats the segment is recorded directly,
-                # as pdfminer would record it
-                n = _PATH_OPERANDS.get(name)
-                if n is not None and type(operands) is Floats and len(operands) >= n:
-                    self.curpath.append((name, *operands[len(operands) - n:]))
-                else:
-                    run(name, operands)
+            try:
+                for name, operands in operators(data):
+                    # path construction, by far the most common: when the
+                    # tokenizer gives floats the segment is recorded directly,
+                    # as pdfminer would record it
+                    n = _PATH_OPERANDS.get(name)
+                    if n is not None and type(operands) is Floats and len(operands) >= n:
+                        self.curpath.append((name, *operands[len(operands) - n:]))
+                    elif name == "BI":
+                        self._inline_image_raw(*operands)
+                    else:
+                        run(name, operands)
+            except InlineImageError:
+                pass                      # (an image's end lost: the rest unread)
             return
         try:                              # inline images: qpdf knows where they end
             instructions = pikepdf.parse_content_stream(pikepdf.Stream(_scratch_pdf(), data))
@@ -230,6 +252,27 @@ class ContentInterpreter(PDFPageInterpreter):
             parms = ii.decode_parms or []
             parms = parms[0] if isinstance(parms, list) and parms else parms
             predictor = int(parms.get("/Predictor", 1)) if hasattr(parms, "get") else 1
+        except Exception:
+            return
+        rgb = strip_pixels(bytes(data), w, h, predictor)
+        if rgb:
+            self.page.record("colour_strips", {"ctm": self.ctm, "w": w, "h": h, "rgb": rgb})
+
+    def _inline_image_raw(self, d, data):
+        """_inline_image for an image read by the tokenizer: its dictionary
+        (full key and filter names) and raw data."""
+        try:
+            w, h = int(d.get("Width")), int(d.get("Height"))
+            if min(w, h) != 1 or max(w, h) < 2 or int(d.get("BitsPerComponent", 0)) != 8:
+                return
+            filters = d.get("Filter") or []
+            if filters == ["FlateDecode"]:
+                data = zlib.decompress(data)
+            elif filters:
+                return
+            parms = d.get("DecodeParms") or d.get("DP") or []
+            parms = parms[0] if isinstance(parms, list) and parms else parms
+            predictor = int(parms.get("Predictor", 1)) if hasattr(parms, "get") else 1
         except Exception:
             return
         rgb = strip_pixels(bytes(data), w, h, predictor)
@@ -317,7 +360,7 @@ class ContentInterpreter(PDFPageInterpreter):
             self.page.record("paths", {
                 "subpaths": subpaths, "fill": fill, "stroke": stroke,
                 "fill_rgb": e.fill, "stroke_rgb": e.stroke,
-                "opaque": e.ca >= 0.99, "clip": e.clip,
+                "opaque": e.ca >= _OPAQUE_ALPHA, "clip": e.clip,
                 "res": _resolution(self.unit, self.ctm), "tool": self.tool,
                 "scale": _resolution(1.0, self.ctm),
                 "form_box": getattr(e, "form_box", None),
@@ -492,12 +535,12 @@ class ContentInterpreter(PDFPageInterpreter):
                     # (numbers set wider apart than a space, 0.6 em, are
                     # separate labels: Seongmin-PhD-036's tick labels 1000
                     # ... 3500 in one run, 0.84 em apart)
-                    numgap = pieces and last_end is not None and pen - last_end > 0.6 * em and \
+                    numgap = pieces and last_end is not None and pen - last_end > _NUMBER_GAP_EMS * em and \
                         pieces[-1][0][-1:].isdigit() and (u.isdigit() or u in "-\u2212.")
                     if last_end is None or not pieces or abs(pen - last_end) > em or numgap:
                         pieces.append([u, pen, gend, [(u, pen, gend)]])
                     else:
-                        if saw_space or pen - last_end > 0.15 * em:
+                        if saw_space or pen - last_end > _SPACE_EMS * em:
                             pieces[-1][0] += " "
                         pieces[-1][0] += u
                         pieces[-1][2] = gend
@@ -508,7 +551,7 @@ class ContentInterpreter(PDFPageInterpreter):
         size = math.hypot(base[2] * efs, base[3] * efs)
         for txt, s0, s1, gl in pieces:
             p0 = apply_matrix_pt(base, (s0, rise))
-            top = apply_matrix_pt(base, (s0, rise + 0.7 * efs))
+            top = apply_matrix_pt(base, (s0, rise + _CAP_HEIGHT * efs))
             self.page.record("texts", {
                 "text": txt, "p0": p0, "p1": apply_matrix_pt(base, (s1, rise)),
                 "up": (top[0] - p0[0], top[1] - p0[1]), "size": size,
@@ -577,7 +620,7 @@ class ContentInterpreter(PDFPageInterpreter):
             return
         strip["ctm"] = _crop_strip(strip, ctm, self.extra.clip)
         a, b, c, d, e, f = strip["ctm"]
-        if max(abs(a) + abs(c), abs(b) + abs(d)) >= 20:
+        if max(abs(a) + abs(c), abs(b) + abs(d)) >= _STRIP_MIN_PT:
             self.page.record("colour_strips", strip)
 
     def do_Do(self, xobjid):
@@ -634,18 +677,18 @@ class ContentInterpreter(PDFPageInterpreter):
                 self.page.images.append((box, self.page.order))
             ww, hh = resolve1(xobj.get("Width")), resolve1(xobj.get("Height"))
             if isinstance(ww, int) and isinstance(hh, int) and max(ww, hh) >= 2 and \
-                    max(ww, hh) >= 5 * min(ww, hh) and max(box[2] - box[0], box[3] - box[1]) >= 20:
+                    max(ww, hh) >= _STRIP_ASPECT * min(ww, hh) and max(box[2] - box[0], box[3] - box[1]) >= _STRIP_MIN_PT:
                 # (a few rows looked at first: a big picture is no strip)
                 strip = None if rows_uneven(xobj) else colour_strip(read_image(xobj))
                 if strip:
                     strip["ctm"] = self.ctm
                     self.page.record("colour_strips", strip)
-            if min(box[2] - box[0], box[3] - box[1]) >= 30.0 and isinstance(ww, int) and \
-                    isinstance(hh, int) and min(ww, hh) >= 4:
+            if min(box[2] - box[0], box[3] - box[1]) >= _PICTURE_MIN_PT and isinstance(ww, int) and \
+                    isinstance(hh, int) and min(ww, hh) >= _PICTURE_MIN_PX:
                 # (a heat map drawn as a picture: read only if a graph's
                 # plot is filled by it - colourbar.image_tiles)
                 self.page.pictures.append({"box": box, "xobj": xobj, "ctm": self.ctm})
-            if 1.0 <= max(box[2] - box[0], box[3] - box[1]) <= 30.0:
+            if 1.0 <= max(box[2] - box[0], box[3] - box[1]) <= _IMAGE_MARK_MAX_PT:
                 # small enough to be a marker drawn as a picture (Excel for
                 # Mac draws gradient-filled markers this way): image_marks.py
                 self.page.record("image_marks", {"box": box, "xobj": xobj, "ctm": self.ctm,

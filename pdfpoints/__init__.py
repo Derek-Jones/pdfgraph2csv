@@ -159,6 +159,8 @@ Package layout (in pipeline order)
 ----------------------------------
     document                                opening the file (pikepdf -> pdfminer.six)
     fonts, interpreter                      executing a page's drawing operators
+    normalise                               the normalisation stage: the drawing rewritten into
+                                            one form (text as seen, discs, outlined text, words)
     occlusion, text, outlined_text          the page's text, as it is seen
     axes, labels, scales                    tick marks, tick labels, value mappings
     graphs, titles, nongraphs               plot boxes, panels, insets, titles; tables
@@ -170,7 +172,11 @@ Package layout (in pipeline order)
     legend                                  legend keys and series names
     rows, meta, tools, styles               output rows, -meta records, drawing tool
     pipeline, cli                           putting it together; command line
-    geometry, grouping, colours, context    shared helpers and page state
+    rules                                   the symbol filter chain as named rules, traced
+    page, model                             the page model (facts shared by steps, passed
+                                            as `page`); the keys of each kind of record
+    geometry, spatial, colours, context     shared helpers: geometry, spatial indexes
+                                            (page.index), colour names, settings
 """
 
 from .pipeline import extract

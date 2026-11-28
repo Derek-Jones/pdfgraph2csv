@@ -31,6 +31,12 @@ def _norm(s):
     return " ".join(re.sub(r"[^0-9a-z]+", " ", (s or "").lower()).split())
 
 
+_TITLE_BAND_PT = 40     # an axis title within 40 pt outside the axis
+_TITLE_INSIDE_PT = 0.5  # or 0.5 pt inside it
+_TITLE_ALONG_PT = 5     # along the axis within 5 pt of its ends
+_TITLE_LINE_EMS = 1.6   # title lines within 1.6 font sizes of each other
+
+
 def axis_title(axis, texts, side):
     """The text set beside an axis beyond its tick labels (its title),
     joined in reading order; `side` is -1 when it lies below / left of the
@@ -43,7 +49,7 @@ def axis_title(axis, texts, side):
             max(tx["bbox"][k + 2] for tx in labels)
     else:
         outer = pos
-    band = (outer - 40, outer + 0.5) if side < 0 else (outer - 0.5, outer + 40)
+    band = (outer - _TITLE_BAND_PT, outer + _TITLE_INSIDE_PT) if side < 0 else (outer - _TITLE_INSIDE_PT, outer + _TITLE_BAND_PT)
     lo, hi = axis["lo"], axis["hi"]
     used = {id(tx) for tx in labels}
     picked = []
@@ -53,7 +59,7 @@ def axis_title(axis, texts, side):
         b = t["bbox"]
         c_across = (b[k] + b[k + 2]) / 2
         c_along = (b[1 - k] + b[3 - k]) / 2
-        if band[0] <= c_across <= band[1] and lo - 5 <= c_along <= hi + 5:
+        if band[0] <= c_across <= band[1] and lo - _TITLE_ALONG_PT <= c_along <= hi + _TITLE_ALONG_PT:
             picked.append(t)
     # only the column (row) of text nearest the labels, and lines within
     # 1.6 text sizes of it: Seongmin-PhD-036's "Executions" beside its right
@@ -64,7 +70,7 @@ def axis_title(axis, texts, side):
         first = min(picked, key=lambda t: abs(across(t) - outer))
         keep = [first]
         for t in sorted(picked, key=lambda t: abs(across(t) - outer)):
-            if t is not first and any(abs(across(t) - across(o)) <= 1.6 * (o["size"] or 1.0) for o in keep):
+            if t is not first and any(abs(across(t) - across(o)) <= _TITLE_LINE_EMS * (o["size"] or 1.0) for o in keep):
                 keep.append(t)
         picked = keep
     picked.sort(key=lambda t: (-t["bbox"][1], t["bbox"][0]) if k == 1 else

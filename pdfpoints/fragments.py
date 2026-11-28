@@ -11,17 +11,22 @@ import math
 from .geometry import (
     bbox_of, bezier_point, circumcircle, flatten_subpath, is_polygon, point_in_polys,
     polygon_area, subpath_bbox, union_box, vertices)
-from .grouping import PointGrid
+from .spatial import PointGrid
+
+
+_CLUSTER_CELL_R = 0.2    # arc centres filed in cells of 0.2 radii
+_CLUSTER_CELL_PT = 0.05  # at least 0.05 pt
+_CLUSTER_R = 0.08        # arc centres within 0.08 radii are one centre
 
 
 def _cluster_centres(arcs, rr):
     """Merge circle centres closer than 8% of the radius `rr` (the arcs of
     one circle give nearly the same centre); returns [[x, y, count]]."""
-    cent, grid = [], PointGrid(max(0.2 * rr, 0.05))
+    cent, grid = [], PointGrid(max(_CLUSTER_CELL_R * rr, _CLUSTER_CELL_PT))
     for c in arcs:
         hit = None
         for k in grid.near(c[0], c[1]):
-            if math.hypot(k[0] - c[0], k[1] - c[1]) < 0.08 * rr:
+            if math.hypot(k[0] - c[0], k[1] - c[1]) < _CLUSTER_R * rr:
                 hit = k                           # (the last one found)
         if hit:
             hit[2] += 1
@@ -32,12 +37,21 @@ def _cluster_centres(arcs, rr):
     return cent
 
 
+_GREY_SPREAD = 0.08  # a colour whose channels differ by under 0.08 is grey
+_HUE_STEPS = 24      # hues compared in 24 steps round the circle
+
+
 def _hue_family(c):
     """Colours of one series blended into darker shades share a hue: the
     hue in 24 steps, or 'grey' for colours without one."""
-    if max(c) - min(c) < 0.08:
+    if max(c) - min(c) < _GREY_SPREAD:
         return "grey"
-    return round(colorsys.rgb_to_hls(*c)[0] * 24) % 24
+    return round(colorsys.rgb_to_hls(*c)[0] * _HUE_STEPS) % _HUE_STEPS
+
+
+_SHADE_SPAN = 0.05  # a stack's shades span 0.05 at least
+_STACK_MAX = 40     # up to 40 markers stacked at one place
+_SHADE_TOL = 0.012  # a blended shade matches a stack count within 0.012
 
 
 def _stack_shade(c, base, deepest):
@@ -50,16 +64,48 @@ def _stack_shade(c, base, deepest):
         return True
     k = max(range(3), key=lambda i: 1 - deepest[i])
     span = 1 - deepest[k]
-    if span < 0.05:
+    if span < _SHADE_SPAN:
         return True
     a = (1 - base[k]) / span
     if not 0 < a < 1:
         return True
-    for n in range(2, 40):
+    for n in range(2, _STACK_MAX):
         f = 1 - (1 - a) ** n
-        if all(abs((1 - (1 - deepest[i]) * f) - c[i]) <= 0.012 for i in range(3)):
+        if all(abs((1 - (1 - deepest[i]) * f) - c[i]) <= _SHADE_TOL for i in range(3)):
             return True
     return False
+
+
+_FRAGMENTS_MIN = 20          # fewer than 20 curved fragments: nothing to rebuild
+_CHROMATIC = 0.15            # a colour whose channels differ by more than 0.15 is no text grey
+_FRAGMENT_MAX_PT = 40        # a subpath over 40 pt is no marker fragment
+_ARC_MIN_CHORD_PT = 0.05     # an arc's chord is over 0.05 pt
+_ARC_MIN_R_PT = 0.2          # arc radii from 0.2 to 8 pt
+_ARC_MAX_R_PT = 8            # (the largest arc radius)
+_ARC_MAX_EXTENT_R = 5        # the subpath spans at most 5 radii (else round joins of a line)
+_ARC_FIT_R = 0.01            # the Bezier's quarter points within 0.01 of the radius
+_ARC_FIT_PT = 0.002          # plus 0.002 pt of the circle
+_ARC_MIN_CHORD_R = 0.3       # and its chord over 0.3 of the radius
+_ARCS_MIN = 40               # 40 arcs or more, the commonest radius 40 times or more
+_RADIUS_SHARE = 0.15         # and on 15% of the arcs
+_RADIUS_TOL = 0.03           # arcs of one radius: within 3%
+_RADII_TRIED = 6             # the 6 commonest radii are tried as rings of one marker
+_OTHER_RADIUS_SHARE = 0.2    # another radius with 20% of the commonest one's arcs
+_OTHER_RADIUS_APART = 0.05   # apart from those taken by 5% of the radius
+_CONCENTRIC_FRAC = 0.7       # 70% of its centres on the marker centres: the same markers
+_ARC_PATHS_MIN = 20          # arcs from 20 paths or more
+_CENTRES_MIN = 5             # 5 marker centres or more
+_ON_CENTRE_R = 0.15          # a whole circle or arc at a centre: within 0.15 of the radius
+_INTACT_FRAC = 0.6           # 60% of the markers intact: no rebuilding
+_FRAGMENT_MAX_CELLS = 10000  # fragments over 10 000 one-point cells are far larger than markers
+
+
+_CENTRE_INSIDE_PT = 0.02  # a sample inside a circle: by 0.02 pt
+_SAMPLE_RING_1 = 0.3      # colour sampled at 0.3
+_SAMPLE_RING_2 = 0.55     # 0.55
+_SAMPLE_RING_3 = 0.8      # and 0.8 of the radius
+_SAMPLE_STEP_DEG = 30     # every 30 degrees
+_LADDER_MIN = 3           # a shade ladder of 3 steps or more
 
 
 def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
@@ -80,7 +126,7 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
     marker_paths = {s["idx"] for s in symbols}
     pieces = sum(1 for p in paths if p["fill"] and p["idx"] not in marker_paths and
                  any(seg[0] == "c" for sp in p["subpaths"] for seg in sp["segs"]))
-    if pieces < 20:
+    if pieces < _FRAGMENTS_MIN:
         return symbols
     # 1. every Bezier segment that is a good circular arc gives a centre
     #    and radius
@@ -89,7 +135,7 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
         if not p["fill"] or p["fill_rgb"] is None:
             continue
         rgb = p["fill_rgb"]
-        chromatic = max(rgb) - min(rgb) > 0.15
+        chromatic = max(rgb) - min(rgb) > _CHROMATIC
         for k, sp in enumerate(p["subpaths"]):
             # outlined letters are black or grey; coloured pieces the text
             # reader claimed may still be marker fragments
@@ -100,42 +146,42 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
             # their subpath runs far beyond the circle)
             sb = subpath_bbox(sp)
             extent = max(sb[2] - sb[0], sb[3] - sb[1])
-            if extent > 40:
+            if extent > _FRAGMENT_MAX_PT:
                 continue                     # (no arc of radius under 8 qualifies)
             for s in sp["segs"]:
                 if s[0] == "c":
                     p0, p1, p2, p3 = cur, s[1], s[2], s[3]
                     chord = math.hypot(p3[0] - p0[0], p3[1] - p0[1])
-                    if chord > 0.05:
+                    if chord > _ARC_MIN_CHORD_PT:
                         c = circumcircle(p0, bezier_point(p0, p1, p2, p3, .5), p3)
-                        if c and 0.2 < c[2] < 8 and extent <= 5 * c[2]:
+                        if c and _ARC_MIN_R_PT < c[2] < _ARC_MAX_R_PT and extent <= _ARC_MAX_EXTENT_R * c[2]:
                             q1, q3 = bezier_point(p0, p1, p2, p3, .25), bezier_point(p0, p1, p2, p3, .75)
                             e = max(abs(math.hypot(q[0] - c[0], q[1] - c[1]) - c[2]) for q in (q1, q3))
-                            if e < 0.01 * c[2] + 0.002 and chord > 0.3 * c[2]:
+                            if e < _ARC_FIT_R * c[2] + _ARC_FIT_PT and chord > _ARC_MIN_CHORD_R * c[2]:
                                 arcs.append((c[0], c[1], c[2], p["idx"], p["fill_rgb"],
                                              _arc_span(c, p0, bezier_point(p0, p1, p2, p3, .5), p3)))
                 cur = s[-1]
-    if len(arcs) < 40:
+    if len(arcs) < _ARCS_MIN:
         return symbols
     # 2. the marker radius is the most common one; other common radii whose
     #    circles share its centres (inner edges of rings) belong to it too
     radii = collections.Counter(round(a[2], 2) for a in arcs)
     r1, n1 = radii.most_common(1)[0]
-    if n1 < 40 or n1 < 0.15 * len(arcs):
+    if n1 < _ARCS_MIN or n1 < _RADIUS_SHARE * len(arcs):
         return symbols
     fam = [r1]
-    base = _cluster_centres([a for a in arcs if abs(a[2] - r1) < 0.03 * r1], r1)
+    base = _cluster_centres([a for a in arcs if abs(a[2] - r1) < _RADIUS_TOL * r1], r1)
     base_cells = _centre_cells(base)
-    for r2, n2 in radii.most_common(6)[1:]:
-        if n2 < 0.2 * n1 or min(abs(r2 - f) for f in fam) < 0.05 * r1:
+    for r2, n2 in radii.most_common(_RADII_TRIED)[1:]:
+        if n2 < _OTHER_RADIUS_SHARE * n1 or min(abs(r2 - f) for f in fam) < _OTHER_RADIUS_APART * r1:
             continue
-        cc = _cluster_centres([a for a in arcs if abs(a[2] - r2) < 0.03 * r2], r2)
+        cc = _cluster_centres([a for a in arcs if abs(a[2] - r2) < _RADIUS_TOL * r2], r2)
         hit = sum(1 for k in cc if _near_centre(base_cells, k))
-        if cc and hit >= 0.7 * len(cc):
+        if cc and hit >= _CONCENTRIC_FRAC * len(cc):
             fam.append(r2)                       # concentric: same markers
-    sel = [a for a in arcs if any(abs(a[2] - f) < 0.03 * f for f in fam)]
+    sel = [a for a in arcs if any(abs(a[2] - f) < _RADIUS_TOL * f for f in fam)]
     cols = collections.Counter(a[4] for a in sel)
-    if len({a[3] for a in sel}) < 20:
+    if len({a[3] for a in sel}) < _ARC_PATHS_MIN:
         return symbols                           # arcs from a few shapes only
     # 3. the marker centres
     r_out = max(fam)
@@ -144,11 +190,11 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
     # made the check against every centre so far take two minutes)
     cells = _centre_cells(())
     for f in fam:
-        for k in _cluster_centres([a for a in sel if abs(a[2] - f) < 0.03 * f], f):
+        for k in _cluster_centres([a for a in sel if abs(a[2] - f) < _RADIUS_TOL * f], f):
             if not _near_centre(cells, k):
                 cents.append(k)
                 cells.add(k, k[0], k[1])
-    if len(cents) < 5:
+    if len(cents) < _CENTRES_MIN:
         return symbols
     # markers that are intact need no rebuilding
     whole = [s for s in symbols if s["shape"] == "circle"]
@@ -159,28 +205,28 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
     # both) stay as they are
     # (arcs filed in cells as big as the reach, 0.15 of the radius: cells
     # of a whole radius held hundreds of arcs each in 460-201's clouds)
-    agrid = PointGrid(0.15 * r_out)
+    agrid = PointGrid(_ON_CENTRE_R * r_out)
     for a in sel:
         agrid.add(a, a[0], a[1])
     intact, opaque = [], []
     keep_idx = set()                     # paths of opaque whole markers
     for k in cents:
         hits = [s for s in wgrid.near(k[0], k[1])
-                if math.hypot(s["cx"] - k[0], s["cy"] - k[1]) < 0.15 * r_out]
+                if math.hypot(s["cx"] - k[0], s["cy"] - k[1]) < _ON_CENTRE_R * r_out]
         intact.append(bool(hits))
         # all the arcs there drawn by those circles themselves: whole
         # markers, not the top of a stack of fragments
         own = {s["idx"] for s in hits}
         arc_paths = {a[3] for a in agrid.near(k[0], k[1])
-                     if math.hypot(a[0] - k[0], a[1] - k[1]) < 0.15 * r_out}
+                     if math.hypot(a[0] - k[0], a[1] - k[1]) < _ON_CENTRE_R * r_out}
         op = bool(hits) and arc_paths <= own
         opaque.append(op)
         if op:
             keep_idx.update(own)
-    if sum(intact) >= 0.6 * len(cents):
+    if sum(intact) >= _INTACT_FRAC * len(cents):
         return symbols
     cents = [k for k, op in zip(cents, opaque) if not op]
-    if len(cents) < 5:
+    if len(cents) < _CENTRES_MIN:
         return symbols
     # 4. how many markers are stacked at each centre: semi-transparent
     #    markers blend into darker colours where they overlap, so the colour
@@ -196,7 +242,7 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
                 b = bbox_of(pts)
                 i = len(frags)
                 frags.append((b, polys, p["idx"], p["fill_rgb"]))
-                if (int(b[2]) - int(b[0]) + 1) * (int(b[3]) - int(b[1]) + 1) > 10000:
+                if (int(b[2]) - int(b[0]) + 1) * (int(b[3]) - int(b[1]) + 1) > _FRAGMENT_MAX_CELLS:
                     continue                  # far larger than a marker fragment
                 for gx in range(int(b[0]), int(b[2]) + 1):
                     for gy in range(int(b[1]), int(b[3]) + 1):
@@ -235,14 +281,14 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
 
     def covering(x, y):
         """Indexes of the marker centres whose circle covers (x, y)."""
-        return [j for j in cgrid.near(x, y) if math.hypot(cents[j][0] - x, cents[j][1] - y) < r_out - 0.02]
+        return [j for j in cgrid.near(x, y) if math.hypot(cents[j][0] - x, cents[j][1] - y) < r_out - _CENTRE_INSIDE_PT]
 
     # sample each marker where it overlaps as few others as possible
     samples = []         # (overlap key, covering markers, layers seen, colour) or None
     for i, k in enumerate(cents):
         best = None
-        for rr in (0, 0.3 * r_out, 0.55 * r_out, 0.8 * r_out):
-            for ang in range(0, 360, 30 if rr else 360):
+        for rr in (0, _SAMPLE_RING_1 * r_out, _SAMPLE_RING_2 * r_out, _SAMPLE_RING_3 * r_out):
+            for ang in range(0, 360, _SAMPLE_STEP_DEG if rr else 360):
                 x = k[0] + rr * math.cos(math.radians(ang))
                 y = k[1] + rr * math.sin(math.radians(ang))
                 cov = covering(x, y)
@@ -267,7 +313,7 @@ def rebuild_fragmented_circles(paths, symbols, text_parts, warnings):
                 changed = True
         if not changed:
             break
-    sat = [s for s in samples if s and ladder_len[s[3]] >= 3 and s[2] == ladder_len[s[3]]]
+    sat = [s for s in samples if s and ladder_len[s[3]] >= _LADDER_MIN and s[2] == ladder_len[s[3]]]
     if sat:
         warnings.append("%d marker positions are stacked so deep that the blended colour "
                         "saturates (%d+ layers): their counts are lower bounds" % (
@@ -307,6 +353,10 @@ def _arc_span(c, p0, pm, p3):
     return (a0 % 360, d) if dm <= d else (a3 % 360, 360 - d)
 
 
+_SAME_CENTRE_PT = 0.12  # arcs and centres within 0.12 pt are at one centre
+_OUTLINE_BINS = 72      # an outline found in 72 bins of 5 degrees
+
+
 def _outline_found(cents, arcs, r):
     """For each centre, the fraction of its circle's outline covered by the
     arcs fitted there (centres within 0.12 pt; 72 steps of 5 degrees)."""
@@ -317,16 +367,16 @@ def _outline_found(cents, arcs, r):
     for k in cents:
         bins = set()
         for a in grid.near(k[0], k[1]):
-            if math.hypot(a[0] - k[0], a[1] - k[1]) < 0.12:
+            if math.hypot(a[0] - k[0], a[1] - k[1]) < _SAME_CENTRE_PT:
                 start, sweep = a[5]
-                bins.update(b for b in range(72) if (b * 5 + 2.5 - start) % 360 <= sweep)
+                bins.update(b for b in range(_OUTLINE_BINS) if (b * 5 + 2.5 - start) % 360 <= sweep)
         out.append(len(bins) / 72.0)
     return out
 
 
 def _centre_cells(cents):
     """Centres filed in cells of 0.12 pt, for _near_centre."""
-    cells = PointGrid(0.12)
+    cells = PointGrid(_SAME_CENTRE_PT)
     for k in cents:
         cells.add(k, k[0], k[1])
     return cells
@@ -335,16 +385,52 @@ def _centre_cells(cents):
 def _near_centre(cells, k):
     """Is a filed centre within 0.12 pt of k?  (A scan of every centre
     took minutes on 460-201's 150 000 open circles.)"""
-    return any(math.hypot(k[0] - j[0], k[1] - j[1]) < 0.12 for j in cells.near(k[0], k[1]))
+    return any(math.hypot(k[0] - j[0], k[1] - j[1]) < _SAME_CENTRE_PT for j in cells.near(k[0], k[1]))
 
 
-def rebuild_strip_discs(paths, symbols):
+_STRIP_PIECE_MIN_CORNERS = 3  # a strip piece has 3 to 5 corners
+_STRIP_PIECE_MAX_CORNERS = 5  # (the most corners of a strip piece)
+_STRIP_PIECE_MAX_PT = 8       # and is at most 8 pt
+_STRIP_PIECES_MIN = 6         # a disc is a run of 6 or more pieces
+_DISC_ROUND = 0.7             # about round: its sides 0.7 of each other or more
+_DISC_AREA_MIN = 0.6          # its area 0.6 to 0.92 of its box (a disc fills pi/4)
+_DISC_AREA_MAX = 0.92         # (a square of two triangles fills its box)
+
+
+_DISC_POLYGON = 24             # a strip disc is redrawn as a 24-gon
+
+
+def strip_discs_as_paths(paths):
     """Discs filled as a fan of thin triangles (a 20-gon cut into vertical
     strips, seen in a probability textbook's plots): a run of small filled
     triangles of one colour, painted one after another and touching, whose
     box is about square and whose area is about that of the disc in it
     (pi/4 of the box; a square of two triangles fills its box) is one filled
-    circle.  The pieces give no other symbols."""
+    circle.  Returns the paths with each such run replaced by one path: a
+    filled polygon round the disc, in the first piece's place, its
+    classification (a circle, the run's box's centre and larger side) set
+    on it, and "rebuilt": "strip disc" (no glyph: outlined_text passes it
+    by).  The pieces are gone from the drawing, for every later step."""
+    discs = _strip_disc_runs(paths)
+    if not discs:
+        return paths
+    first_of = {}
+    gone = set()
+    for run, (cx, cy, size, w, h) in discs:
+        first = run[0][0]
+        pts = [(cx + 0.5 * w * math.cos(2 * math.pi * k / _DISC_POLYGON),
+                cy + 0.5 * h * math.sin(2 * math.pi * k / _DISC_POLYGON)) for k in range(_DISC_POLYGON)]
+        sp = {"start": pts[0], "segs": [("l", q) for q in pts[1:]] + [("l", pts[0])], "closed": True,
+              "_cls": {"shape": "circle", "cx": cx, "cy": cy, "size": size}}
+        disc = dict(first, subpaths=[sp], fill=True, stroke=False, rebuilt="strip disc")
+        first_of[first["idx"]] = disc
+        gone.update(p["idx"] for p, _, _ in run)
+    return [first_of.get(p["idx"], p) for p in paths if p["idx"] not in gone or p["idx"] in first_of]
+
+
+def _strip_disc_runs(paths):
+    """[(run of (path, vertices, box), (cx, cy, size, width, height))] of
+    the strip discs (strip_discs_as_paths)."""
     runs, cur, box = [], [], None      # (box: the run's union so far)
     for p in paths:
         piece = None
@@ -353,7 +439,7 @@ def rebuild_strip_discs(paths, symbols):
             if is_polygon(sp):
                 v = vertices(sp)
                 b = bbox_of(v)
-                if 3 <= len(v) <= 5 and max(b[2] - b[0], b[3] - b[1]) <= 8:
+                if _STRIP_PIECE_MIN_CORNERS <= len(v) <= _STRIP_PIECE_MAX_CORNERS and max(b[2] - b[0], b[3] - b[1]) <= _STRIP_PIECE_MAX_PT:
                     piece = (p, v, b)
         if piece and cur and cur[-1][0]["idx"] == piece[0]["idx"] - 1 and \
                 cur[-1][0]["fill_rgb"] == piece[0]["fill_rgb"] and _touch(box, piece[2]):
@@ -365,37 +451,29 @@ def rebuild_strip_discs(paths, symbols):
                 # next disc, touching or overlapping it, starts afresh
                 # (prob-book-171's 2 000 dots, crowded, began and ended
                 # with a sliver of no width)
-                if len(cur) >= 6:
+                if len(cur) >= _STRIP_PIECES_MIN:
                     runs.append(cur)
                 cur, box = [], None
             continue
-        if len(cur) >= 6:
+        if len(cur) >= _STRIP_PIECES_MIN:
             runs.append(cur)
         cur = [piece] if piece else []
         box = piece[2] if piece else None
-    if len(cur) >= 6:
+    if len(cur) >= _STRIP_PIECES_MIN:
         runs.append(cur)
-    discs, used = [], set()
+    discs = []
     for run in runs:
         x0, y0, x1, y1 = union_box(b for _, _, b in run)
         w, h = x1 - x0, y1 - y0
         # (about round: prob-book-171's dots are 3.3 x 4.4 pt, their page
         # printed to PDF at unequal scales)
-        if min(w, h) <= 0 or min(w, h) < 0.7 * max(w, h):
+        if min(w, h) <= 0 or min(w, h) < _DISC_ROUND * max(w, h):
             continue
         area = sum(abs(polygon_area(v)) for _, v, _ in run)
-        if not 0.6 * w * h <= area <= 0.92 * w * h:
+        if not _DISC_AREA_MIN * w * h <= area <= _DISC_AREA_MAX * w * h:
             continue
-        first = run[0][0]
-        discs.append({"shape": "circle", "cx": (x0 + x1) / 2, "cy": (y0 + y1) / 2,
-                      "size": max(w, h), "filled": True, "rgb": first["fill_rgb"],
-                      "idx": first["idx"]})
-        used.update(p["idx"] for p, _, _ in run)
-    if not discs:
-        return symbols
-    out = [s for s in symbols if s.get("idx") not in used] + discs
-    out.sort(key=lambda s: s["idx"])
-    return out
+        discs.append((run, ((x0 + x1) / 2, (y0 + y1) / 2, max(w, h), w, h)))
+    return discs
 
 
 def _cap(b, tol=0.01):

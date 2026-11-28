@@ -95,7 +95,11 @@ def _jpeg_pixels(raw, w, h):
     return img.tobytes(), (1 if img.mode == "L" else 3)
 
 
-def rows_uneven(xobj, samples=64):
+_ROW_SAMPLES = 64   # rows sampled across a strip before reading it whole
+_ROW_UNEVEN = 0.02  # a row uneven by over 2% of full scale is no strip
+
+
+def rows_uneven(xobj, samples=_ROW_SAMPLES):
     """A quick look at a long thin image before it is read whole: True if
     one of a few rows across it (first, last and evenly between) holds
     pixels further apart than 0.02 in some component - then it is no
@@ -117,7 +121,7 @@ def rows_uneven(xobj, samples=64):
     data = _decoded(xobj)
     if data is None or len(data) < w * h * n:
         return False
-    lim = 0.02 * 255
+    lim = _ROW_UNEVEN * 255
     count = w if h < w else h                 # rows across the strip
     for r in sorted({round(k * (count - 1) / (samples - 1)) for k in range(samples)}):
         if h >= w:
@@ -128,6 +132,9 @@ def rows_uneven(xobj, samples=64):
         if any(abs(row[k] - first[k % n]) > lim for k in range(len(row))):
             return True
     return False
+
+
+_WHITE = 0.95  # pixels lighter than 0.95 in every channel are background
 
 
 def read_image(xobj):
@@ -178,8 +185,19 @@ def read_image(xobj):
                  for j in range(h) for i in range(w)]
     else:
         # no mask: white is the ground the marker was drawn on
-        alpha = [0.0 if min(c) > 0.95 else 1.0 for c in rgb]
+        alpha = [0.0 if min(c) > _WHITE else 1.0 for c in rgb]
     return w, h, rgb, alpha
+
+
+_MARK_MIN_PX = 3       # an image marker is 3 pixels or more each way
+_MARK_ASPECT_LO = 0.6  # and 0.6 to 1.6 times as wide as tall
+_MARK_ASPECT_HI = 1.6  # (the widest)
+_SQUARE_FILL = 0.88    # a square fills 88% of its box or more
+_TIP_FRAC = 0.45       # a triangle's tip row: at most 0.45 of its width
+_BASE_FRAC = 0.75      # its base row: 0.75 of it or more
+_WAIST_LO = 0.3        # a diamond's widest row 0.3 to 0.7 of its height
+_WAIST_HI = 0.7        # (the lowest waist)
+_DIAMOND_FILL = 0.68   # a diamond fills under 68% (a circle more)
 
 
 def _shape(grid):
@@ -192,18 +210,25 @@ def _shape(grid):
     W, H = x1 - x0 + 1, len(rows)
     widths = [sum(r[x0:x1 + 1]) for r in rows]
     fill = sum(widths) / float(W * H)
-    if W < 3 or H < 3 or not 0.6 <= W / float(H) <= 1.6:
+    if W < _MARK_MIN_PX or H < _MARK_MIN_PX or not _MARK_ASPECT_LO <= W / float(H) <= _MARK_ASPECT_HI:
         return "image"
     k = max(1, H // 5)
     top, bottom = sum(widths[:k]) / float(k), sum(widths[-k:]) / float(k)
     widest = max(range(H), key=lambda j: widths[j])
-    if fill >= 0.88:
+    if fill >= _SQUARE_FILL:
         return "square"
-    if (top <= 0.45 * W and bottom >= 0.75 * W) or (bottom <= 0.45 * W and top >= 0.75 * W):
+    if (top <= _TIP_FRAC * W and bottom >= _BASE_FRAC * W) or (bottom <= _TIP_FRAC * W and top >= _BASE_FRAC * W):
         return "triangle"
-    if top <= 0.45 * W and bottom <= 0.45 * W and 0.3 <= widest / float(H - 1 or 1) <= 0.7:
-        return "diamond" if fill < 0.68 else "circle"
+    if top <= _TIP_FRAC * W and bottom <= _TIP_FRAC * W and _WAIST_LO <= widest / float(H - 1 or 1) <= _WAIST_HI:
+        return "diamond" if fill < _DIAMOND_FILL else "circle"
     return "image"
+
+
+_SOFT_MIN_PX = 5      # an anti-aliased disc is 5 pixels or more
+_SOFT_CORNER = 0.3    # its corners under 0.3 opaque
+_SOFT_FILL_LO = 0.65  # it fills 65 to 90% of its box
+_SOFT_FILL_HI = 0.9   # (the fullest disc)
+_SOFT_ENDS = 0.75     # its end rows under 0.75 of its width
 
 
 def _soft_round(w, h, rgb):
@@ -215,16 +240,21 @@ def _soft_round(w, h, rgb):
     65% to 90% of its box, with no row of the top or bottom fifth filled
     to three quarters (a square does; a diamond covers about half).
     Returns "circle" or None."""
-    if w < 5 or h < 5 or not 0.6 <= w / float(h) <= 1.6:
+    if w < _SOFT_MIN_PX or h < _SOFT_MIN_PX or not _MARK_ASPECT_LO <= w / float(h) <= _MARK_ASPECT_HI:
         return None
     ink = [[1.0 - min(rgb[j * w + i]) for i in range(w)] for j in range(h)]
     corners = (ink[0][0], ink[0][w - 1], ink[h - 1][0], ink[h - 1][w - 1])
     fill = sum(map(sum, ink)) / float(w * h)
     k = max(1, h // 5)
     ends = ink[:k] + ink[-k:]
-    if max(corners) < 0.3 and 0.65 <= fill <= 0.9 and all(sum(r) < 0.75 * w for r in ends):
+    if max(corners) < _SOFT_CORNER and _SOFT_FILL_LO <= fill <= _SOFT_FILL_HI and all(sum(r) < _SOFT_ENDS * w for r in ends):
         return "circle"
     return None
+
+
+_SHADOW_PT = 0.05    # a shadow's offset stroke is under 0.05 pt one way
+_OPAQUE = 0.5        # a pixel 50% opaque or more is part of the marker
+_MATCH_SIZES = 0.15  # an image marker matches a shape within 0.15 of its size
 
 
 def image_symbols(marks, paths):
@@ -241,7 +271,7 @@ def image_symbols(marks, paths):
                     # through every marker, and its silver dots gave the
                     # blue markers their colour
                     xs, ys = [q[0] for q in vs], [q[1] for q in vs]
-                    if len(sp["segs"]) == 1 and (max(xs) - min(xs) < 0.05 or max(ys) - min(ys) < 0.05):
+                    if len(sp["segs"]) == 1 and (max(xs) - min(xs) < _SHADOW_PT or max(ys) - min(ys) < _SHADOW_PT):
                         continue
                     for q in vs:
                         corners[(round(q[0]), round(q[1]))].append((q, p["stroke_rgb"]))
@@ -255,14 +285,14 @@ def image_symbols(marks, paths):
         if img is None:
             continue
         w, h, rgb, alpha = img
-        if max(alpha) < 0.5:
+        if max(alpha) < _OPAQUE:
             continue                        # a shadow or a glow
         a, b, c, d = m["ctm"][:4]
         if abs(b) > 1e-6 or abs(c) > 1e-6 or a == 0 or d == 0:
             shape = "image"                 # (turned images: shape not read)
         else:
             # image rows run top to bottom when d > 0; columns left to right when a > 0
-            grid = [[alpha[j * w + i] >= 0.5 for i in range(w)] for j in range(h)]
+            grid = [[alpha[j * w + i] >= _OPAQUE for i in range(w)] for j in range(h)]
             if d < 0:
                 grid.reverse()
             if a < 0:
@@ -270,16 +300,16 @@ def image_symbols(marks, paths):
             shape = _shape(grid)
             if resolve1(m["xobj"].get("SMask")) is None and shape in ("square", "image"):
                 shape = _soft_round(w, h, rgb) or shape
-        opaque = [rgb[k] for k in range(w * h) if alpha[k] >= 0.5]
+        opaque = [rgb[k] for k in range(w * h) if alpha[k] >= _OPAQUE]
         colour = collections.Counter(tuple(round(v, 3) for v in c) for c in opaque).most_common(1)[0][0]
         x0, y0, x1, y1 = m["box"]
         cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
         # the opaque part's size: pixels times their size on the page
-        xs = [k % w for k in range(w * h) if alpha[k] >= 0.5]
-        ys = [k // w for k in range(w * h) if alpha[k] >= 0.5]
+        xs = [k % w for k in range(w * h) if alpha[k] >= _OPAQUE]
+        ys = [k // w for k in range(w * h) if alpha[k] >= _OPAQUE]
         size = max((max(xs) - min(xs) + 1) / float(w) * (x1 - x0),
                    (max(ys) - min(ys) + 1) / float(h) * (y1 - y0))
-        tol = 0.15 * size
+        tol = _MATCH_SIZES * size
         near = [rgb_ for q, rgb_ in corners.get((round(cx), round(cy)), ())
                 if abs(q[0] - cx) <= tol and abs(q[1] - cy) <= tol]
         for dx in (-1, 0, 1):

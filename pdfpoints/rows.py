@@ -6,7 +6,6 @@ its error bars."""
 import math
 
 from .colours import color_name
-from .context import PAGE
 from .geometry import overlap_area, rect_area
 from .graphs import clip_graph, graph_for_symbol
 from .scales import map_value, nominal_rank
@@ -43,6 +42,11 @@ def legend_looks(symbols, legend):
     return {(symbols[i]["shape"], color_name(symbols[i]["rgb"])[1]) for i in legend}
 
 
+_MARKER_MAX_PT = 3.5    # markers up to 3.5 pt are reported in any plot
+_MARKER_MAX_SIDE = 0.4  # (or 0.4 of a small plot's side)
+_KEY_MAX_SIDE = 0.25    # a bigger legend-like marker up to a quarter of the side
+
+
 def marker_sized(s, g, opts, keyed=frozenset()):
     """Whether a symbol is small enough to be a marker of graph g.  Markers
     are small: at most --max-symbol-frac (0.1) of the plot's shorter side,
@@ -56,9 +60,13 @@ def marker_sized(s, g, opts, keyed=frozenset()):
         return True
     x0, y0, x1, y1 = g["rect"]
     side = min(x1 - x0, y1 - y0)
-    if s["size"] <= max(opts.max_frac * side, min(3.5, 0.4 * side)):
+    if s["size"] <= max(opts.max_frac * side, min(_MARKER_MAX_PT, _MARKER_MAX_SIDE * side)):
         return True
-    return s["size"] <= 0.25 * side and (s["shape"], color_name(s["rgb"])[1]) in keyed
+    return s["size"] <= _KEY_MAX_SIDE * side and (s["shape"], color_name(s["rgb"])[1]) in keyed
+
+
+_OUTSIDE_SIDES = 0.5  # a point outside its graph by half its size is not reported
+_CLIP_SHARE = 0.1     # a clip sharing under 10% with its graph belongs elsewhere
 
 
 def reportable(graphs, s, g, d, opts, key=False, keyed=frozenset()):
@@ -69,10 +77,10 @@ def reportable(graphs, s, g, d, opts, key=False, keyed=frozenset()):
     x0, y0, x1, y1 = g["rect"]
     w, h = x1 - x0, y1 - y0
     if not key and clip_graph(graphs, s) is not g:
-        if d > 0.5 * max(w, h):
+        if d > _OUTSIDE_SIDES * max(w, h):
             return False                  # far from every graph (and not drawn in one)
         c = s.get("clip")
-        if d > 0 and c and overlap_area(g["rect"], c) < 0.1 * max(rect_area(c), 1e-9):
+        if d > 0 and c and overlap_area(g["rect"], c) < _CLIP_SHARE * max(rect_area(c), 1e-9):
             return False                  # drawn in a plot box that is not a graph found
     return marker_sized(s, g, opts, keyed if not key else ())
 
@@ -90,7 +98,7 @@ def symbol_size(s):
     return (w + h) / 2
 
 
-def make_rows(pno, graphs, symbols, legend, namer, opts, bars=None):
+def make_rows(pno, graphs, symbols, legend, namer, opts, bars=None, *, page):
     """One output row per reported symbol (with the ends of its error bars,
     `bars` from find_error_bars, when --errbars is given), graph by graph
     and, within a graph, in increasing order of x."""
@@ -157,11 +165,11 @@ def make_rows(pno, graphs, symbols, legend, namer, opts, bars=None):
             # labels kept)
             "value": "" if not opts.heatmap or s.get("value") is None or
             (si in legend and s["shape"] != "tile") else s["value"],
-            "rotation": (g["rot"] + PAGE.turn + 180) % 360 - 180 if PAGE.turn else g["rot"],
+            "rotation": (g["rot"] + page.turn + 180) % 360 - 180 if page.turn else g["rot"],
             "symbol_size": symbol_size(s),
             "legend_key": 1 if si in legend else 0,
-            "pdf_x": PAGE.unturn((s["cx"], s["cy"]))[0] if PAGE.turn else s["cx"],
-            "pdf_y": PAGE.unturn((s["cx"], s["cy"]))[1] if PAGE.turn else s["cy"],
+            "pdf_x": page.unturn((s["cx"], s["cy"]))[0] if page.turn else s["cx"],
+            "pdf_y": page.unturn((s["cx"], s["cy"]))[1] if page.turn else s["cy"],
             "x_order": (1, s["x_rank"]) if s.get("x_category") is not None and not g["rot"]
             else x_order(g["x"]["map"], xc, x)})
         if s.get("base_y") is not None and not g["rot"]:
@@ -226,6 +234,12 @@ def error_bar_values(g, x, y, bar):
     return out
 
 
+_SLOTS_MIN = 4       # box slots named with 4 boxes or more
+_SLOT_TOL = 0.03     # slots match within 0.03
+_SLOTS_FILLED = 3    # a blank slot among 3 or more
+_SLOT_CENTRE = 0.02  # centres on a slot within 0.02
+
+
 def name_box_slots(rows):
     """Box plots dodged by series (ggplot: one box per series side by side
     at each category, always in the same order) give each series a slot,
@@ -249,14 +263,14 @@ def name_box_slots(rows):
         by_graph.setdefault((r["page"], r["graph"]), []).append(r)
     for rs in by_graph.values():
         boxes = [r for r in rs if r["symbol"] == "box-median"]
-        if len(boxes) < 4:
+        if len(boxes) < _SLOTS_MIN:
             continue
         # slots: offsets from the nearest whole category position
         slots = []
         for r in boxes:
             o = r["x_coord"] - round(r["x_coord"])
             for sl in slots:
-                if abs(sl[0] - o) <= 0.03:
+                if abs(sl[0] - o) <= _SLOT_TOL:
                     sl[1].append(r)
                     break
             else:
@@ -270,7 +284,7 @@ def name_box_slots(rows):
         # the slot is that series (Seongmin-PhD-044's ORBS slot, all its
         # boxes flat in the deleted-lines panels)
         blank = [k for k, nm in enumerate(slot_name) if nm is None]
-        if len(blank) == 1 and len(slots) >= 3 and \
+        if len(blank) == 1 and len(slots) >= _SLOTS_FILLED and \
                 all(len(sl[1]) >= 2 for sl in slots):
             left = page_names.get(rs[0]["page"], set()) - set(slot_name)
             if len(left) == 1 and not any(r["series"] for r in slots[blank[0]][1]):
@@ -290,6 +304,6 @@ def name_box_slots(rows):
         for r in rs:
             if r["symbol"] in BOX_SHAPES or r["series"]:
                 continue
-            on = {s for x, s in centres if abs(x - r["x_coord"]) <= 0.02}
+            on = {s for x, s in centres if abs(x - r["x_coord"]) <= _SLOT_CENTRE}
             if len(on) == 1:
                 r["series"] = on.pop()

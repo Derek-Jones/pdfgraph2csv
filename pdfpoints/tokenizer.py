@@ -8,9 +8,15 @@ time instead, with the operands already as the Python values pdfminer.six
 produces (int/float, PSLiteral names, bytes strings, lists, dicts), so memory
 use does not grow with the size of the stream.
 
-Streams with inline images (BI ... ID <binary> EI) are not handled here: the
-caller uses qpdf for those (see `has_inline_image`).
+Inline images (BI <dict> ID <binary> EI) are yielded as ("BI", (dict,
+data)): the data's end is found from its length when that is known (no
+filter: width x height x components x bits; Flate: where the compressed
+data ends), else at the first "EI" between white space.  A stream whose
+image end cannot be found raises InlineImageError, and the caller reads
+it with qpdf (see `has_inline_image`).
 """
+
+import zlib
 
 import re
 
@@ -55,7 +61,12 @@ class Floats(list):
 _DECIMALS = re.compile(rb"[0-9]\.([0-9]+)|[^0-9]\.([0-9]+)")
 
 
-def coordinate_decimals(data, sample=2000000):
+_DECIMALS_SAMPLE = 2000000  # the decimals of numbers counted in the first 2 MB
+_DECIMALS_SHARE = 0.95      # the 95th percentile of their decimals
+_DECIMALS_MAX = 12          # at most 12 decimals
+
+
+def coordinate_decimals(data, sample=_DECIMALS_SAMPLE):
     """How many decimals the stream's numbers are written with: the 95th
     percentile of the decimals of the numbers in (the start of) the stream,
     so that one odd number does not count.  0 for whole numbers only."""
@@ -69,13 +80,119 @@ def coordinate_decimals(data, sample=2000000):
     seen = 0
     for n in sorted(counts):
         seen += counts[n]
-        if seen >= 0.95 * total:
-            return min(n, 12)
-    return min(max(counts), 12)
+        if seen >= _DECIMALS_SHARE * total:
+            return min(n, _DECIMALS_MAX)
+    return min(max(counts), _DECIMALS_MAX)
 
 
 def has_inline_image(data):
     return _INLINE_IMAGE.search(data) is not None
+
+
+class InlineImageError(ValueError):
+    """An inline image whose data's end was not found."""
+
+
+_II_KEYS = {"W": "Width", "H": "Height", "BPC": "BitsPerComponent", "CS": "ColorSpace",
+            "F": "Filter", "DP": "DecodeParms", "IM": "ImageMask", "D": "Decode", "I": "Interpolate"}
+_II_FILTERS = {"AHx": "ASCIIHexDecode", "A85": "ASCII85Decode", "LZW": "LZWDecode",
+               "Fl": "FlateDecode", "RL": "RunLengthDecode", "CCF": "CCITTFaxDecode",
+               "DCT": "DCTDecode"}
+_II_COMPONENTS = {"G": 1, "DeviceGray": 1, "RGB": 3, "DeviceRGB": 3, "CMYK": 4,
+                  "DeviceCMYK": 4, "I": 1, "Indexed": 1}
+_EI = re.compile(rb"[ \t\r\n\f\x00]EI(?=[ \t\r\n\f\x00()<>\[\]{}/%]|\Z)")
+_ID = re.compile(rb"(?<=[ \t\r\n\f\x00\]>)])ID(?=[ \t\r\n\f\x00])")
+_EI_AFTER = re.compile(rb"[ \t\r\n\f\x00]*EI(?=[ \t\r\n\f\x00()<>\[\]{}/%]|\Z)")
+
+
+_FLATE_FIRST = 512  # Flate data fed in pieces from 512 bytes
+_FLATE_GROWTH = 4   # each piece 4 times the last
+
+
+def _inline_image(data, pos):
+    """The inline image whose dictionary starts at `pos` (just after BI):
+    (dict with full key and filter names, raw data, position after EI)."""
+    ops = operators_until_id(data, pos)
+    if ops is None:
+        raise InlineImageError("no ID")
+    d, pos = ops
+    start = pos + 1                   # (one white-space byte after ID)
+    filters = d.get("Filter")
+    filters = [] if filters is None else (filters if isinstance(filters, list) else [filters])
+    filters = [_II_FILTERS.get(f.name, f.name) if hasattr(f, "name") else f for f in filters]
+    d["Filter"] = filters
+    end = None
+    try:
+        if not filters:
+            w, h, bpc = int(d["Width"]), int(d["Height"]), int(d.get("BitsPerComponent", 1))
+            cs = d.get("ColorSpace")
+            if d.get("ImageMask"):
+                comps, bpc = 1, 1
+            else:
+                comps = _II_COMPONENTS.get(getattr(cs, "name", None)) if cs is not None else None
+                if isinstance(cs, list) and cs and getattr(cs[0], "name", None) in ("I", "Indexed"):
+                    comps = 1
+            if comps:
+                end = start + (w * comps * bpc + 7) // 8 * h
+        elif filters == ["FlateDecode"]:
+            # (fed in growing pieces: handing over the rest of a long stream
+            # for each of thousands of small images copies it each time)
+            z = zlib.decompressobj()
+            fed, step = start, _FLATE_FIRST
+            while not z.eof and fed < len(data):
+                z.decompress(data[fed:fed + step])
+                fed = min(fed + step, len(data))
+                step *= _FLATE_GROWTH
+            if z.eof:
+                end = fed - len(z.unused_data)
+    except (KeyError, TypeError, ValueError, zlib.error):
+        end = None
+    if end is not None:
+        m = _EI_AFTER.match(data, end)
+        if m is not None:              # (the data up to EI, as qpdf gives it)
+            return d, data[start:m.end() - 2], m.end()
+    m = _EI.search(data, start)
+    if m is None:
+        raise InlineImageError("no EI")
+    return d, data[start:m.end() - 2], m.end()
+
+
+def inline_images_found(data):
+    """Can the end of every inline image of `data` be found?  (Each "BI"
+    keyword, found by pattern, read as an image, the search going on after
+    its EI.)"""
+    pos = 0
+    while True:
+        m = _INLINE_IMAGE.search(data, pos)
+        if m is None:
+            return True
+        try:
+            _, _, pos = _inline_image(data, m.end() - 1)
+        except InlineImageError:
+            return False
+
+
+def operators_until_id(data, pos):
+    """The inline image dictionary from `pos` to its ID keyword: ({full key:
+    value}, position of the end of ID), or None."""
+    items = []
+    for name, operands in operators(data[pos:pos + 4096], images=False):
+        if name == "ID":
+            items += operands
+            break
+        return None                   # (any other operator: no image dictionary)
+    else:
+        return None
+    m = _ID.search(data, pos)
+    if m is None:
+        return None
+    d = {}
+    it = iter(items)
+    for k in it:
+        v = next(it, None)
+        if hasattr(k, "name"):
+            d[_II_KEYS.get(k.name, k.name)] = v
+    return d, m.end()
 
 
 def _name(tok):
@@ -139,9 +256,9 @@ def _literal_string(data, pos):
     return bytes(out), n
 
 
-def operators(data):
+def operators(data, images=True):
     """Yield (operator name, operands) for each operator of the content
-    stream `data` (bytes)."""
+    stream `data` (bytes); an inline image as ("BI", (dict, raw data))."""
     operands = []
     stack = []                       # open arrays / dictionaries
     match = _TOKEN.match
@@ -155,6 +272,10 @@ def operators(data):
                 nums, op = m.group(1, 2)
                 pos = m.end()
                 if not nums:
+                    if op == b"BI" and images:
+                        d, raw, pos = _inline_image(data, pos)
+                        yield "BI", (d, raw)
+                        continue
                     yield op.decode("latin-1"), []
                 elif op in _PATH_OPS:     # coordinates: floats, as pdfminer makes them
                     yield op.decode("latin-1"), Floats(map(float, nums.split()))
@@ -209,6 +330,11 @@ def operators(data):
             if stack:                # an operator inside [ ] / << >>: malformed
                 operands = stack[0][1]
                 stack = []
+            if tok == b"BI" and images:
+                d, raw, pos = _inline_image(data, pos)
+                yield "BI", (d, raw)
+                operands = []
+                continue
             yield tok.decode("latin-1"), operands
             operands = []
             continue

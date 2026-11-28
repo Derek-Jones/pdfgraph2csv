@@ -1,0 +1,2 @@
+page,graph,title,figure,caption,tool,tool_guess,points,x_tick_min,x_tick_max,y_tick_min,y_tick_max
+1,1,mod(100) | mod(500) | mod(1000),3.1,ML estimates with 95% confidence intervals for the data example of Model I.,,R,40,ρ1,ρ19,0,0.6

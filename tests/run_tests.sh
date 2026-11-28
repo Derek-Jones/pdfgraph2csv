@@ -24,12 +24,19 @@
 #   tests/run_tests.sh               run all cases
 #   tests/run_tests.sh -v            one line per case (with its run time)
 #   tests/run_tests.sh -k rofpc      only cases whose name contains "rofpc"
+#   tests/run_tests.sh -j 4          run 4 cases at a time (default: one per
+#                                    processor; -j 1 runs them one by one)
 #   tests/run_tests.sh --update      regenerate the expected CSVs from the
 #                                    current program (after an intended
 #                                    change; review the differences)
 #   tests/run_tests.sh --generate    first re-create the synthetic test PDFs
 #                                    with the Python generators, then run
 #                                    the cases
+#
+# Cases run in parallel, through xargs -P: the script first lists the
+# selected cases (by number), then xargs runs this script once per case
+# (--run-case N, each in its own temporary directory, its report written to
+# a file), and the reports are printed in the cases' order as they finish.
 #
 # The test PDFs that were made by program are re-created by these Python
 # scripts in tests/ (they write into tests/data):
@@ -46,7 +53,7 @@
 # The Python interpreter is taken from $PYTHON (default python3).  To test
 # another build of the program, set $PDFGRAPH2CSV to its path; it is run
 # instead of pdfgraph2csv.py.  Needs only bash (3.2 or later) and the
-# standard tools awk, grep, sort, diff, cmp.
+# standard tools awk, grep, sort, diff, cmp, xargs.
 # Exit status is 0 when every case passes, 1 otherwise.
 #
 # A case is one call of t:
@@ -81,17 +88,38 @@ verbose=0
 update=0
 generate=0
 filter=
+jobs=
+run_case=                            # (internal) run only case number N
 while [ $# -gt 0 ]; do
     case $1 in
         -v|--verbose) verbose=1 ;;
         -k) shift; filter=$1 ;;
+        -j|--jobs) shift; jobs=$1 ;;
         --update) update=1 ;;
         --generate) generate=1 ;;
+        --run-case) shift; run_case=$1 ;;
         -h|--help) sed -n '2,/^$/s/^# \{0,1\}//p' "$0"; exit 0 ;;
-        *) echo "usage: $0 [-v] [-k TEXT] [--update] [--generate]" >&2; exit 2 ;;
+        *) echo "usage: $0 [-v] [-k TEXT] [-j N] [--update] [--generate]" >&2; exit 2 ;;
     esac
     shift
 done
+if [ -z "$jobs" ]; then
+    jobs=$(getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null || echo 1)
+fi
+case $jobs in
+    ''|*[!0-9]*|0) echo "$0: -j needs a whole number of 1 or more" >&2; exit 2 ;;
+esac
+
+# list: this run lists the selected cases and has them run (the default);
+# case: this run is one of those, running case number $run_case only
+if [ -n "$run_case" ]; then
+    mode=case
+    RESULTS=${PDFGRAPH2CSV_TEST_RESULTS:?--run-case is only for the script itself}
+    exec >"$RESULTS/$run_case.out" 2>&1
+else
+    mode=list
+fi
+case_no=0
 
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/pdfgraph2csv-tests.XXXXXX") || exit 2
 trap 'rm -rf "$TMP"' EXIT
@@ -107,7 +135,7 @@ failed=0
 failed_names=
 
 # --generate: re-create the synthetic PDFs before running the cases
-if [ "$generate" -eq 1 ]; then
+if [ "$generate" -eq 1 ] && [ "$mode" = list ]; then
     for gen in make_line_plus_pdf.py make_date_axis_pdf.py make_random_symbols_pdf.py \
                make_synthetic_pdfs.py; do
         if [ "$gen" = make_synthetic_pdfs.py ] && ! "$PYTHON" -c "import matplotlib" 2>/dev/null; then
@@ -375,10 +403,26 @@ write_expected() {
     elif cmp -s "$1" "$path"; then state="unchanged"
     else state="UPDATED  "
     fi
-    cp "$1" "$path"
+    # (replaced in one step: cases sharing an expected file may be
+    # updated at the same time)
+    cp "$1" "$path.$$.tmp" && mv -f "$path.$$.tmp" "$path"
     rows=$(awk 'NF' "$path" | wc -l)
     [ "$rows" -gt 0 ] && rows=$((rows - 1))
     echo "$state $2 ($rows rows)"
+}
+
+# take_case NAME: number the next case; true when it is to be run now.
+# Listing, a case whose name passes -k is noted (by number) and not run;
+# running case N, only case N is run.
+take_case() {
+    case_no=$((case_no + 1))
+    if [ "$mode" = list ]; then
+        if [ -z "$filter" ] || printf '%s\n' "$1" | grep -qiF -- "$filter"; then
+            echo "$case_no" >>"$TMP/selected"
+        fi
+        return 1
+    fi
+    [ "$case_no" -eq "$run_case" ]
 }
 
 # t NAME --pdf FILE [options] [-- program arguments]: one case
@@ -406,9 +450,7 @@ t() {
         esac
         shift
     done
-    if [ -n "$filter" ] && ! printf '%s\n' "$c_name" | grep -qiF -- "$filter"; then
-        return
-    fi
+    take_case "$c_name" || return
     if [ "$update" -eq 1 ]; then
         update_expected
         return
@@ -429,9 +471,7 @@ t() {
 # t_help: the --help text must be the usage text README.md gives
 t_help() {
     local name='--help: the same text as the usage block of README.md'
-    if [ -n "$filter" ] && ! printf '%s\n' "$name" | grep -qiF -- "$filter"; then
-        return
-    fi
+    take_case "$name" || return
     [ "$update" -eq 1 ] && return
     # (the indented block from "usage:" to the first line not indented)
     awk '/^    usage:/ { on = 1 } on && !/^    / && !/^$/ { exit } on' \
@@ -452,9 +492,7 @@ t_help() {
 # t_progress: --progress prints each page processed and the seconds so far
 t_progress() {
     local name='--progress: one line per page processed (pages 2 and 8 of 2407.03385v3), page number and seconds since the start to one decimal, on standard output'
-    if [ -n "$filter" ] && ! printf '%s\n' "$name" | grep -qiF -- "$filter"; then
-        return
-    fi
+    take_case "$name" || return
     [ "$update" -eq 1 ] && return
     "$PYTHON" -I "$PROGRAM" --progress --pages 2,8 -o "$TMP/progress.csv" "$DATA/2407.03385v3.pdf" \
         >"$TMP/progress_out" 2>/dev/null
@@ -471,15 +509,55 @@ t_progress() {
     fi
 }
 
+# run_selected: run the listed cases, $jobs at a time (xargs -P), and print
+# their reports in order as they finish, counting passes and failures
+run_selected() {
+    local n flags=() res=$TMP/results got
+    mkdir "$res"
+    [ "$verbose" -eq 1 ] && flags+=(-v)
+    [ "$update" -eq 1 ] && flags+=(--update)
+    PDFGRAPH2CSV_TEST_RESULTS=$res xargs -P "$jobs" -n 1 \
+        "${BASH:-bash}" "$0" ${flags[@]+"${flags[@]}"} --run-case <"$TMP/selected" &
+    local pid=$!
+    while read -r n; do
+        # wait for this case's report (or for xargs to have given up)
+        while [ ! -e "$res/$n.status" ]; do
+            if ! kill -0 "$pid" 2>/dev/null && [ ! -e "$res/$n.status" ]; then
+                echo "FAIL  case $n did not report"
+                failed=$((failed + 1))
+                failed_names="$failed_names  case number $n (no report)
+"
+                continue 2
+            fi
+            sleep 0.2
+        done
+        cat "$res/$n.out"
+        read -r got <"$res/$n.status"
+        passed=$((passed + ${got%% *}))
+        failed=$((failed + ${got##* }))
+        [ -s "$res/$n.names" ] && failed_names="$failed_names$(cat "$res/$n.names")
+"
+    done <"$TMP/selected"
+    wait "$pid"
+}
+
 # summary: called after the last case
 summary() {
+    if [ "$mode" = case ]; then
+        # one case of a parallel run: its counts for the listing run
+        printf '%s' "$failed_names" >"$RESULTS/$run_case.names"
+        echo "$passed $failed" >"$RESULTS/$run_case.status.tmp"
+        mv -f "$RESULTS/$run_case.status.tmp" "$RESULTS/$run_case.status"
+        exit 0
+    fi
+    if [ ! -s "$TMP/selected" ]; then
+        echo "no cases selected"
+        exit 1
+    fi
+    run_selected
     if [ "$update" -eq 1 ]; then
         [ "$failed" -eq 0 ]
         exit $?
-    fi
-    if [ $((passed + failed)) -eq 0 ]; then
-        echo "no cases selected"
-        exit 1
     fi
     echo
     echo "$((passed + failed)) cases: $passed passed, $failed failed  (${SECONDS}s)"
@@ -810,7 +888,7 @@ t 'arXiv 2304.10304 p5: matplotlib markers as Form XObject /M0 (8-Bezier filled 
   --pdf 2304_10304v3-005.pdf \
   --expect 2304_10304v3-005.csv
 
-t 'computer depreciation p189: two scatter plots, every marker outline written twice (Distiller), coincident points, clipped markers' \
+t 'computer depreciation p189: two scatter plots, every marker outline written twice (Distiller), each drawing reported (all points are output, those at the same place too), clipped markers' \
   --pdf Estimatingcomputerdepreciationauctiondata-001.pdf \
   --expect Estimatingcomputerdepreciationauctiondata-001.csv
 
@@ -928,10 +1006,10 @@ t 'Mohamed_Rakha_PhD-072 (--heatmap), with meta file: a ggplot hexbin plot (Cair
   --meta Mohamed_Rakha_PhD-072.meta.csv \
   -- --heatmap
 
-t 'ArianeWuerbach-Phd-219, with meta file: 19 R trace plots turned a quarter turn on the page (iteration labels at 90 degrees, value labels at 180); Arial tick labels with no ToUnicode map read through the Mac standard glyph order of the CID font; each trace a stroked polyline of 5 254 segments, some written as straight curves; one plot found twice (an axis scale borrowed down its column) kept once; titles rho1 ... rho19 with two-digit subscripts; the page took 56 s, now about 10 s' \
+t 'ArianeWuerbach-Phd-219, with meta file: 19 R trace plots turned a quarter turn on the page (iteration labels at 90 degrees, value labels at 180); Arial tick labels with no ToUnicode map read through the Mac standard glyph order of the CID font; each trace a stroked polyline of 5 254 segments, some written as straight curves, every vertex reported (repeated ones too); one plot found twice (an axis scale borrowed down its column) kept once; titles rho1 ... rho19 with two-digit subscripts; the page took 56 s, now about 10 s' \
   --pdf ArianeWuerbach-Phd-219.pdf \
   --meta ArianeWuerbach-Phd-219.meta.csv \
-  --counts '1 line=3281|2 line=3317|3 line=3287|4 line=3322|5 line=3277|6 line=3277|7 line=3297|8 line=3315|9 line=3317|10 line=3318|11 line=3312|12 line=3315|13 line=3278|14 line=3310|15 line=3299|16 line=3281|17 line=3305|18 line=3317|19 line=3300'
+  --counts '1 line=5254|2 line=5263|3 line=5255|4 line=5268|5 line=5256|6 line=5255|7 line=5260|8 line=5263|9 line=5265|10 line=5264|11 line=5269|12 line=5261|13 line=5255|14 line=5269|15 line=5252|16 line=5247|17 line=5255|18 line=5270|19 line=5261'
 
 t '1356058.1356080-007, with meta file: an Excel scatter plot whose four + markers (GCC -O1, -O2, -O3, -Os) are drawn as four half-arm strokes and the x reference point as four filled half-arms; arrows from the labels -O1 ... -Os point at the + markers, their heads (open triangles) no points and their labels in the label column; small dots drawn as a fill and a slightly smaller outline are one point; the bars of Figure 6, one per category in four greys, take no names from other legends' \
   --pdf 1356058.1356080-007.pdf \
@@ -1013,7 +1091,7 @@ t '3832783.3834484-004, with meta file: three Excel bar charts (Foxit printer) p
   --expect 3832783.3834484-004.csv \
   --meta 3832783.3834484-004.meta.csv
 
-t '460-201, with meta file: four R plots flattened by InDesign, 39 MB of drawing (was 6 min 40 s): 150 000 open circles in two scatter plots (outlined text grouped only near real glyphs; fragment centres, bar stacking and short-bar checks indexed); a Q-Q plot of 37 676 squares drawn twice over in the same order (kept once); a histogram of outlined rectangles (bars); outlined titles unread' \
+t '460-201, with meta file: four R plots flattened by InDesign, 39 MB of drawing (was 6 min 40 s): 150 000 open circles in two scatter plots (outlined text grouped only near real glyphs; fragment centres, bar stacking and short-bar checks indexed); a Q-Q plot of 37 676 squares drawn twice over in the same order (both drawings reported: all points are output, those at the same place too); a histogram of outlined rectangles (bars); outlined titles unread' \
   --pdf 460-201.pdf \
   --expect 460-201.csv \
   --meta 460-201.meta.csv
@@ -1053,6 +1131,39 @@ t 'prob-book-171, with meta file: two scatter plots of 1000 filled black circles
   --pdf prob-book-171.pdf \
   --expect prob-book-171.csv \
   --meta prob-book-171.meta.csv
+
+t 'no.ntnu_inspera_146721987_149459097-037, with meta file: a matplotlib scatter plot of 11 714 markers in two colours, each filled and then stroked as separate paths (joined into one path by the normalisation stage); the minus of the y labels is glyph 0xED of a Type 3 font renumbered from 0, a lone bar about the middle, read as a minus sign (-30 to 40)' \
+  --pdf no.ntnu_inspera_146721987_149459097-037.pdf \
+  --expect no.ntnu_inspera_146721987_149459097-037.csv \
+  --meta no.ntnu_inspera_146721987_149459097-037.meta.csv
+
+t 'no.ntnu_inspera_146721987_149459097-040, with meta file: a matplotlib scatter plot of 11 712 points coloured by library on a colour bar; its labels are a Type 3 font (glyphs zero, one, A ... in 2048 units to the em, a matrix of 0.004883) whose size was taken for 0.6 pt, so no label was read and no graph found' \
+  --pdf no.ntnu_inspera_146721987_149459097-040.pdf \
+  --expect no.ntnu_inspera_146721987_149459097-040.csv \
+  --meta no.ntnu_inspera_146721987_149459097-040.meta.csv
+
+t 'no.ntnu_inspera_146721987_149459097-040 (--heatmap), with meta file: each point valued on the colour bar, in a column named Library after its title; the 30 colours read 0.97 to 29.84 (libraries 1 to 30)' \
+  --pdf no.ntnu_inspera_146721987_149459097-040.pdf \
+  --expect no.ntnu_inspera_146721987_149459097-040-heatmap.csv \
+  --meta no.ntnu_inspera_146721987_149459097-040-heatmap.meta.csv \
+  -- --heatmap
+
+t 'Keynote_LuigiLavazza_EmpiricalSoftEng-003: no graph, a slide whose background of fine horizontal and vertical lines is 18 700 inline image tiles, printed turned; the inline images are read by the tokenizer, not qpdf (6 s, now 2 s)' \
+  --pdf Keynote_LuigiLavazza_EmpiricalSoftEng-003.pdf \
+  --meta - \
+  --stderr 'No vector graphics found'
+
+t 'prob-book-171 with --debug: the normalisation stage and the filter chain name the steps that changed the drawing and the symbols (the 36000 triangles of the strip discs redrawn as 2000 circles by the normaliser strip_discs, the caption dot dropped by drop_symbols_in_prose)' \
+  --pdf prob-book-171.pdf \
+  --counts '1 filled-circle=1000|2 filled-circle=1000' \
+  --stderr 'normaliser strip_discs: paths -36000 +2000, texts -0 +0, words -0 +0' \
+  --stderr 'rule drop_symbols_in_prose: dropped 1, added 0, changed 0' \
+  -- --debug
+
+t 'BehavioralNetworkScience-319: no graph, nine grids of thousands of coloured squares (no tick labels, axis titles or legend); the tick groups made by the squares edges are checked against the squares through a grid, each decided as soon as its count is reached (8 minutes, now 11 s)' \
+  --pdf BehavioralNetworkScience-319.pdf \
+  --meta - \
+  --stderr 'No vector graphics found'
 
 t 'BehavioralNetworkScience-305: no graph, a network diagram whose names and edges are filled outlines (tens of thousands of slivers under 1 pt, read only by their proportions; outlined glyphs rasterised span by span)' \
   --pdf BehavioralNetworkScience-305.pdf \
@@ -1611,6 +1722,17 @@ t 'random10 asterisk-unequal: the same points with 10-digit coordinates (asteris
   --cols symbol,x_coord,y_coord \
   --tol 1.3e-8 \
   --keep
+
+t '2411.16433v1-066, with meta file: 20 graphs; twelve small bar charts 24 pt wide in a row, category names with subscripts (N2, P1, DT3, N3), the y scale written beside the first only, each x axis a zero line above the plot foot; six scatter plots side by side on grey backgrounds clipped to each (no tiled grid), their y labels in the gaps between them belonging to the plot on their right; two bar charts whose last categories are under a shaded band; legend names with a subscript under a superscript' \
+  --pdf 2411.16433v1-066.pdf \
+  --expect 2411.16433v1-066.csv \
+  --meta 2411.16433v1-066.meta.csv
+
+t 'ArianeWuerbach-Phd-083 (--errbars), with meta file: one R plot in three sections divided by grey lines, titled mod(100), mod(500), mod(1000) inside its top (one graph, the titles joined); two points per category (True, Estimated) drawn as circle glyphs of Adobe Pi Std, put by Acrobat in the place of ZapfDingbats; error bars on the estimates (95% confidence intervals of the table below)' \
+  --pdf ArianeWuerbach-Phd-083.pdf \
+  --expect ArianeWuerbach-Phd-083.csv \
+  --meta ArianeWuerbach-Phd-083.meta.csv \
+  -- --errbars
 
 t_help
 t_progress
